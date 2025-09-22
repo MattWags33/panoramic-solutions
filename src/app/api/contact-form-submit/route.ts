@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
       `;
 
       const { data, error } = await resend.emails.send({
-        from: 'Contact Form <noreply@panoramic-solutions.com>',
+        from: 'Contact Form <reports@app.panoramic-solutions.com>',
         to: ['Matt.Wagner@panoramic-solutions.com'],
         subject: `New Contact: ${name} from ${company}`,
         html: emailHtml,

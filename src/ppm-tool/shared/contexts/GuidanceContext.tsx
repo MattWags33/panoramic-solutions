@@ -29,11 +29,11 @@ interface GuidanceContextType {
   closeManualGuidance: () => void;
   hasShownManualGuidance: boolean;
   showProductBumper: boolean;
-  triggerProductBumper: () => void;
+  triggerProductBumper: (bypassRules?: boolean) => void;
   closeProductBumper: () => void;
   hasShownProductBumper: boolean;
   showExitIntentBumper: boolean;
-  triggerExitIntentBumper: (triggerType: 'mouse-leave' | 'tab-switch') => void;
+  triggerExitIntentBumper: (triggerType: 'mouse-leave' | 'tab-switch', bypassRules?: boolean) => void;
   closeExitIntentBumper: () => void;
   hasShownExitIntentBumper: boolean;
   exitIntentTriggerType: 'mouse-leave' | 'tab-switch' | null;
@@ -95,28 +95,27 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     setShowManualGuidance(false);
   };
 
-  const triggerProductBumper = () => {
-    console.log('🎯 triggerProductBumper called - current state:', { internalShowProductBumper, hasShownProductBumper });
+  const triggerProductBumper = (bypassRules = false) => {
+    console.log('🎯 triggerProductBumper called - current state:', { internalShowProductBumper, hasShownProductBumper, bypassRules });
     
-    // Use unified state management
-    if (!shouldShowProductBumper()) {
+    // Use unified state management (unless bypassed for testing)
+    if (!bypassRules && !shouldShowProductBumper()) {
       console.log('⚠️ ProductBumper blocked by unified rules');
       return;
     }
     
-    // Check if already showing or has been shown in this session
-    const canShow = !internalShowProductBumper && !hasShownProductBumper;
-    
-    if (canShow) {
-      console.log('✅ Showing ProductBumper');
-      setInternalShowProductBumper(true);
-      setHasShownProductBumper(true);
-      recordProductBumperShown();
-      setBumperCurrentlyOpen(true);
-      setOverlayOpen(OVERLAY_TYPES.PRODUCT_BUMPER);
-    } else {
-      console.log('⚠️ ProductBumper already shown or visible, skipping...');
+    // Check if already showing (always check this even with bypass)
+    if (internalShowProductBumper) {
+      console.log('⚠️ ProductBumper already visible, skipping...');
+      return;
     }
+    
+    console.log('✅ Showing ProductBumper');
+    setInternalShowProductBumper(true);
+    setHasShownProductBumper(true);
+    recordProductBumperShown();
+    setBumperCurrentlyOpen(true);
+    setOverlayOpen(OVERLAY_TYPES.PRODUCT_BUMPER);
   };
 
   const closeProductBumper = () => {
@@ -130,29 +129,28 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     setHasShownProductBumper(true);
   };
 
-  const triggerExitIntentBumper = (triggerType: 'mouse-leave' | 'tab-switch') => {
-    console.log('🎯 triggerExitIntentBumper called - trigger type:', triggerType);
+  const triggerExitIntentBumper = (triggerType: 'mouse-leave' | 'tab-switch', bypassRules = false) => {
+    console.log('🎯 triggerExitIntentBumper called - trigger type:', triggerType, 'bypassRules:', bypassRules);
     
-    // Use unified state management
-    if (!shouldShowExitIntentBumper()) {
+    // Use unified state management (unless bypassed for testing)
+    if (!bypassRules && !shouldShowExitIntentBumper()) {
       console.log('⚠️ ExitIntentBumper blocked by unified rules');
       return;
     }
     
-    // Check if already showing or has been shown in this session
-    const canShow = !showExitIntentBumper && !hasShownExitIntentBumper;
-    
-    if (canShow) {
-      console.log('✅ Showing ExitIntentBumper');
-      setExitIntentTriggerType(triggerType);
-      setShowExitIntentBumper(true);
-      setHasShownExitIntentBumper(true);
-      recordExitIntentBumperShown();
-      setBumperCurrentlyOpen(true);
-      setOverlayOpen(OVERLAY_TYPES.EXIT_INTENT_BUMPER);
-    } else {
-      console.log('⚠️ ExitIntentBumper already shown or visible, skipping...');
+    // Check if already showing (always check this even with bypass)
+    if (showExitIntentBumper) {
+      console.log('⚠️ ExitIntentBumper already visible, skipping...');
+      return;
     }
+    
+    console.log('✅ Showing ExitIntentBumper');
+    setExitIntentTriggerType(triggerType);
+    setShowExitIntentBumper(true);
+    setHasShownExitIntentBumper(true);
+    recordExitIntentBumperShown();
+    setBumperCurrentlyOpen(true);
+    setOverlayOpen(OVERLAY_TYPES.EXIT_INTENT_BUMPER);
   };
 
   const closeExitIntentBumper = () => {
@@ -198,6 +196,21 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     console.log('📊 Comparison Report closed');
     recordComparisonReportClosed();
     setOverlayClosed(OVERLAY_TYPES.COMPARISON_REPORT);
+    
+    // Reset Product Bumper eligibility when Report closes (if user never clicked GR)
+    const { getUnifiedBumperState, updateUnifiedBumperState } = require('@/ppm-tool/shared/utils/unifiedBumperState');
+    const state = getUnifiedBumperState();
+    
+    if (!state.hasClickedIntoGuidedRankings) {
+      console.log('🔄 Resetting Product Bumper eligibility after Report close (no GR click)');
+      updateUnifiedBumperState({
+        productBumperShown: false,
+        productBumperDismissed: false
+      });
+      setHasShownProductBumper(false);
+    } else {
+      console.log('⚠️ Not resetting Product Bumper - user already clicked into Guided Rankings');
+    }
   };
 
   return (

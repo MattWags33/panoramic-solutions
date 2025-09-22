@@ -3,6 +3,8 @@ import { Tool, Criterion } from '@/ppm-tool/shared/types';
 
 interface PPMReportEmailTemplateProps {
   userEmail: string;
+  firstName?: string;
+  lastName?: string;
   selectedTools: Tool[];
   selectedCriteria: Criterion[];
   topRecommendations: {
@@ -15,6 +17,8 @@ interface PPMReportEmailTemplateProps {
 
 export function PPMReportEmailTemplate({
   userEmail,
+  firstName,
+  lastName,
   selectedTools,
   selectedCriteria,
   topRecommendations,
@@ -56,7 +60,7 @@ export function PPMReportEmailTemplate({
           }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src="https://panoramicsolutions.com/images/Logo_Panoramic_Solutions.webp" 
+              src="https://panoramic-solutions.com/images/Logo_Panoramic_Solutions.webp" 
               alt="Panoramic Solutions" 
               style={{
                 maxWidth: '200px',
@@ -80,6 +84,15 @@ export function PPMReportEmailTemplate({
             
             {/* Personal Greeting */}
             <div style={{ marginBottom: '30px' }}>
+              {firstName && (
+                <p style={{ 
+                  fontSize: '16px', 
+                  marginBottom: '10px',
+                  color: '#374151'
+                }}>
+                  Hi {firstName},
+                </p>
+              )}
               <p style={{ 
                 fontSize: '16px', 
                 marginBottom: '15px',
@@ -291,7 +304,7 @@ export function PPMReportEmailTemplate({
             <div style={{ marginBottom: '20px' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src="https://panoramicsolutions.com/images/Wagner_Headshot_2024.webp" 
+                src="https://panoramic-solutions.com/images/Wagner_Headshot_2024.webp" 
                 alt="Matt Wagner" 
                 style={{
                   width: '60px',
@@ -322,8 +335,8 @@ export function PPMReportEmailTemplate({
                 </a>
               </p>
               <p style={{ margin: '5px 0' }}>
-                🌐 <a href="https://panoramicsolutions.com" style={{ color: '#0057B7' }}>
-                  panoramicsolutions.com
+                🌐                 <a href="https://panoramic-solutions.com" style={{ color: '#0057B7' }}>
+                  panoramic-solutions.com
                 </a>
               </p>
               <p style={{ margin: '15px 0 5px 0', fontSize: '11px' }}>

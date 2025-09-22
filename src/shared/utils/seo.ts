@@ -22,7 +22,7 @@ export function generateSiteMetadata({
   noIndex = false,
   alternates,
 }: SEOProps): Metadata {
-  const siteUrl = 'https://panoramicsolutions.com'
+  const siteUrl = 'https://panoramic-solutions.com'
   const fullOgImage = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage}`
 
   return {
@@ -95,8 +95,8 @@ export function generateOrganizationSchema() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Panoramic Solutions',
-    url: 'https://panoramicsolutions.com',
-    logo: 'https://panoramicsolutions.com/images/Logo_Panoramic_Solutions.webp',
+    url: 'https://panoramic-solutions.com',
+    logo: 'https://panoramic-solutions.com/images/Logo_Panoramic_Solutions.webp',
     description: 'SaaS Architecture, Enterprise Automations, and Digital Transformation consultancy',
     founder: {
       '@type': 'Person',
@@ -144,8 +144,8 @@ export function generatePersonSchema() {
       'Enterprise Automation',
       'Agile Methodologies',
     ],
-    url: 'https://panoramicsolutions.com/about',
-    image: 'https://panoramicsolutions.com/images/Wagner_Headshot_2024.webp',
+    url: 'https://panoramic-solutions.com/about',
+    image: 'https://panoramic-solutions.com/images/Wagner_Headshot_2024.webp',
   }
 }
 

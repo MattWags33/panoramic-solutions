@@ -16,6 +16,7 @@ import { ToolCompareAnimation } from '@/ppm-tool/components/animations/ToolCompa
 import { useShuffleAnimation, useToolOrderShuffle } from '@/ppm-tool/hooks/useShuffleAnimation';
 import { ShuffleContainer } from '@/ppm-tool/components/animations/ShuffleContainer';
 import { AnimatedToolCard } from '@/ppm-tool/components/animations/AnimatedToolCard';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 
 
 
@@ -122,11 +123,27 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
 
   const handleToggleExpand = (toolId: string) => {
     const newExpanded = new Set(expandedCards);
-    if (newExpanded.has(toolId)) {
+    const wasExpanded = newExpanded.has(toolId);
+    const tool = selectedTools.find(t => t.id === toolId);
+    
+    if (wasExpanded) {
       newExpanded.delete(toolId);
     } else {
       newExpanded.add(toolId);
+      
+      // Track tool card expansion for New_Active metric (only when expanding, not collapsing)
+      try {
+        checkAndTrackNewActive('Active-details', {
+          component: 'tool_section',
+          tool_id: toolId,
+          tool_name: tool?.name || 'unknown',
+          interaction_type: 'tool_card_expanded'
+        });
+      } catch (error) {
+        console.warn('Failed to track tool card expansion:', error);
+      }
     }
+    
     setExpandedCards(newExpanded);
   };
   
@@ -405,7 +422,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
             <ShuffleContainer
               tools={sortedTools}
               shuffleAnimation={shuffleAnimation}
-              className="space-y-4"
+              className="flex flex-col gap-4"
               isMobile={isMobile}
               enableParticles={true}
             >

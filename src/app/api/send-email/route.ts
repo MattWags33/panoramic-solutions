@@ -204,7 +204,9 @@ function parseGuidedRankingData(guidedRankingAnswers: any, personalizationData: 
 // Handle React email format
 async function handleReactEmail(request: NextRequest, body: any) {
   const { 
-    userEmail, 
+    userEmail,
+    firstName,
+    lastName, 
     selectedTools, 
     selectedCriteria, 
     chartImageUrl,
@@ -214,9 +216,9 @@ async function handleReactEmail(request: NextRequest, body: any) {
   } = body;
 
   // Validate required fields
-  if (!userEmail || !selectedTools || !selectedCriteria) {
+  if (!userEmail || !firstName || !lastName || !selectedTools || !selectedCriteria) {
     return NextResponse.json(
-      { message: 'Missing required fields: userEmail, selectedTools, selectedCriteria' },
+      { message: 'Missing required fields: userEmail, firstName, lastName, selectedTools, selectedCriteria' },
       { status: 400 }
     );
   }
@@ -1074,6 +1076,7 @@ Create a unique, varied description for ${tool.name} that stands out from other 
         <tr>
           <td style="padding:28px 28px 16px 28px;font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
             <div style="font-size:20px;font-weight:700;margin:0 0 8px 0;color:#2c3e50;">Your Personalized PPM Tool Analysis Report</div>
+            ${firstName ? `<div style="font-size:16px;color:#2c3e50;margin:0 0 12px 0;">Hi ${firstName},</div>` : ''}
             <div style="font-size:14px;color:#444;margin:0 0 20px 0;">
               These results combine <strong>your ranked criteria</strong> with our <strong>independent research and real-world implementation experience</strong>, helping you set a foundation for <strong>lasting project portfolio success</strong>.
             </div>
@@ -1214,7 +1217,7 @@ Create a unique, varied description for ${tool.name} that stands out from other 
 
     // Send email via Resend
     const { data, error } = await resend.emails.send({
-      from: 'Matt Wagner <matt.wagner@panoramic-solutions.com>', // Use verified domain
+      from: 'Matt Wagner <reports@app.panoramic-solutions.com>', // Use verified domain
       to: [userEmail],
       subject: 'Your PPM Tool Analysis Report',
       html: emailHtml,
@@ -1254,6 +1257,8 @@ Create a unique, varied description for ${tool.name} that stands out from other 
           .from('email_reports')
           .insert({
             user_email: userEmail,
+            first_name: firstName,
+            last_name: lastName,
             email_hash: emailHash,
             selected_tools: selectedTools,
             selected_criteria: selectedCriteria,
@@ -1355,7 +1360,7 @@ export async function POST(request: NextRequest) {
     // Log email attempt
     console.log('🚀 Attempting to send email via Resend:', {
       to: to.replace(/(.{3}).*(@.*)/, '$1***$2'),
-      from: from || 'Matt Wagner <matt.wagner@panoramic-solutions.com>',
+      from: from || 'Matt Wagner <noreply@app.panoramic-solutions.com>',
       subject,
       hasHtml: !!html,
       hasText: !!text,
@@ -1364,7 +1369,7 @@ export async function POST(request: NextRequest) {
 
     // Send email via Resend
     const data = await resend.emails.send({
-      from: from || 'Matt Wagner <matt.wagner@panoramic-solutions.com>',
+      from: from || 'Matt Wagner <reports@app.panoramic-solutions.com>',
       to: [to],
       subject,
       html,

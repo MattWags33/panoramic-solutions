@@ -324,6 +324,14 @@ export function shouldShowProductBumper(): boolean {
   if (state.productBumperShown) {
     return false;
   }
+
+  // Cross-bumper cooldown: if Exit-Intent was recently dismissed, wait 23s
+  if (state.exitIntentDismissedAt) {
+    const sinceExitDismiss = Date.now() - new Date(state.exitIntentDismissedAt).getTime();
+    if (sinceExitDismiss < POST_BUMPER_DELAY_MS) {
+      return false;
+    }
+  }
   
   // Check timing conditions based on scenario
   const now = Date.now();
@@ -440,6 +448,11 @@ export function shouldShowExitIntentBumper(): boolean {
   if (state.isComparisonReportCurrentlyOpen) {
     return false;
   }
+
+  // If the user opened and closed the Comparison Report, never show Exit-Intent afterward
+  if (state.comparisonReportClosedAt) {
+    return false;
+  }
   
   // Never show if already shown
   if (state.exitIntentShown) {
@@ -452,6 +465,14 @@ export function shouldShowExitIntentBumper(): boolean {
     const timeSinceDismissed = Date.now() - dismissedAt;
     
     if (timeSinceDismissed < POST_BUMPER_DELAY_MS) {
+      return false;
+    }
+  }
+
+  // Cross-bumper cooldown: if Product Bumper was recently dismissed, wait 23s
+  if (state.productBumperDismissedAt) {
+    const sinceProductDismiss = Date.now() - new Date(state.productBumperDismissedAt).getTime();
+    if (sinceProductDismiss < POST_BUMPER_DELAY_MS) {
       return false;
     }
   }

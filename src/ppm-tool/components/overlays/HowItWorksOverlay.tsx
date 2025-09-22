@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { ArrowRight, X, Zap, Users, Target, TrendingUp } from 'lucide-react';
 import { Button } from '@/ppm-tool/components/ui/button';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 
 interface HowItWorksOverlayProps {
   isVisible: boolean;
@@ -224,7 +225,20 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                     {/* CTA Button - positioned to the right on desktop, below on mobile */}
                     <div className="flex justify-center lg:items-center mt-4 lg:mt-0">
                       <button
-                        onClick={onGetStarted}
+                        onClick={() => {
+                          // Track how it works interaction for New_Active metric
+                          try {
+                            checkAndTrackNewActive('Active-how-it-works', {
+                              component: 'how_it_works_overlay',
+                              interaction_type: 'rank_criteria_clicked',
+                              overlay_step: 'step_1'
+                            });
+                          } catch (error) {
+                            console.warn('Failed to track how it works interaction:', error);
+                          }
+                          
+                          onGetStarted();
+                        }}
                         className="flex flex-col items-center px-6 py-4 text-sm md:text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
                       >
                         <span>Rank Your Criteria</span>

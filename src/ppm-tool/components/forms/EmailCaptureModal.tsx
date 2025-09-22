@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 interface EmailCaptureModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (email: string) => void;
+  onSubmit: (email: string, firstName: string, lastName: string) => void;
   isLoading: boolean;
   selectedTools?: Tool[];
   selectedCriteria?: Criterion[];
@@ -26,6 +26,8 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
   selectedTools = [],
   selectedCriteria = []
 }) => {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const formRef = useRef<HTMLDivElement>(null);
@@ -54,6 +56,18 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate first name
+    if (!firstName.trim()) {
+      setError('Please enter your first name');
+      return;
+    }
+
+    // Validate last name
+    if (!lastName.trim()) {
+      setError('Please enter your last name');
+      return;
+    }
+    
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -65,6 +79,8 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
 
     // Always use the new email system - no PDF fallback unless explicitly requested
     console.log('📧 Attempting to send email report with:', {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       tools: selectedTools.length,
       criteria: selectedCriteria.length,
       email: email.replace(/(.{3}).*(@.*)/, '$1***$2')
@@ -72,6 +88,8 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
     
     await sendEmailReport({
       userEmail: email,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       selectedTools,
       selectedCriteria
     });
@@ -158,6 +176,36 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
               </div>
               
               <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="John"
+                      className="w-full px-3 py-2 md:py-2.5 text-sm md:text-base border rounded-lg focus:ring-2 focus:ring-alpine-blue-400 focus:border-alpine-blue-500 outline-none transition-all"
+                      disabled={isLoading || isSendingEmail}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Doe"
+                      className="w-full px-3 py-2 md:py-2.5 text-sm md:text-base border rounded-lg focus:ring-2 focus:ring-alpine-blue-400 focus:border-alpine-blue-500 outline-none transition-all"
+                      disabled={isLoading || isSendingEmail}
+                    />
+                  </div>
+                </div>
                 <div>
                   <label htmlFor="email" className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
                     Email Address
@@ -167,9 +215,9 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="email@example.com"
                     className="w-full px-3 py-2 md:py-2.5 text-sm md:text-base border rounded-lg focus:ring-2 focus:ring-alpine-blue-400 focus:border-alpine-blue-500 outline-none transition-all"
-                    disabled={isLoading}
+                    disabled={isLoading || isSendingEmail}
                   />
                   {(error || emailError) && (
                     <motion.p 

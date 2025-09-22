@@ -40,14 +40,15 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     setShowEmailModal(true);
   };
 
-  const handleEmailSubmit = async (email: string) => {
+  const handleEmailSubmit = async (email: string, firstName: string, lastName: string) => {
     try {
       setIsProcessing(true);
       
       // TODO: Send email report via API instead of PDF generation
-      // await sendEmailReport(email, selectedTools, selectedCriteria);
+      // await sendEmailReport(email, firstName, lastName, selectedTools, selectedCriteria);
       
       console.log('Email report request for:', email);
+      console.log('Name:', firstName, lastName);
       console.log('Tools:', selectedTools.length);
       console.log('Criteria:', selectedCriteria.length);
       
@@ -97,7 +98,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
                 )}
               >
                 <Send className="w-4 h-4" />
-                Get my Free Comparison Report
+                Get My Free Comparison Report
               </button>
             </div>
           </div>

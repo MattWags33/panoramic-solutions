@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, X, ArrowRight, Sparkles, Target, Zap } from 'lucide-react';
 import { Button } from '@/ppm-tool/components/ui/button';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 
 interface GuidedRankingGuidanceProps {
   isVisible: boolean;
@@ -147,7 +148,20 @@ export const GuidedRankingGuidance: React.FC<GuidedRankingGuidanceProps> = ({
               {/* Action button - only Use Guided, no continue */}
               <div className="pt-2">
                 <Button
-                  onClick={onUseGuided}
+                  onClick={() => {
+                    // Track guided ranking initiation for New_Active metric
+                    try {
+                      checkAndTrackNewActive('Active-guided', {
+                        component: 'guided_ranking_guidance',
+                        interaction_type: 'use_guided_clicked',
+                        guidance_type: 'popup'
+                      });
+                    } catch (error) {
+                      console.warn('Failed to track guided ranking guidance interaction:', error);
+                    }
+                    
+                    onUseGuided();
+                  }}
                   size="sm"
                   className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-sm h-9 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 guidance-glow"
                 >

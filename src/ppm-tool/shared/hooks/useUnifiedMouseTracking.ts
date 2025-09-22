@@ -31,7 +31,19 @@ export function useUnifiedMouseTracking(options: UseUnifiedMouseTrackingOptions 
   
   // Start the initial 23-second timer on mount
   useEffect(() => {
-    if (!enabled || initialTimerStartedRef.current) return;
+    if (!enabled) return;
+    
+    // Check if timer was already completed in a previous session
+    const { getUnifiedBumperState } = require('../utils/unifiedBumperState');
+    const state = getUnifiedBumperState();
+    
+    if (state.initialTimerComplete) {
+      console.log('⏱️ Initial timer already completed from previous session');
+      onInitialTimerComplete?.();
+      return;
+    }
+    
+    if (initialTimerStartedRef.current) return;
     
     initialTimerStartedRef.current = true;
     
@@ -68,18 +80,30 @@ export function useUnifiedMouseTracking(options: UseUnifiedMouseTrackingOptions 
       const currentTime = Date.now();
       lastMousePositionRef.current = { x: e.clientX, y: e.clientY, time: currentTime };
       
-      // Start a new timer for mouse stillness detection
+      // Start a new timer for mouse stillness detection (longer delay to avoid interrupting active users)
       mouseMovementTimerRef.current = setTimeout(() => {
-        recordMouseStopped();
+        // Double-check that mouse is still in the same position
+        const currentPos = { x: e.clientX, y: e.clientY };
+        const lastPos = lastMousePositionRef.current;
+        const distance = Math.sqrt(
+          Math.pow(currentPos.x - lastPos.x, 2) + Math.pow(currentPos.y - lastPos.y, 2)
+        );
         
-        // Start the 3-second timer for mouse movement completion
-        setTimeout(() => {
-          recordMouseMovementTimerComplete();
-          onMouseMovementTimerComplete?.();
-          console.log('✅ Mouse movement 3s timer completed');
-        }, MOUSE_MOVEMENT_TIMER_MS);
+        // Only record as stopped if mouse hasn't moved significantly (< 5 pixels)
+        if (distance < 5) {
+          recordMouseStopped();
+          
+          // Start the 3-second timer for mouse movement completion
+          setTimeout(() => {
+            recordMouseMovementTimerComplete();
+            onMouseMovementTimerComplete?.();
+            console.log('✅ Mouse movement 3s timer completed');
+          }, MOUSE_MOVEMENT_TIMER_MS);
+        } else {
+          console.log('🖱️ Mouse moved during stillness check, restarting timer');
+        }
         
-      }, 100); // Small delay to detect when mouse actually stops
+      }, 500); // Increased delay to 500ms to better detect true stillness
     };
     
     // Add event listener

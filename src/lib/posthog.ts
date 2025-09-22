@@ -152,3 +152,13 @@ export const resetTrackingState = () => {
   localStorage.removeItem(STORAGE_KEYS.ACTIVE_TRACKED);
   localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
 };
+
+// Make tracking functions available globally for debugging in development
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as any).checkAndTrackNewActive = checkAndTrackNewActive;
+  (window as any).checkAndTrackNewVisitor = checkAndTrackNewVisitor;
+  (window as any).resetTrackingState = resetTrackingState;
+  (window as any).trackNewActive = trackNewActive;
+  (window as any).trackNewVisitor = trackNewVisitor;
+  console.log('🔧 PostHog tracking functions available globally for debugging');
+}

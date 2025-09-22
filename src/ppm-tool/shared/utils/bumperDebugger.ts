@@ -96,6 +96,13 @@ export function getBumperDebugInfo(): BumperDebugInfo {
       productBumperBlocked.push(`Mouse stopped only ${Math.round(timeSinceMouseStopped/1000)}s ago (need 3s)`);
     }
   }
+  // Cross-bumper cooldown visibility for Product Bumper
+  if (unifiedState.exitIntentDismissedAt) {
+    const sinceExit = now - new Date(unifiedState.exitIntentDismissedAt).getTime();
+    if (sinceExit < 23000) {
+      productBumperBlocked.push(`Exit-Intent closed ${Math.round(sinceExit/1000)}s ago (need 23s)`);
+    }
+  }
 
   // Check what's blocking Exit Intent Bumper
   const exitIntentBlocked: string[] = [];
@@ -115,11 +122,21 @@ export function getBumperDebugInfo(): BumperDebugInfo {
   if (unifiedState.isComparisonReportCurrentlyOpen) {
     exitIntentBlocked.push('Comparison Report is open');
   }
+  if (unifiedState.comparisonReportClosedAt) {
+    exitIntentBlocked.push('Comparison Report was closed earlier (exit-intent disabled)');
+  }
   if (unifiedState.exitIntentShown) {
     exitIntentBlocked.push('Already shown');
   }
   if (timeOnPage < 120000) {
     exitIntentBlocked.push(`Only ${Math.round(timeOnPage/1000)}s on page (need 120s)`);
+  }
+  // Cross-bumper cooldown visibility for Exit Intent
+  if (unifiedState.productBumperDismissedAt) {
+    const sinceProduct = now - new Date(unifiedState.productBumperDismissedAt).getTime();
+    if (sinceProduct < 23000) {
+      exitIntentBlocked.push(`Product Bumper closed ${Math.round(sinceProduct/1000)}s ago (need 23s)`);
+    }
   }
 
   return {
@@ -237,18 +254,34 @@ export function printBumperDebugReport(): void {
 export function resetAllBumperState(): void {
   console.log('🔄 Resetting all bumper state...');
   
-  // Clear localStorage
-  localStorage.removeItem('unifiedBumperState');
-  localStorage.removeItem('ppmToolHomeState');
-  localStorage.removeItem('productBumperState');
-  localStorage.removeItem('exitIntentState');
+  // Clear localStorage completely
+  const keysToRemove = [
+    'unifiedBumperState',
+    'ppmToolHomeState', 
+    'productBumperState',
+    'exitIntentState',
+    'bumperCoordinationState'
+  ];
   
-  console.log('✅ All bumper state cleared');
+  keysToRemove.forEach(key => {
+    try {
+      localStorage.removeItem(key);
+      console.log(`🗑️ Cleared ${key}`);
+    } catch (error) {
+      console.warn(`Failed to clear ${key}:`, error);
+    }
+  });
+  
+  // Force reset home state to ensure clean slate
+  const { resetToHomeState } = require('./homeState');
+  resetToHomeState();
+  
+  console.log('✅ All bumper state cleared completely');
   console.log('🔄 Please refresh the page to start fresh');
 }
 
 /**
- * Force trigger conditions for testing
+ * Force trigger conditions for testing (production-safe)
  */
 export function forceTriggerConditions(): void {
   console.log('🔧 Force triggering bumper conditions...');
@@ -259,6 +292,7 @@ export function forceTriggerConditions(): void {
   unifiedState.initialTimerComplete = true;
   unifiedState.mouseMovementTimerComplete = true;
   unifiedState.mouseStoppedAt = new Date(Date.now() - 5000).toISOString(); // 5 seconds ago
+  unifiedState.toolOpenedAt = new Date(Date.now() - 3*60*1000).toISOString(); // 3 minutes ago for exit-intent
   
   // Reset blocking conditions
   unifiedState.hasClickedIntoGuidedRankings = false;
@@ -271,23 +305,80 @@ export function forceTriggerConditions(): void {
   unifiedState.isGuidedRankingsCurrentlyOpen = false;
   unifiedState.isComparisonReportCurrentlyOpen = false;
   
+  // Clear dismissal timestamps
+  unifiedState.productBumperDismissedAt = undefined;
+  unifiedState.exitIntentDismissedAt = undefined;
+  
+  // Clear session tracking that might block scenarios
+  unifiedState.guidedRankingsOpenedAt = undefined;
+  unifiedState.guidedRankingsClosedAt = undefined;
+  unifiedState.comparisonReportOpenedAt = undefined;
+  unifiedState.comparisonReportClosedAt = undefined;
+  
   // Save state
   localStorage.setItem('unifiedBumperState', JSON.stringify(unifiedState));
   
+  // Cross-browser and geographic compatibility check
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isEdge = navigator.userAgent.includes('Edg');
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
   console.log('✅ Forced trigger conditions set');
   console.log('🔄 Bumpers should now be eligible to show');
+  console.log(`📍 Environment: ${isProduction ? 'Production' : 'Development'}`);
+  console.log(`🌐 Browser: ${isEdge ? 'Microsoft Edge' : 'Other'}`);
+  console.log(`🌍 Timezone: ${timezone}`);
 }
 
-// Make functions available globally for browser console debugging
+// Make functions available globally for browser console debugging (production-ready)
 if (typeof window !== 'undefined') {
   (window as any).debugBumpers = printBumperDebugReport;
   (window as any).getBumperDebugInfo = getBumperDebugInfo;
   (window as any).resetAllBumperState = resetAllBumperState;
   (window as any).forceTriggerConditions = forceTriggerConditions;
   
+  // Production environment detection
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                      !window.location.hostname.includes('localhost');
+  
   console.log('🔧 Bumper debugging functions available:');
   console.log('   debugBumpers() - Print comprehensive debug report');
   console.log('   getBumperDebugInfo() - Get debug data object');
   console.log('   resetAllBumperState() - Clear all state');
   console.log('   forceTriggerConditions() - Force bumpers to be eligible');
+  console.log(`📍 Environment: ${isProduction ? 'Production' : 'Development'}`);
+  console.log(`🌐 Browser: ${navigator.userAgent.includes('Edg') ? 'Microsoft Edge' : 'Other'}`);
+  
+  // Add comprehensive production test function
+  (window as any).testBumpersProduction = () => {
+    console.log('🚀 PRODUCTION BUMPER TEST - Chicago to Utah Edge Compatibility');
+    console.log('==========================================');
+    
+    // Environment info
+    const env = {
+      nodeEnv: process.env.NODE_ENV,
+      hostname: window.location.hostname,
+      userAgent: navigator.userAgent,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      language: navigator.language,
+      platform: navigator.platform,
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      isEdge: navigator.userAgent.includes('Edg'),
+      isProduction: process.env.NODE_ENV === 'production' || !window.location.hostname.includes('localhost')
+    };
+    
+    console.log('🔍 Environment Details:', env);
+    
+    // Reset and test
+    resetAllBumperState();
+    console.log('🔄 State reset, refreshing page for clean test...');
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  };
+  
+  console.log('');
+  console.log('🚀 PRODUCTION TEST FUNCTION ADDED:');
+  console.log('   testBumpersProduction() - Complete environment test and reset');
 }

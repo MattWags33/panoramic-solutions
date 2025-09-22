@@ -32,11 +32,16 @@ const getBrowserInfo = (): BrowserInfo => {
   }
   
   const userAgent = navigator.userAgent;
+  const isEdgeDetected = /Edg/.test(userAgent);
+  
+  // Enhanced Edge detection for better Utah/Edge compatibility
+  console.log(`🌐 Exit Intent Browser Detection: ${isEdgeDetected ? 'Microsoft Edge' : 'Other'} | UA: ${userAgent.substring(0, 50)}...`);
+  
   return {
     isChrome: /Chrome/.test(userAgent) && !/Edg/.test(userAgent),
     isFirefox: /Firefox/.test(userAgent),
     isSafari: /Safari/.test(userAgent) && !/Chrome/.test(userAgent),
-    isEdge: /Edg/.test(userAgent),
+    isEdge: isEdgeDetected,
     isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/.test(userAgent)
   };
 };
@@ -198,8 +203,12 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
       lastMousePositionRef.current = currentPos;
       
       // Browser-specific thresholds
-      const topZone = browserInfo.isSafari ? 80 : browserInfo.isFirefox ? 70 : 60;
-      const cornerZone = browserInfo.isSafari ? 120 : browserInfo.isFirefox ? 110 : 100;
+      const topZone = browserInfo.isSafari ? 80 : 
+                     browserInfo.isFirefox ? 70 : 
+                     browserInfo.isEdge ? 65 : 60;  // Edge needs slightly different threshold
+      const cornerZone = browserInfo.isSafari ? 120 : 
+                        browserInfo.isFirefox ? 110 : 
+                        browserInfo.isEdge ? 105 : 100;  // Edge corner detection
       const headerZone = window.innerWidth < 768 ? 144 : 152;
       
       // Detection zones

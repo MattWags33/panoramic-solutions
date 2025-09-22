@@ -20,9 +20,9 @@ export function generateMetadata(): Metadata {
   return {
     ...generateSiteMetadata({
       title: 'Panoramic Solutions | SaaS Architecture & Digital Transformation',
-      description: 'Solutions Architect Matt Wagner specializes in SaaS Architecture, Enterprise Automations, and Digital Transformation. PMP®, SAFe 6, Airtable & Smartsheet certified.',
+      description: 'Transform your business with expert SaaS Architecture and Digital Transformation solutions. PMP® certified Solutions Architect Matt Wagner delivers measurable results for forward-thinking organizations.',
       keywords: 'SaaS Architecture, Digital Transformation, Project Management, Enterprise Automation, Matt Wagner, PMP, SAFe, Utah Consultant',
-      canonicalUrl: 'https://panoramicsolutions.com',
+      canonicalUrl: 'https://panoramic-solutions.com',
     })
   }
 }

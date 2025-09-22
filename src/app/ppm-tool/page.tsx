@@ -6,6 +6,7 @@ import { EmbeddedPPMToolFlow } from '@/ppm-tool/components/common/EmbeddedPPMToo
 // REMOVED: FullscreenProvider - no longer needed, using simple mobile detection
 import { GuidanceProvider } from '@/ppm-tool/shared/contexts/GuidanceContext';
 import { HowItWorksOverlay } from '@/ppm-tool/components/overlays/HowItWorksOverlay';
+import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES } from '@/ppm-tool/shared/utils/homeState';
 import { LegalDisclaimer } from '@/ppm-tool/components/common/LegalDisclaimer';
 
 // Temporarily disable force-dynamic to fix deployment inconsistencies
@@ -18,11 +19,13 @@ export default function PPMToolPage() {
 
   const handleGetStarted = () => {
     setShowHowItWorks(false);
+    setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
     setShowGuidedRanking(true); // Directly open guided ranking
   };
 
   const handleManualRanking = () => {
     setShowHowItWorks(false);
+    setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
     // Go directly to manual tool selection
   };
 
@@ -36,6 +39,7 @@ export default function PPMToolPage() {
 
   const handleShowHowItWorks = () => {
     setShowHowItWorks(true);
+    setOverlayOpen(OVERLAY_TYPES.HOW_IT_WORKS);
   };
 
   return (
@@ -55,7 +59,10 @@ export default function PPMToolPage() {
               isVisible={showHowItWorks}
               onGetStarted={handleGetStarted}
               onManualRanking={handleManualRanking}
-              onClose={() => setShowHowItWorks(false)}
+              onClose={() => {
+                setShowHowItWorks(false);
+                setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
+              }}
             />
 
             {/* Legal Disclaimer - Inside the PPM tool container */}

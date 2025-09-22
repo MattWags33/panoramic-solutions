@@ -6,7 +6,6 @@ import { Sliders, Sparkles, HelpCircle } from 'lucide-react';
 import { DraggableList } from '@/ppm-tool/components/interactive/DraggableList';
 import { defaultCriteria } from '@/ppm-tool/data/criteria';
 
-
 import { CriteriaGuidance } from '@/ppm-tool/components/overlays/CriteriaGuidance';
 import { Slider } from '@/ppm-tool/components/ui/slider';
 import { MobileTooltip } from '@/ppm-tool/components/ui/MobileTooltip';
@@ -14,6 +13,7 @@ import { EnhancedDesktopTooltip } from '@/ppm-tool/components/ui/enhanced-deskto
 import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
 
 import { useGuidance } from '@/ppm-tool/shared/contexts/GuidanceContext';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 
 interface CriteriaSectionProps {
   criteria: Criterion[];
@@ -30,6 +30,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
   guidedButtonRef,
   onOpenGuidedRanking
 }) => {
+  const [dragTooltipCriterionId, setDragTooltipCriterionId] = useState<string | null>(null);
 
   // Helper function to get tooltip description
   const getTooltipDescription = (criterion: Criterion) => {
@@ -41,7 +42,6 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
     return defaultCriterion?.tooltipDescription || `Detailed information about ${criterion.name} rating guidelines.`;
   };
 
-
   const sectionRef = useRef<HTMLDivElement>(null);
   const isTouchDevice = useTouchDevice();
   const { 
@@ -51,19 +51,12 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
     onGuidedRankingClick
   } = useGuidance();
 
-  // Debug logging
-  // Debug logs removed to prevent performance issues
-  // console.log('CriteriaSection - showProductBumper:', showProductBumper);
-  // console.log('CriteriaSection - guidedButtonRef:', guidedButtonRef);
-
   const handleGuidedRankingsClick = () => {
-    // Record that user clicked into Guided Rankings - this prevents all future bumpers
     onGuidedRankingClick();
     onOpenGuidedRanking?.();
   };
 
   const handleUseGuided = () => {
-    // Record that user clicked into Guided Rankings - this prevents all future bumpers
     onGuidedRankingClick();
     closeManualGuidance();
     onOpenGuidedRanking?.();
@@ -92,7 +85,39 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
       };
     });
     return callbacks;
-  }, [criteria]); // Recreate when criteria change
+  }, [criteria]);
+
+  // Drag handler callbacks for each criterion
+  const dragStartCallbacks = React.useMemo(() => {
+    const callbacks: Record<string, () => void> = {};
+    criteria.forEach((criterion) => {
+      callbacks[criterion.id] = () => {
+        setDragTooltipCriterionId(criterion.id);
+      };
+    });
+    return callbacks;
+  }, [criteria]);
+
+  const dragEndCallbacks = React.useMemo(() => {
+    const callbacks: Record<string, () => void> = {};
+    criteria.forEach((criterion) => {
+      callbacks[criterion.id] = () => {
+        setDragTooltipCriterionId(null);
+        
+        // Track slider interaction for New_Active metric
+        try {
+          checkAndTrackNewActive('Active-slider', {
+            component: 'criteria_section',
+            criterion_name: criterion.name,
+            interaction_type: 'manual_slider_drag'
+          });
+        } catch (error) {
+          console.warn('Failed to track criteria slider interaction:', error);
+        }
+      };
+    });
+    return callbacks;
+  }, [criteria]);
 
   return (
     <>
@@ -151,7 +176,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
 
           {/* Criteria List */}
           <div className="section-scroll flex-1 min-h-0 overflow-y-auto" data-lenis-prevent style={{ overflowX: 'visible' }}>
-            <div className="p-6 pb-24"> {/* Added extra bottom padding to match ToolSection */}
+            <div className="p-6 pb-24">
               <DraggableList
                 items={criteria}
                 onReorder={onCriteriaChange}
@@ -174,6 +199,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                               side="top"
                               align="center"
                               className="max-w-xs text-sm"
+                              forceOpen={dragTooltipCriterionId === criterion.id}
                             >
                               <button 
                                 type="button"
@@ -194,6 +220,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                               align="center"
                               className="max-w-xs text-sm"
                               delay={300}
+                              forceOpen={dragTooltipCriterionId === criterion.id}
                             >
                               <button 
                                 type="button"
@@ -216,6 +243,8 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                               max={5}
                               step={1}
                               onValueChange={sliderCallbacks[criterion.id]}
+                              onDragStart={dragStartCallbacks[criterion.id]}
+                              onDragEnd={dragEndCallbacks[criterion.id]}
                             />
                           </div>
                           <div className="flex items-center justify-end min-w-[30px]">
@@ -233,8 +262,6 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
               />
             </div>
           </div>
-
-
         </div>
       </div>
     </>

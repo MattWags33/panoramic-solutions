@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowRight, ArrowLeft, ToggleLeft, ToggleRight, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ppm-tool/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 
 interface Question {
   id: string;
@@ -227,6 +228,18 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
   }, [manualRankings, isManualMode, onRealTimeUpdate]);
 
   const handleAnswer = (questionId: string, value: number) => {
+    // Track guided criteria question answer for New_Active metric
+    try {
+      checkAndTrackNewActive('Active-guided', {
+        component: 'guided_criteria_questions',
+        question_id: questionId,
+        question_number: currentQuestion + 1,
+        interaction_type: 'criteria_question_answer'
+      });
+    } catch (error) {
+      console.warn('Failed to track guided criteria question interaction:', error);
+    }
+    
     setAnswers(prev => ({ ...prev, [questionId]: value }));
     
     // Auto-advance to next question after a short delay
@@ -238,6 +251,18 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
   };
 
   const handleManualRankingChange = (criterionId: string, value: number) => {
+    // Track manual ranking change for New_Active metric
+    try {
+      checkAndTrackNewActive('Active-guided', {
+        component: 'guided_criteria_questions',
+        criterion_id: criterionId,
+        new_value: value,
+        interaction_type: 'manual_ranking_change'
+      });
+    } catch (error) {
+      console.warn('Failed to track manual ranking change:', error);
+    }
+    
     setManualRankings(prev => ({ ...prev, [criterionId]: value }));
   };
 
@@ -277,7 +302,23 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
               Guided Questions
             </span>
             <motion.button
-              onClick={() => setIsManualMode(!isManualMode)}
+              onClick={() => {
+                const newMode = !isManualMode;
+                
+                // Track mode toggle for New_Active metric
+                try {
+                  checkAndTrackNewActive('Active-guided', {
+                    component: 'guided_criteria_questions',
+                    interaction_type: 'mode_toggle',
+                    from_mode: isManualMode ? 'manual' : 'guided',
+                    to_mode: newMode ? 'manual' : 'guided'
+                  });
+                } catch (error) {
+                  console.warn('Failed to track mode toggle:', error);
+                }
+                
+                setIsManualMode(newMode);
+              }}
               className="flex items-center"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

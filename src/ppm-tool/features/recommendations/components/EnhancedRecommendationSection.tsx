@@ -15,6 +15,7 @@ import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
 import { useShuffleAnimation, useToolOrderShuffle } from '@/ppm-tool/hooks/useShuffleAnimation';
 import { ShuffleContainer } from '@/ppm-tool/components/animations/ShuffleContainer';
 import { AnimatedToolCard } from '@/ppm-tool/components/animations/AnimatedToolCard';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 
 
 interface RecommendationSectionProps {
@@ -180,7 +181,7 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
       </div>
 
              {/* Enhanced Tool Cards */}
-       <div className="px-6 space-y-4 pb-6">
+       <div className="px-6 pb-6">
          {sortedTools.length === 0 ? (
            <div className="text-center py-12">
              <div className="text-gray-400 mb-4">
@@ -189,11 +190,11 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
              <h3 className="text-lg font-medium text-gray-900 mb-2">No tools to analyze</h3>
              <p className="text-gray-600 mb-4">Add some tools from the previous step to see your personalized recommendations.</p>
            </div>
-         ) : (
+          ) : (
            <ShuffleContainer
              tools={sortedTools}
              shuffleAnimation={shuffleAnimation}
-             className=""
+             className="flex flex-col gap-4"
              isMobile={isMobile}
              enableParticles={true}
            >
@@ -318,9 +319,24 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                  {/* Detailed Breakdown */}
                  <Accordion type="single" collapsible>
                    <AccordionItem value={`details-${tool.id}`} className="border-0">
-                     <AccordionTrigger className="text-sm font-medium text-alpine-blue-600 hover:text-alpine-blue-800 hover:bg-alpine-blue-50 rounded-lg px-3 py-2">
-                       View Detailed Breakdown
-                     </AccordionTrigger>
+                    <AccordionTrigger 
+                      className="text-sm font-medium text-alpine-blue-600 hover:text-alpine-blue-800 hover:bg-alpine-blue-50 rounded-lg px-3 py-2"
+                      onClick={() => {
+                        // Track tool details expansion for New_Active metric
+                        try {
+                          checkAndTrackNewActive('Active-details', {
+                            component: 'enhanced_recommendation_section',
+                            tool_id: tool.id,
+                            tool_name: tool.name,
+                            interaction_type: 'detailed_breakdown_expanded'
+                          });
+                        } catch (error) {
+                          console.warn('Failed to track tool details expansion:', error);
+                        }
+                      }}
+                    >
+                      View Detailed Breakdown
+                    </AccordionTrigger>
                      <AccordionContent className="space-y-3 pt-4">
                        <div className="p-4 bg-gradient-to-br from-alpine-blue-25 to-snow-white rounded-lg border border-alpine-blue-100">
                          <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">

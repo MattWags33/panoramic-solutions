@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tool, Criterion } from '@/ppm-tool/shared/types';
 import { ComparisonChart } from '@/ppm-tool/components/charts/ComparisonChart';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 // REMOVED: FullscreenContext dependency
 
 interface ComparisonSectionProps {
@@ -14,6 +15,21 @@ export const ComparisonSection: React.FC<ComparisonSectionProps> = ({
   criteria: selectedCriteria,
   comparedTools = new Set(),
 }) => {
+  // Track when user views the comparison chart for New_Active metric
+  React.useEffect(() => {
+    try {
+      checkAndTrackNewActive('Active-comparison', {
+        component: 'comparison_section',
+        interaction_type: 'chart_section_viewed',
+        tools_count: selectedTools.length,
+        criteria_count: selectedCriteria.length,
+        compared_tools_count: comparedTools.size
+      });
+    } catch (error) {
+      console.warn('Failed to track comparison section view:', error);
+    }
+  }, []); // Only track on initial mount
+  
   // SIMPLIFIED: Always use standard layout (removed fullscreen complexity)
 
   return (

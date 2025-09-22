@@ -32,21 +32,32 @@ interface BasicHoverTooltipProps {
   side?: 'top' | 'bottom' | 'left' | 'right';
   align?: 'start' | 'center' | 'end';
   className?: string;
+  forceOpen?: boolean; // New prop for external control
 }
 
 /**
  * Basic hover tooltip with no device detection - just pure hover behavior
+ * Now supports external control via forceOpen prop
  */
 export const BasicHoverTooltip: React.FC<BasicHoverTooltipProps> = ({
   content,
   children,
   side = 'top',
   align = 'center',
-  className = ''
+  className = '',
+  forceOpen = false
 }) => {
+  const [internalOpen, setInternalOpen] = React.useState(false);
+
+  // When forceOpen is true, use that; otherwise use internal hover state
+  const effectiveOpen = forceOpen || internalOpen;
+
   return (
     <TooltipProvider delayDuration={200} skipDelayDuration={100}>
-      <Tooltip>
+      <Tooltip 
+        open={effectiveOpen}
+        onOpenChange={forceOpen ? undefined : setInternalOpen}
+      >
         <TooltipTrigger asChild>
           {children}
         </TooltipTrigger>

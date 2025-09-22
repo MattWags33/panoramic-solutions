@@ -12,6 +12,8 @@ interface UseEmailReportOptions {
 
 interface EmailReportData {
   userEmail: string;
+  firstName: string;
+  lastName: string;
   selectedTools: Tool[];
   selectedCriteria: Criterion[];
   chartImageUrl?: string;
@@ -34,8 +36,8 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
 
     try {
       // Validate inputs
-      if (!data.userEmail || !data.selectedTools.length || !data.selectedCriteria.length) {
-        throw new Error('Missing required data for email report');
+      if (!data.userEmail || !data.firstName || !data.lastName || !data.selectedTools.length || !data.selectedCriteria.length) {
+        throw new Error('Missing required data for email report (email, first name, last name, tools, and criteria are required)');
       }
 
       // Generate chart image if not provided
@@ -55,7 +57,11 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
 
       // Generate email payload
       const emailPayload = await PPMEmailTemplateGenerator.generateResendPayload({
-        ...data,
+        userEmail: data.userEmail,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        selectedTools: data.selectedTools,
+        selectedCriteria: data.selectedCriteria,
         chartImageUrl,
         bookingLink: 'https://app.onecal.io/b/matt-wagner/schedule-a-meeting-with-matt',
         unsubscribeLink: `${getBaseUrl()}/unsubscribe`,
@@ -95,6 +101,8 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         },
         body: JSON.stringify({
           userEmail: data.userEmail,
+          firstName: data.firstName,
+          lastName: data.lastName,
           selectedTools: data.selectedTools,
           selectedCriteria: data.selectedCriteria,
           chartImageUrl: data.chartImageUrl,
@@ -167,7 +175,7 @@ function getBaseUrl(): string {
   }
   
   // Fallback for server-side rendering
-  return process.env.NEXT_PUBLIC_SITE_URL || 'https://panoramicsolutions.com';
+  return process.env.NEXT_PUBLIC_SITE_URL || 'https://panoramic-solutions.com';
 }
 
 /**

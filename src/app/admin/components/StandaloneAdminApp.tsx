@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Plus, LogOut } from 'lucide-react';
+import { AlertCircle, Plus, LogOut, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/ppm-tool/shared/hooks/useAuth';
 import { AdminLogin } from './AdminLogin';
@@ -19,10 +19,13 @@ export const StandaloneAdminApp: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingTool, setIsAddingTool] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddName, setQuickAddName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [criteria, setCriteria] = useState<Criterion[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const { user, isAdmin, loading, signOut } = useAuth();
   
   // Prevent hydration mismatches
@@ -34,12 +37,34 @@ export const StandaloneAdminApp: React.FC = () => {
     if (user) {
       fetchTools();
       fetchCriteria();
+      debugAdminAuth();
     }
   }, [user]);
 
+  const debugAdminAuth = async () => {
+    try {
+      if (!supabase) {
+        console.warn('⚠️ Supabase client not available for debug');
+        return;
+      }
+      
+      const { data, error } = await supabase.rpc('debug_admin_status');
+      
+      if (error) {
+        console.error('❌ Debug admin status error:', error);
+      } else {
+        console.log('🔍 Admin authentication debug info:', data);
+      }
+    } catch (err) {
+      console.error('❌ Failed to debug admin status:', err);
+    }
+  };
+
   const fetchTools = async () => {
     try {
-      setIsLoading(true);
+      if (!isLoading) {
+        console.log('🔄 Refreshing tools data...');
+      }
       setError(null);
       
       // Use admin_tools_view to get all tools regardless of status
@@ -55,7 +80,20 @@ export const StandaloneAdminApp: React.FC = () => {
       if (error) throw error;
       
       if (data) {
-        console.log('Fetched tools:', data);
+        console.log('📊 Fetched tools from database:', data.length, 'tools');
+        console.log('📋 Sample tool data (first tool):', data[0]);
+        
+        // Find Asana specifically for debugging
+        const asanaData = data.find((tool: any) => tool.name === 'Asana');
+        if (asanaData) {
+          console.log('🎯 Asana data from database:', {
+            name: asanaData.name,
+            status: asanaData.submission_status,
+            criteriaCount: asanaData.criteria?.length || 0,
+            tagsCount: asanaData.tags?.length || 0,
+            hasData: !!(asanaData.criteria && asanaData.tags)
+          });
+        }
         
         // Add updated_at field if it doesn't exist
         const toolsWithUpdated = data.map((tool: Tool) => ({
@@ -118,6 +156,48 @@ export const StandaloneAdminApp: React.FC = () => {
     setIsEditing(false);
     setSelectedTool(null);
   };
+
+  const handleQuickAddTool = async () => {
+    if (!quickAddName.trim()) {
+      setError('Please enter a tool name');
+      return;
+    }
+
+    try {
+      setError(null);
+      setIsUpdating(true);
+      
+      if (!supabase) {
+        throw new Error('Supabase client not configured');
+      }
+      
+      console.log('🚀 Quick adding tool:', quickAddName);
+      
+      const { data, error } = await supabase.rpc('simple_create_tool', {
+        p_name: quickAddName.trim(),
+        p_type: 'application'
+      });
+      
+      if (error) {
+        console.error('❌ Quick add error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Tool quick added:', data);
+      
+      // Reset form
+      setQuickAddName('');
+      setShowQuickAdd(false);
+      
+      // Refresh from database immediately
+      await fetchTools();
+    } catch (err: unknown) {
+      console.error('❌ Failed to quick add tool:', err);
+      setError(`Failed to add tool: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
   
   const handleDeleteTool = async (toolId: string) => {
     if (!confirm('Are you sure you want to delete this tool? This action cannot be undone.')) {
@@ -126,6 +206,7 @@ export const StandaloneAdminApp: React.FC = () => {
     
     try {
       setError(null);
+      setIsUpdating(true);
       
       if (!supabase) {
         throw new Error('Supabase client not configured');
@@ -138,41 +219,85 @@ export const StandaloneAdminApp: React.FC = () => {
         
       if (error) throw error;
       
-      // Refresh the tools list
-      fetchTools();
+      // Refresh data immediately
+      await fetchTools();
     } catch (err: unknown) {
       console.error('Error deleting tool:', err);
       setError(`Failed to delete tool: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdating(false);
     }
   };
   
   const handleApproveRejectTool = async (toolId: string, status: 'approved' | 'rejected') => {
     try {
       setError(null);
+      setIsUpdating(true);
       
       if (!supabase) {
         throw new Error('Supabase client not configured');
       }
       
-      // Use the update_tool_status RPC function instead of direct update
-      const { error } = await supabase.rpc('update_tool_status', {
-        p_tool_id: toolId,
-        p_status: status
-      });
+      console.log('🔧 Admin attempting to update tool status:', { toolId, status });
       
-      if (error) throw error;
+      // Use direct database update for reliable operation
+      const now = new Date().toISOString();
+      let updateData: any = {
+        submission_status: status,
+        updated_at: now
+      };
       
-      // Refresh the tools list
-      fetchTools();
+      // Set appropriate timestamps based on status
+      if (status === 'approved') {
+        updateData.approved_at = now;
+      } else if (status === 'rejected') {
+        updateData.approved_at = null;
+      }
+      
+      const { data, error } = await supabase
+        .from('tools')
+        .update(updateData)
+        .eq('id', toolId)
+        .select();
+      
+      if (error) {
+        console.error('❌ Admin Database Error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          toolId,
+          status
+        });
+        
+        // Provide more specific error messages
+        if (error.code === '42P01') {
+          throw new Error('Database schema error: Missing table. Please contact your administrator.');
+        } else if (error.message?.includes('Only administrators')) {
+          throw new Error('Admin permission denied. Please ensure you are signed in as an administrator.');
+        } else if (error.message?.includes('Tool not found')) {
+          throw new Error('Tool not found. It may have been deleted.');
+        } else {
+          throw new Error(`Database error: ${error.message || 'Unknown error occurred'}`);
+        }
+      }
+      
+      console.log('✅ Admin tool status updated successfully:', { toolId, status, result: data });
+      
+      // Refresh tools data immediately to get the updated information with all criteria/tags preserved
+      await fetchTools();
     } catch (err: unknown) {
-      console.error(`Error ${status === 'approved' ? 'approving' : 'rejecting'} tool:`, err);
+      console.error(`❌ Error ${status === 'approved' ? 'approving' : 'rejecting'} tool:`, err);
       setError(`Failed to ${status === 'approved' ? 'approve' : 'reject'} tool: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdating(false);
     }
   };
   
   const handleApproveAll = async () => {
     try {
       setError(null);
+      setIsUpdating(true);
       
       if (!supabase) {
         throw new Error('Supabase client not configured');
@@ -184,15 +309,22 @@ export const StandaloneAdminApp: React.FC = () => {
         return;
       }
       
-      // Process each tool individually using the RPC function
+      console.log('🚀 Approving all submitted tools:', submittedTools.length);
+      
+      // Use direct database updates for all tools
+      const now = new Date().toISOString();
       const promises = submittedTools.map(tool => {
         if (!supabase) {
           throw new Error('Supabase client not configured');
         }
-        return supabase.rpc('update_tool_status', {
-          p_tool_id: tool.id,
-          p_status: 'approved'
-        });
+        return supabase
+          .from('tools')
+          .update({
+            submission_status: 'approved',
+            approved_at: now,
+            updated_at: now
+          })
+          .eq('id', tool.id);
       });
       
       const results = await Promise.all(promises);
@@ -203,11 +335,15 @@ export const StandaloneAdminApp: React.FC = () => {
         throw new Error(`Failed to approve ${errors.length} tools`);
       }
       
-      // Refresh the tools list
-      fetchTools();
+      console.log('✅ All tools approved successfully');
+      
+      // Refresh data immediately
+      await fetchTools();
     } catch (err: unknown) {
       console.error('Error approving all tools:', err);
       setError(`Failed to approve all tools: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsUpdating(false);
     }
   };
   
@@ -283,17 +419,84 @@ export const StandaloneAdminApp: React.FC = () => {
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 Panoramic Solutions - Admin Dashboard
               </h1>
+              {isUpdating && (
+                <div className="flex items-center space-x-2 text-sm text-blue-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  <span>Updating...</span>
+                </div>
+              )}
             </div>
             
             <div className="flex items-center space-x-4">
-              {/* Add New Tool button */}
+              {/* Refresh button */}
               <button 
-                onClick={handleAddNewTool}
-                className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
+                onClick={() => {
+                  console.log('🔄 Manual refresh triggered');
+                  fetchTools();
+                  fetchCriteria();
+                }}
+                className="flex items-center px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors shadow-sm"
+                title="Refresh data from database"
+                disabled={isUpdating}
               >
-                <Plus className="w-5 h-5 mr-2" />
-                Add New Tool
+                <RefreshCw className={`w-4 h-4 mr-1 ${isUpdating ? 'animate-spin' : ''}`} />
+                Refresh
               </button>
+              
+              {/* Quick Add Tool */}
+              {showQuickAdd ? (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Tool name..."
+                    value={quickAddName}
+                    onChange={(e) => setQuickAddName(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm"
+                    onKeyPress={(e) => e.key === 'Enter' && handleQuickAddTool()}
+                    autoFocus
+                    disabled={isUpdating}
+                  />
+                  <button 
+                    onClick={handleQuickAddTool}
+                    className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? 'Adding...' : 'Add'}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowQuickAdd(false);
+                      setQuickAddName('');
+                    }}
+                    className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+                    disabled={isUpdating}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Quick Add button */}
+                  <button 
+                    onClick={() => setShowQuickAdd(true)}
+                    className="flex items-center px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm text-sm disabled:opacity-50"
+                    disabled={isUpdating}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Quick Add
+                  </button>
+                  
+                  {/* Add New Tool button */}
+                  <button 
+                    onClick={handleAddNewTool}
+                    className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50"
+                    disabled={isUpdating}
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Add New Tool
+                  </button>
+                </>
+              )}
               
               {/* User Menu */}
               <div className="flex items-center space-x-3">
@@ -348,7 +551,7 @@ export const StandaloneAdminApp: React.FC = () => {
           !isAddingTool && (
             <ToolsList 
               tools={tools} 
-              isLoading={isLoading}
+              isLoading={isLoading || isUpdating}
               onEdit={handleEditTool}
               onDelete={handleDeleteTool}
               onApproveReject={handleApproveRejectTool}

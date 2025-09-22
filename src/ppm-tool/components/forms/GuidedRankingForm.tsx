@@ -8,7 +8,7 @@ import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/ppm-tool/components/ui/button';
 import { Slider } from '@/ppm-tool/components/ui/slider';
-import { trackNewRankingSubmittal } from '@/lib/posthog';
+import { trackNewRankingSubmittal, checkAndTrackNewActive } from '@/lib/posthog';
 import { markGuidedRankingComplete } from '@/ppm-tool/shared/utils/productBumperState';
 
 interface GuidedRankingFormProps {
@@ -268,6 +268,18 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
 
   const handleAnswer = (questionId: string, value: number) => {
     const question = questions.find(q => q.id === questionId);
+    
+    // Track guided ranking interaction for New_Active metric
+    try {
+      checkAndTrackNewActive('Active-guided', {
+        component: 'guided_ranking_form',
+        question_id: questionId,
+        question_number: currentStep + 1,
+        interaction_type: question?.isMultiSelect ? 'multi_select_answer' : 'single_select_answer'
+      });
+    } catch (error) {
+      console.warn('Failed to track guided ranking interaction:', error);
+    }
     
     if (question?.isMultiSelect) {
       // For multi-select, toggle values in an array
@@ -694,7 +706,21 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
             {/* Footer - Always visible */}
             <div className={`px-4 md:px-6 py-3 md:py-4 border-t bg-gray-50 flex justify-between flex-shrink-0 sticky bottom-0 ${isTouchDevice ? 'py-4' : ''}`}>
               <button
-                onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                onClick={() => {
+                  // Track navigation for New_Active metric
+                  try {
+                    checkAndTrackNewActive('Active-guided', {
+                      component: 'guided_ranking_form',
+                      interaction_type: 'navigation_previous',
+                      from_question: currentStep + 1,
+                      to_question: currentStep
+                    });
+                  } catch (error) {
+                    console.warn('Failed to track guided ranking navigation:', error);
+                  }
+                  
+                  setCurrentStep(prev => Math.max(0, prev - 1));
+                }}
                 disabled={currentStep === 0}
                 className={`px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${isTouchDevice ? 'py-3 touch-manipulation' : ''}`}
               >
@@ -703,6 +729,18 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
               <button
                 onClick={() => {
                   if (currentStep < questions.length - 1) {
+                    // Track navigation for New_Active metric
+                    try {
+                      checkAndTrackNewActive('Active-guided', {
+                        component: 'guided_ranking_form',
+                        interaction_type: 'navigation_next',
+                        from_question: currentStep + 1,
+                        to_question: currentStep + 2
+                      });
+                    } catch (error) {
+                      console.warn('Failed to track guided ranking navigation:', error);
+                    }
+                    
                     setCurrentStep(prev => prev + 1);
                   } else {
                     handleSubmit();

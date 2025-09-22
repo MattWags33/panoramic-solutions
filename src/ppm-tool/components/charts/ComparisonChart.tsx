@@ -21,6 +21,7 @@ import { ChartControls } from './ChartControls';
 import { MobileToolSelector } from './MobileToolSelector';
 import { getToolColor } from '@/ppm-tool/shared/utils/chartColors';
 import { useMobileDetection } from '@/ppm-tool/shared/hooks/useMobileDetection';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 
 
 interface ComparisonChartProps {
@@ -74,24 +75,54 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
 
   const handleToggleTool = (toolId: string) => {
     const newVisible = new Set(visibleTools);
-    if (newVisible.has(toolId)) {
+    const wasVisible = newVisible.has(toolId);
+    
+    if (wasVisible) {
       newVisible.delete(toolId);
     } else {
       newVisible.add(toolId);
     }
+    
+    // Track chart tool toggle for New_Active metric
+    try {
+      checkAndTrackNewActive('Active-comparison', {
+        component: 'comparison_chart',
+        tool_id: toolId,
+        interaction_type: 'toggle_tool',
+        action: wasVisible ? 'hide_tool' : 'show_tool'
+      });
+    } catch (error) {
+      console.warn('Failed to track chart tool toggle:', error);
+    }
+    
     setVisibleTools(newVisible);
   };
 
   const handleToggleCriterion = (criterionId: string) => {
     const newVisible = new Set(visibleCriteria);
+    const wasVisible = newVisible.has(criterionId);
+    
     // Check if hiding would result in less than 1 visible criteria
-    if (newVisible.has(criterionId) && newVisible.size <= 1) {
+    if (wasVisible && newVisible.size <= 1) {
       return; // Don't allow hiding if it would result in no visible criteria
-    } else if (newVisible.has(criterionId)) {
+    } else if (wasVisible) {
       newVisible.delete(criterionId);
     } else {
       newVisible.add(criterionId);
     }
+    
+    // Track chart criterion toggle for New_Active metric
+    try {
+      checkAndTrackNewActive('Active-comparison', {
+        component: 'comparison_chart',
+        criterion_id: criterionId,
+        interaction_type: 'toggle_criterion',
+        action: wasVisible ? 'hide_criterion' : 'show_criterion'
+      });
+    } catch (error) {
+      console.warn('Failed to track chart criterion toggle:', error);
+    }
+    
     setVisibleCriteria(newVisible);
   };
 

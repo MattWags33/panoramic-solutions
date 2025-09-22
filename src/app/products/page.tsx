@@ -6,9 +6,9 @@ import { ArrowRight, Wrench, Zap } from 'lucide-react'
 
 export const metadata: Metadata = generateSiteMetadata({
   title: 'Products & Tools | Panoramic Solutions',
-  description: 'Discover our suite of powerful tools and products designed to streamline your project management and digital transformation journey.',
+  description: 'Free PPM Tool Finder and project management solutions. Get personalized recommendations to streamline your digital transformation and boost project success rates.',
   keywords: 'PPM Tool Finder, Project Management Tools, Digital Transformation Products',
-  canonicalUrl: 'https://panoramicsolutions.com/products',
+  canonicalUrl: 'https://panoramic-solutions.com/products',
 })
 
 export default function ProductsPage() {

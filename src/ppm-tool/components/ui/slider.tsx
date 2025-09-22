@@ -4,13 +4,71 @@ import * as React from "react"
 import * as SliderPrimitive from "@radix-ui/react-slider"
 
 import { cn } from "@/ppm-tool/shared/lib/utils"
+import { checkAndTrackNewActive } from "@/lib/posthog"
+
+interface SliderProps extends React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> {
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+}
 
 const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
->(({ className, onValueChange, ...props }, ref) => {
-  // Remove the problematic useCallback and requestAnimationFrame
-  // Use the onValueChange directly to prevent ref composition loops
+  SliderProps
+>(({ className, onValueChange, onDragStart, onDragEnd, ...props }, ref) => {
+  const [isDragging, setIsDragging] = React.useState(false);
+
+  const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
+    if (!isDragging) {
+      setIsDragging(true);
+      onDragStart?.();
+    }
+  }, [isDragging, onDragStart]);
+
+  const handlePointerUp = React.useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      onDragEnd?.();
+      
+      // Track slider interaction for New_Active metric
+      try {
+        checkAndTrackNewActive('Active-slider', {
+          component: 'criteria_slider',
+          interaction_type: 'drag_end'
+        });
+      } catch (error) {
+        console.warn('Failed to track slider interaction:', error);
+      }
+    }
+  }, [isDragging, onDragEnd]);
+
+  // Handle cases where pointer events end outside the component
+  React.useEffect(() => {
+    if (!isDragging) return;
+
+    const handleGlobalPointerUp = () => {
+      setIsDragging(false);
+      onDragEnd?.();
+      
+      // Track slider interaction for New_Active metric
+      try {
+        checkAndTrackNewActive('Active-slider', {
+          component: 'criteria_slider',
+          interaction_type: 'drag_end_global'
+        });
+      } catch (error) {
+        console.warn('Failed to track slider interaction:', error);
+      }
+    };
+
+    document.addEventListener('pointerup', handleGlobalPointerUp);
+    document.addEventListener('pointercancel', handleGlobalPointerUp);
+
+    return () => {
+      document.removeEventListener('pointerup', handleGlobalPointerUp);
+      document.removeEventListener('pointercancel', handleGlobalPointerUp);
+    };
+  }, [isDragging, onDragEnd]);
+
   return (
     <SliderPrimitive.Root
       ref={ref}
@@ -36,6 +94,8 @@ const Slider = React.forwardRef<
           msUserSelect: 'none',
           userSelect: 'none',
         } as React.CSSProperties}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
         onFocus={(e) => {
           // Explicitly prevent any browser default focus styles
           e.target.style.outline = 'none';

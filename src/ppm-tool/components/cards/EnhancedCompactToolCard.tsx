@@ -165,7 +165,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
             >
               <Star className={cn(
                 "w-3 h-3 mr-1",
-                isCompared ? "fill-yellow-400 text-yellow-500" : "fill-yellow-400 text-yellow-500"
+                isCompared ? "fill-yellow-400 text-yellow-500" : "text-yellow-500"
               )} />
               {isCompared ? 'Added' : 'Compare'}
             </Button>

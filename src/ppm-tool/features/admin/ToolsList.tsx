@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, Check, X, Filter, ChevronDown, ChevronUp, Search, Calendar } from 'lucide-react';
 import { Tool } from '@/ppm-tool/shared/types';
 import { StatusDropdown } from './StatusDropdown';
@@ -28,6 +28,22 @@ export const ToolsList: React.FC<ToolsListProps> = ({
   const [expandedToolId, setExpandedToolId] = useState<string | null>(null);
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [mobileStatusDropdownId, setMobileStatusDropdownId] = useState<string | null>(null);
+
+  // Debug tools data when it changes
+  useEffect(() => {
+    console.log('🔍 ToolsList received tools:', tools.length);
+    const asanaTool = tools.find(tool => tool.name === 'Asana');
+    if (asanaTool) {
+      console.log('🎯 Asana tool data in ToolsList:', {
+        name: asanaTool.name,
+        status: asanaTool.submission_status,
+        criteriaCount: asanaTool.criteria?.length || 0,
+        criteriaData: asanaTool.criteria,
+        tagsCount: asanaTool.tags?.length || 0,
+        tagsData: asanaTool.tags
+      });
+    }
+  }, [tools]);
 
   const toggleSort = (field: 'name' | 'created_on' | 'updated_at') => {
     if (sortField === field) {
@@ -99,33 +115,22 @@ export const ToolsList: React.FC<ToolsListProps> = ({
     });
   };
 
-  // Handle status change
+  // Handle status change - delegate to parent for proper state management
   const handleStatusChange = async (toolId: string, newStatus: string) => {
     try {
-      if (!supabase) {
-        throw new Error('Supabase client not configured');
-      }
+      console.log('🔧 ToolsList: Delegating status change to parent:', { toolId, newStatus });
       
-      const { error } = await supabase.rpc('update_tool_status', {
-        p_tool_id: toolId,
-        p_status: newStatus
-      });
-      
-      if (error) {
-        console.error('Error updating status:', error);
-        throw error;
-      }
-      
-      // Close the dropdown
+      // Close the dropdown immediately for better UX
       setEditingStatusId(null);
+      setMobileStatusDropdownId(null);
       
-      // Refresh the tool list (handled by parent)
+      // Delegate to parent component which has the proper state management
       if (newStatus === 'approved' || newStatus === 'rejected') {
-        onApproveReject(toolId, newStatus as any);
+        onApproveReject(toolId, newStatus as 'approved' | 'rejected');
       }
-    } catch (err) {
-      console.error('Failed to update status:', err);
-      alert('Failed to update status. Please try again.');
+    } catch (err: any) {
+      console.error('❌ ToolsList: Failed to update status:', err);
+      alert(`Error updating tool status: ${err.message || 'Please try again'}`);
     }
   };
 
@@ -248,6 +253,10 @@ export const ToolsList: React.FC<ToolsListProps> = ({
                           +{tool.tags.length - 2} more
                         </span>
                       )}
+                      {/* Debug info for missing tags */}
+                      {(!Array.isArray(tool.tags) || tool.tags.length === 0) && (
+                        <span className="text-xs text-red-500">No tags (Debug: {JSON.stringify(tool.tags)})</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -299,21 +308,36 @@ export const ToolsList: React.FC<ToolsListProps> = ({
                 {/* Expanded Criteria View */}
                 {expandedToolId === tool.id && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Criteria Ratings</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">
+                      Criteria Ratings 
+                      <span className="text-xs text-gray-500 ml-2">
+                        ({Array.isArray(tool.criteria) ? tool.criteria.length : 0} criteria)
+                      </span>
+                    </h4>
                     <div className="space-y-3">
-                      {Array.isArray(tool.criteria) && tool.criteria.map((criterion: any, index: number) => (
-                        <div key={index} className="bg-gray-50 p-3 rounded border">
-                          <div className="flex justify-between mb-1">
-                            <span className="text-sm font-medium">{criterion.name}</span>
-                            <span className={`text-sm font-semibold ${
-                              criterion.ranking >= 4 ? 'text-green-600' :
-                              criterion.ranking >= 3 ? 'text-alpine-blue-500' :
-                              'text-gray-600'
-                            }`}>{criterion.ranking}/5</span>
+                      {Array.isArray(tool.criteria) && tool.criteria.length > 0 ? (
+                        tool.criteria.map((criterion: any, index: number) => (
+                          <div key={index} className="bg-gray-50 p-3 rounded border">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm font-medium">{criterion.name || 'Unnamed Criterion'}</span>
+                              <span className={`text-sm font-semibold ${
+                                criterion.ranking >= 4 ? 'text-green-600' :
+                                criterion.ranking >= 3 ? 'text-alpine-blue-500' :
+                                'text-gray-600'
+                              }`}>{criterion.ranking || 0}/5</span>
+                            </div>
+                            <p className="text-xs text-gray-500">{criterion.description || 'No description'}</p>
                           </div>
-                          <p className="text-xs text-gray-500">{criterion.description}</p>
+                        ))
+                      ) : (
+                        <div className="bg-red-50 p-3 rounded border border-red-200">
+                          <p className="text-sm text-red-700">
+                            No criteria data found. 
+                            <br />
+                            <span className="text-xs">Debug: {JSON.stringify(tool.criteria)}</span>
+                          </p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 )}
@@ -401,18 +425,24 @@ export const ToolsList: React.FC<ToolsListProps> = ({
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {Array.isArray(tool.tags) && tool.tags.slice(0, 3).map((tag: any, index: number) => (
-                          <span 
-                            key={index}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-alpine-blue-100 text-alpine-blue-800"
-                          >
-                            {tag.name}
-                          </span>
-                        ))}
-                        {Array.isArray(tool.tags) && tool.tags.length > 3 && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                            +{tool.tags.length - 3} more
-                          </span>
+                        {Array.isArray(tool.tags) && tool.tags.length > 0 ? (
+                          <>
+                            {tool.tags.slice(0, 3).map((tag: any, index: number) => (
+                              <span 
+                                key={index}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-alpine-blue-100 text-alpine-blue-800"
+                              >
+                                {tag.name}
+                              </span>
+                            ))}
+                            {tool.tags.length > 3 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                +{tool.tags.length - 3} more
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-400">No tags</span>
                         )}
                       </div>
                     </td>
@@ -458,9 +488,10 @@ export const ToolsList: React.FC<ToolsListProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                console.log('🟢 Approve button clicked for:', tool.name, tool.id);
                                 onApproveReject(tool.id, 'approved');
                               }}
-                              className="text-green-600 hover:text-green-900"
+                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
                               title="Approve"
                             >
                               <Check className="w-5 h-5" />
@@ -468,9 +499,10 @@ export const ToolsList: React.FC<ToolsListProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                console.log('🔴 Reject button clicked for:', tool.name, tool.id);
                                 onApproveReject(tool.id, 'rejected');
                               }}
-                              className="text-red-600 hover:text-red-900"
+                              className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                               title="Reject"
                             >
                               <X className="w-5 h-5" />
@@ -482,7 +514,7 @@ export const ToolsList: React.FC<ToolsListProps> = ({
                             e.stopPropagation();
                             onEdit(tool);
                           }}
-                          className="text-alpine-blue-500 hover:text-alpine-blue-700"
+                          className="text-alpine-blue-500 hover:text-alpine-blue-700 p-1 rounded hover:bg-alpine-blue-50"
                           title="Edit"
                         >
                           <Edit className="w-5 h-5" />
@@ -492,7 +524,7 @@ export const ToolsList: React.FC<ToolsListProps> = ({
                             e.stopPropagation();
                             onDelete(tool.id);
                           }}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                           title="Delete"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -511,21 +543,36 @@ export const ToolsList: React.FC<ToolsListProps> = ({
                     <tr>
                       <td colSpan={6} className="px-6 py-4 bg-gray-50">
                         <div className="text-sm">
-                          <h4 className="font-medium text-gray-900 mb-2">Criteria Ratings</h4>
+                          <h4 className="font-medium text-gray-900 mb-2">
+                            Criteria Ratings 
+                            <span className="text-xs text-gray-500 ml-2">
+                              ({Array.isArray(tool.criteria) ? tool.criteria.length : 0} criteria found)
+                            </span>
+                          </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {Array.isArray(tool.criteria) && tool.criteria.map((criterion: any, index: number) => (
-                              <div key={index} className="bg-white p-3 rounded border">
-                                <div className="flex justify-between mb-1">
-                                  <span className="font-medium">{criterion.name}</span>
-                                  <span className={`font-semibold ${
-                                    criterion.ranking >= 4 ? 'text-green-600' :
-                                    criterion.ranking >= 3 ? 'text-alpine-blue-500' :
-                                    'text-gray-600'
-                                  }`}>{criterion.ranking}/5</span>
+                            {Array.isArray(tool.criteria) && tool.criteria.length > 0 ? (
+                              tool.criteria.map((criterion: any, index: number) => (
+                                <div key={index} className="bg-white p-3 rounded border">
+                                  <div className="flex justify-between mb-1">
+                                    <span className="font-medium">{criterion.name || 'Unnamed Criterion'}</span>
+                                    <span className={`font-semibold ${
+                                      criterion.ranking >= 4 ? 'text-green-600' :
+                                      criterion.ranking >= 3 ? 'text-alpine-blue-500' :
+                                      'text-gray-600'
+                                    }`}>{criterion.ranking || 0}/5</span>
+                                  </div>
+                                  <p className="text-xs text-gray-500">{criterion.description || 'No description'}</p>
                                 </div>
-                                <p className="text-xs text-gray-500">{criterion.description}</p>
+                              ))
+                            ) : (
+                              <div className="col-span-full bg-red-50 p-3 rounded border border-red-200">
+                                <p className="text-sm text-red-700">
+                                  No criteria data found for {tool.name}
+                                  <br />
+                                  <span className="text-xs">Debug: {JSON.stringify(tool.criteria)}</span>
+                                </p>
                               </div>
-                            ))}
+                            )}
                           </div>
                         </div>
                       </td>

@@ -8,19 +8,22 @@ interface MobileTooltipProps {
   side?: 'top' | 'bottom' | 'left' | 'right';
   align?: 'start' | 'center' | 'end';
   className?: string;
+  forceOpen?: boolean; // New prop for external control
 }
 
 /**
  * Hybrid tooltip that automatically chooses the right behavior:
  * - Desktop: Hover-based tooltip using BasicHoverTooltip
  * - Mobile/Touch: Touch-based tooltip with click activation
+ * - External control: Can be forced open via forceOpen prop
  */
 export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   content,
   children,
   side = 'top',
   align = 'center',
-  className = ''
+  className = '',
+  forceOpen = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -28,13 +31,18 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const isTouchDevice = useTouchDevice();
 
+  // External control: forceOpen overrides internal state
+  const effectiveIsOpen = forceOpen || isOpen;
+
   const handleClick = (e: React.MouseEvent) => {
+    if (forceOpen) return; // Don't handle clicks when externally controlled
     e.preventDefault();
     e.stopPropagation();
     setIsOpen(!isOpen);
   };
 
   const handleClickOutside = (e: MouseEvent) => {
+    if (forceOpen) return; // Don't handle outside clicks when externally controlled
     if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node) &&
         triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
       setIsOpen(false);
@@ -42,7 +50,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   };
 
   useEffect(() => {
-    if (!isTouchDevice || !isOpen) return;
+    if (!isTouchDevice || !effectiveIsOpen || forceOpen) return;
     
     document.addEventListener('click', handleClickOutside);
     const timer = setTimeout(() => setIsOpen(false), 4000);
@@ -51,10 +59,10 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
       document.removeEventListener('click', handleClickOutside);
       clearTimeout(timer);
     };
-  }, [isOpen, isTouchDevice]);
+  }, [effectiveIsOpen, isTouchDevice, forceOpen]);
 
   useEffect(() => {
-    if (!isTouchDevice || !isOpen || !triggerRef.current || !tooltipRef.current) return;
+    if (!isTouchDevice || !effectiveIsOpen || !triggerRef.current || !tooltipRef.current) return;
     
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
@@ -136,9 +144,9 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     }
 
     setPosition({ top, left });
-  }, [isOpen, side, align, isTouchDevice]);
+  }, [effectiveIsOpen, side, align, isTouchDevice]);
 
-  // On desktop, use hover tooltip
+  // On desktop, use hover tooltip with forceOpen support
   if (!isTouchDevice) {
     return (
       <BasicHoverTooltip
@@ -146,6 +154,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
         side={side}
         align={align}
         className={className}
+        forceOpen={forceOpen}
       >
         {children}
       </BasicHoverTooltip>
@@ -164,7 +173,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
         {children}
       </div>
       
-      {isOpen && (
+      {effectiveIsOpen && (
         <div
           ref={tooltipRef}
           className={`fixed z-[100] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}

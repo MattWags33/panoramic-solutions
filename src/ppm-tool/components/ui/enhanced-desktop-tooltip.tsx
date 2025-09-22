@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { cn } from "@/ppm-tool/shared/lib/utils"
 
 interface EnhancedDesktopTooltipProps {
   content: React.ReactNode;
@@ -8,11 +9,13 @@ interface EnhancedDesktopTooltipProps {
   align?: 'start' | 'center' | 'end';
   className?: string;
   delay?: number;
+  forceOpen?: boolean; // New prop for external control
 }
 
 /**
  * Enhanced desktop tooltip with better cross-browser compatibility
  * Designed to work consistently across different browsers and geographic locations
+ * Now supports external control via forceOpen prop
  */
 export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
   content,
@@ -20,7 +23,8 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
   side = 'top',
   align = 'center',
   className = '',
-  delay = 200
+  delay = 200,
+  forceOpen = false
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isPositioned, setIsPositioned] = useState(false);
@@ -30,6 +34,9 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
   const timeoutRef = useRef<NodeJS.Timeout>();
   const hideTimeoutRef = useRef<NodeJS.Timeout>();
   const isTouchDevice = useTouchDevice();
+
+  // External control: forceOpen overrides internal state
+  const effectiveIsVisible = forceOpen || isVisible;
 
   // Enhanced hover detection with multiple fallback mechanisms
   const [supportsHover, setSupportsHover] = useState(() => {
@@ -49,249 +56,227 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
         (window.screen.width >= 1024 && window.screen.height >= 768) : 
         (window.innerWidth >= 1024);
       
-      // Check for hover capability using multiple methods with enhanced error handling
-      let hasHoverCapability = true;
+      // Additional touch capability check as backup
+      const hasTouchCapability = 'ontouchstart' in window || 
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
       
-      if (window.matchMedia) {
-        try {
-          // Create a test function to safely check media queries
-          const safeMatchMedia = (query: string) => {
-            try {
-              return window.matchMedia(query).matches;
-            } catch {
-              return false;
-            }
-          };
-          
-          // Primary detection with error handling
-          const hoverHover = safeMatchMedia('(hover: hover)');
-          const pointerFine = safeMatchMedia('(pointer: fine)');
-          const hoverNone = safeMatchMedia('(hover: none)');
-          
-          // Secondary detection for browsers with partial support
-          const anyHover = safeMatchMedia('(any-hover: hover)');
-          const anyPointerFine = safeMatchMedia('(any-pointer: fine)');
-          
-          // Tertiary detection for older browsers
-          const minDeviceWidth = safeMatchMedia('(min-device-width: 1024px)');
-          const notTouchDevice = safeMatchMedia('not (pointer: coarse)');
-          
-          // Combine multiple indicators with preference for conservative desktop detection
-          const hasModernHover = hoverHover || pointerFine;
-          const hasLegacyHover = anyHover || anyPointerFine || (minDeviceWidth && notTouchDevice);
-          const hasBasicDesktopIndicators = !hoverNone && isDesktopUA && isDesktopPlatform;
-          
-          hasHoverCapability = hasModernHover || hasLegacyHover || (hasBasicDesktopIndicators && hasDesktopScreen);
-          
-          // Additional validation: if no media queries work but it looks like desktop, assume hover
-          if (!hasModernHover && !hasLegacyHover && !hoverNone && isDesktopUA && hasDesktopScreen) {
-            hasHoverCapability = true;
-          }
-        } catch (e) {
-          // Comprehensive fallback if media queries fail completely
-          console.warn('Media query system failed, using fallback detection:', e);
-          hasHoverCapability = isDesktopUA && isDesktopPlatform && hasDesktopScreen;
-        }
-      } else {
-        // Very old browser - use comprehensive UA and platform detection
-        hasHoverCapability = isDesktopUA && isDesktopPlatform && hasDesktopScreen;
+      // Comprehensive detection logic
+      const isLikelyDesktop = isDesktopUA && isDesktopPlatform && hasDesktopScreen && !hasTouchCapability;
+      
+      // For debugging purposes in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Tooltip hover detection:', {
+          userAgent: userAgent.slice(0, 50) + '...',
+          platform,
+          isDesktopUA,
+          isDesktopPlatform,
+          hasDesktopScreen,
+          hasTouchCapability,
+          finalResult: isLikelyDesktop
+        });
       }
       
-      return hasHoverCapability;
-    } catch (e) {
-      // Ultimate fallback - assume hover support to avoid breaking functionality
-      console.warn('Hover detection completely failed, defaulting to hover support:', e);
+      return isLikelyDesktop;
+    } catch (error) {
+      console.warn('Error in hover detection, defaulting to true:', error);
       return true;
     }
   });
 
+  const safeMatchMedia = (query: string) => {
+    try {
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        return window.matchMedia(query).matches;
+      }
+    } catch (error) {
+      console.warn('matchMedia error:', error);
+    }
+    return false;
+  };
+
   const calculatePosition = useCallback(() => {
-    if (!triggerRef.current || !tooltipRef.current) return;
+    if (!triggerRef.current || !tooltipRef.current || !effectiveIsVisible) return;
 
-    const triggerRect = triggerRef.current.getBoundingClientRect();
-    const tooltipRect = tooltipRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const scrollX = window.scrollX || window.pageXOffset;
-    const scrollY = window.scrollY || window.pageYOffset;
+    try {
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const tooltipRect = tooltipRef.current.getBoundingClientRect();
+      const viewport = {
+        width: window.innerWidth,
+        height: window.innerHeight
+      };
 
-    let top = 0;
-    let left = 0;
+      let top = 0;
+      let left = 0;
+      const padding = 8;
 
-    // Calculate base position
-    switch (side) {
-      case 'top':
-        top = triggerRect.top + scrollY - tooltipRect.height - 8;
-        switch (align) {
-          case 'start':
-            left = triggerRect.left + scrollX;
-            break;
-          case 'center':
-            left = triggerRect.left + scrollX + (triggerRect.width - tooltipRect.width) / 2;
-            break;
-          case 'end':
-            left = triggerRect.right + scrollX - tooltipRect.width;
-            break;
+      // Calculate initial position based on side
+      switch (side) {
+        case 'top':
+          top = triggerRect.top - tooltipRect.height - padding;
+          switch (align) {
+            case 'start':
+              left = triggerRect.left;
+              break;
+            case 'center':
+              left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
+              break;
+            case 'end':
+              left = triggerRect.right - tooltipRect.width;
+              break;
+          }
+          break;
+        case 'bottom':
+          top = triggerRect.bottom + padding;
+          switch (align) {
+            case 'start':
+              left = triggerRect.left;
+              break;
+            case 'center':
+              left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
+              break;
+            case 'end':
+              left = triggerRect.right - tooltipRect.width;
+              break;
+          }
+          break;
+        case 'left':
+          left = triggerRect.left - tooltipRect.width - padding;
+          switch (align) {
+            case 'start':
+              top = triggerRect.top;
+              break;
+            case 'center':
+              top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
+              break;
+            case 'end':
+              top = triggerRect.bottom - tooltipRect.height;
+              break;
+          }
+          break;
+        case 'right':
+          left = triggerRect.right + padding;
+          switch (align) {
+            case 'start':
+              top = triggerRect.top;
+              break;
+            case 'center':
+              top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
+              break;
+            case 'end':
+              top = triggerRect.bottom - tooltipRect.height;
+              break;
+          }
+          break;
+      }
+
+      // Viewport boundary checking with enhanced logic
+      if (left < padding) {
+        left = padding;
+      } else if (left + tooltipRect.width > viewport.width - padding) {
+        left = viewport.width - tooltipRect.width - padding;
+      }
+
+      if (top < padding) {
+        // If tooltip would go above viewport, show below trigger instead
+        if (side === 'top') {
+          top = triggerRect.bottom + padding;
+        } else {
+          top = padding;
         }
-        break;
-      case 'bottom':
-        top = triggerRect.bottom + scrollY + 8;
-        switch (align) {
-          case 'start':
-            left = triggerRect.left + scrollX;
-            break;
-          case 'center':
-            left = triggerRect.left + scrollX + (triggerRect.width - tooltipRect.width) / 2;
-            break;
-          case 'end':
-            left = triggerRect.right + scrollX - tooltipRect.width;
-            break;
+      } else if (top + tooltipRect.height > viewport.height - padding) {
+        // If tooltip would go below viewport, show above trigger instead
+        if (side === 'bottom') {
+          top = triggerRect.top - tooltipRect.height - padding;
+        } else {
+          top = viewport.height - tooltipRect.height - padding;
         }
-        break;
-      case 'left':
-        left = triggerRect.left + scrollX - tooltipRect.width - 8;
-        switch (align) {
-          case 'start':
-            top = triggerRect.top + scrollY;
-            break;
-          case 'center':
-            top = triggerRect.top + scrollY + (triggerRect.height - tooltipRect.height) / 2;
-            break;
-          case 'end':
-            top = triggerRect.bottom + scrollY - tooltipRect.height;
-            break;
-        }
-        break;
-      case 'right':
-        left = triggerRect.right + scrollX + 8;
-        switch (align) {
-          case 'start':
-            top = triggerRect.top + scrollY;
-            break;
-          case 'center':
-            top = triggerRect.top + scrollY + (triggerRect.height - tooltipRect.height) / 2;
-            break;
-          case 'end':
-            top = triggerRect.bottom + scrollY - tooltipRect.height;
-            break;
-        }
-        break;
+      }
+
+      setPosition({ top, left });
+      setIsPositioned(true);
+    } catch (error) {
+      console.error('Error calculating tooltip position:', error);
+      // Fallback positioning
+      setPosition({ top: 0, left: 0 });
+      setIsPositioned(true);
     }
+  }, [effectiveIsVisible, side, align]);
 
-    // Viewport boundary checks with padding
-    const padding = 8;
-    if (left < padding) left = padding;
-    if (left + tooltipRect.width > viewportWidth - padding) {
-      left = viewportWidth - tooltipRect.width - padding;
-    }
-    if (top < scrollY + padding) top = scrollY + padding;
-    if (top + tooltipRect.height > scrollY + viewportHeight - padding) {
-      top = scrollY + viewportHeight - tooltipRect.height - padding;
-    }
-
-    setPosition({ top, left });
-    setIsPositioned(true);
-  }, [side, align]);
-
-  // Show tooltip with delay
-  const showTooltip = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    
-    timeoutRef.current = setTimeout(() => {
-      setIsVisible(true);
-    }, delay);
-  }, [delay]);
-
-  // Hide tooltip with small delay to prevent flickering
-  const hideTooltip = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    
-    hideTimeoutRef.current = setTimeout(() => {
-      setIsVisible(false);
-      setIsPositioned(false);
-    }, 100);
-  }, []);
-
-  // Enhanced event detection to handle browser differences and geographic variations
-  const isRealHoverEvent = useCallback((e: React.MouseEvent) => {
-    // Multiple checks to ensure this is a genuine hover event
-    const nativeEvent = e.nativeEvent;
-    
-    // Check for touch events
-    if (nativeEvent && 'touches' in nativeEvent) return false;
-    
-    // Check for synthesized events (common in some browsers/regions)
-    if (nativeEvent && 'isTrusted' in nativeEvent && !nativeEvent.isTrusted) return false;
-    
-    // Check pointer type if available (modern browsers)
-    if ('pointerType' in nativeEvent && nativeEvent.pointerType === 'touch') return false;
-    
-    // Additional checks for mouse-like behavior
-    if ('buttons' in nativeEvent && typeof nativeEvent.buttons === 'number') {
-      // If buttons are pressed, it's likely a drag operation, not a hover
-      return nativeEvent.buttons === 0;
-    }
-    
-    return true;
-  }, []);
-
-  // Handle mouse events with enhanced compatibility
-  const handleMouseEnter = useCallback((e: React.MouseEvent) => {
-    if (!isRealHoverEvent(e)) return;
-    showTooltip();
-  }, [showTooltip, isRealHoverEvent]);
-
-  const handleMouseLeave = useCallback((e: React.MouseEvent) => {
-    if (!isRealHoverEvent(e)) return;
-    hideTooltip();
-  }, [hideTooltip, isRealHoverEvent]);
-
-  // Handle focus events for keyboard accessibility
-  const handleFocus = useCallback(() => {
-    showTooltip();
-  }, [showTooltip]);
-
-  const handleBlur = useCallback(() => {
-    hideTooltip();
-  }, [hideTooltip]);
-
-  // Update position when tooltip becomes visible
+  // Position calculation effect
   useEffect(() => {
-    if (isVisible) {
+    if (effectiveIsVisible) {
       // Small delay to ensure DOM is ready
-      const positionTimer = setTimeout(calculatePosition, 10);
-      return () => clearTimeout(positionTimer);
+      const timeoutId = setTimeout(calculatePosition, 10);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setIsPositioned(false);
     }
-  }, [isVisible, calculatePosition]);
+  }, [effectiveIsVisible, calculatePosition]);
 
-  // Handle window resize and scroll
+  // Window resize and scroll handlers
   useEffect(() => {
-    if (!isVisible) return;
+    if (!effectiveIsVisible) return;
 
     const handleResize = () => calculatePosition();
     const handleScroll = () => calculatePosition();
 
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('scroll', handleScroll);
     };
-  }, [isVisible, calculatePosition]);
+  }, [effectiveIsVisible, calculatePosition]);
 
-  // Cleanup timeouts
+  const showTooltip = useCallback(() => {
+    if (forceOpen) return; // Don't handle hover when externally controlled
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+  }, [delay, forceOpen]);
+
+  const hideTooltip = useCallback(() => {
+    if (forceOpen) return; // Don't handle hover when externally controlled
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Small delay before hiding to prevent flicker
+    hideTimeoutRef.current = setTimeout(() => {
+      setIsVisible(false);
+      setIsPositioned(false);
+    }, 100);
+  }, [forceOpen]);
+
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
     };
   }, []);
 
-  // On touch devices or devices without hover capability, just render children
-  if (isTouchDevice || !supportsHover) {
+  // Don't show tooltip on touch devices unless forced
+  if (isTouchDevice && !forceOpen) {
+    return <>{children}</>;
+  }
+
+  // Don't show tooltip on devices without proper hover support unless forced
+  if (!supportsHover && !forceOpen) {
     return <>{children}</>;
   }
 
@@ -299,71 +284,30 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
     <>
       <div
         ref={triggerRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        style={{ display: 'inline-block' }}
+        className="inline-block"
+        onMouseEnter={showTooltip}
+        onMouseLeave={hideTooltip}
+        onFocus={showTooltip}
+        onBlur={hideTooltip}
       >
         {children}
       </div>
 
-      {isVisible && isPositioned && (
+      {effectiveIsVisible && (
         <div
           ref={tooltipRef}
-          className={`fixed z-50 px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-xl pointer-events-none max-w-xs break-words ${className}`}
+          className={cn(
+            "fixed z-[100] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-none max-w-xs break-words",
+            !isPositioned && "opacity-0",
+            className
+          )}
           style={{
             top: `${position.top}px`,
             left: `${position.left}px`,
-            // Enhanced cross-browser rendering optimizations
-            transform: 'translateZ(0)',
-            willChange: 'transform',
-            // Prevent text selection issues across browsers
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-            MozUserSelect: 'none',
-            msUserSelect: 'none',
-            // Enhanced visibility and performance
-            opacity: 1,
-            visibility: 'visible',
-            // Prevent content shifting
-            boxSizing: 'border-box',
-            // Better font rendering across systems/regions
-            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-            fontSmooth: 'always',
-            WebkitFontSmoothing: 'antialiased',
-            MozOsxFontSmoothing: 'grayscale',
-            // Ensure consistent line height
-            lineHeight: '1.4',
-            // Better text wrapping
-            wordWrap: 'break-word',
-            overflowWrap: 'break-word',
-            // Prevent layout shifts in different browsers
-            contain: 'layout style',
-            // Performance optimization for animations
-            backfaceVisibility: 'hidden'
+            transition: isPositioned ? 'opacity 0.2s ease-in-out' : 'none'
           }}
-          onMouseEnter={() => {
-            // Keep tooltip visible when hovering over it
-            if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-          }}
-          onMouseLeave={hideTooltip}
-        >
-          {content}
-        </div>
-      )}
-
-      {/* Hidden tooltip for measurement - only render when visible but not positioned */}
-      {isVisible && !isPositioned && (
-        <div
-          ref={tooltipRef}
-          className={`fixed z-50 px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-xl pointer-events-none max-w-xs break-words ${className}`}
-          style={{
-            top: '-9999px',
-            left: '-9999px',
-            opacity: 0,
-            visibility: 'hidden'
-          }}
+          role="tooltip"
+          aria-hidden={!effectiveIsVisible}
         >
           {content}
         </div>

@@ -157,18 +157,18 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   // Development keyboard shortcuts for testing bumpers
   useDevelopmentKeyboards({
     onTriggerProductBumper: () => {
-      console.log('🔥 Development Keyboard: Triggering ProductBumper (Ctrl+Shift+Q)');
+      console.log('🔥 Development Keyboard: Triggering ProductBumper (Ctrl+Shift+Q) - BYPASSING RULES');
       console.log('📊 Pre-trigger state check:');
       console.log('  - Product Bumper visible:', showProductBumper);
       console.log('  - Has shown Product Bumper:', hasShownProductBumper);
-      triggerProductBumper();
+      triggerProductBumper(true); // Bypass rules for testing
     },
     onTriggerExitIntentBumper: () => {
-      console.log('🔥 Development Keyboard: Triggering ExitIntentBumper (Ctrl+Shift+X)');
+      console.log('🔥 Development Keyboard: Triggering ExitIntentBumper (Ctrl+Shift+X) - BYPASSING RULES');
       console.log('📊 Pre-trigger state check:');
       console.log('  - Exit Intent visible:', showExitIntentBumper);
       console.log('  - Has shown Exit Intent:', hasShownExitIntentBumper);
-      triggerExitIntentBumper('mouse-leave');
+      triggerExitIntentBumper('mouse-leave', true); // Bypass rules for testing
     },
     onResetState: () => {
       console.log('🔥 Development: Resetting unified bumper state');

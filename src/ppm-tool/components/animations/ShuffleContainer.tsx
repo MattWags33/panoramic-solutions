@@ -143,7 +143,7 @@ export const ShuffleContainer: React.FC<ShuffleContainerProps> = ({
 
       {/* Animated Children */}
       <motion.div
-        className="space-y-4"
+        className="flex flex-col gap-4"
         layout
         transition={{
           type: 'tween',

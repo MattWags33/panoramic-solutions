@@ -4,6 +4,8 @@ import { AIAnalysisService } from '../services/aiAnalysisService';
 
 interface EmailTemplateData {
   userEmail: string;
+  firstName?: string;
+  lastName?: string;
   selectedTools: Tool[];
   selectedCriteria: Criterion[];
   chartImageUrl?: string;
@@ -22,9 +24,9 @@ interface WeightedScore {
 }
 
 export class PPMEmailTemplateGenerator {
-  private static readonly DEFAULT_LOGO = 'https://panoramicsolutions.com/images/Logo_Panoramic_Solutions.webp';
+  private static readonly DEFAULT_LOGO = 'https://panoramic-solutions.com/images/Logo_Panoramic_Solutions.webp';
   private static readonly DEFAULT_BOOKING_LINK = 'https://app.onecal.io/b/matt-wagner/schedule-a-meeting-with-matt';
-  private static readonly DEFAULT_MATT_HEADSHOT = 'https://panoramicsolutions.com/images/Wagner_Headshot_2024.webp';
+  private static readonly DEFAULT_MATT_HEADSHOT = 'https://panoramic-solutions.com/images/Wagner_Headshot_2024.webp';
 
   /**
    * Calculate weighted scores for tools based on user criteria preferences
@@ -1038,7 +1040,7 @@ Create a concise business insight (max 60 chars) that explains the VALUE this to
 YOUR PPM TOOL COMPARISON REPORT
 ================================
 
-Hi there!
+${data.firstName ? `Hi ${data.firstName}!` : 'Hi there!'}
 
 Here's how the leading PPM tools stack up based on your ranked criteria and our research-backed evaluation.
 
@@ -1118,7 +1120,7 @@ Panoramic Solutions
       `.trim();
 
       return {
-        from: 'Matt Wagner <matt.wagner@panoramic-solutions.com>',
+        from: 'Matt Wagner <reports@app.panoramic-solutions.com>',
         to: data.userEmail,
         subject: '[TEST] PPM Tool Comparison System',
         html: simpleHtml,
@@ -1136,7 +1138,7 @@ Panoramic Solutions
       'Your PPM Tool Comparison Report (See Results Below)';
 
     return {
-      from: 'Matt Wagner <matt.wagner@panoramic-solutions.com>',
+      from: 'Matt Wagner <reports@app.panoramic-solutions.com>',
       to: data.userEmail,
       subject: subjectLine,
       html: await this.generateHTMLEmail(data),
