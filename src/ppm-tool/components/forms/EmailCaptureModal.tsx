@@ -244,7 +244,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                 >
                   {(isLoading || isSendingEmail) ? (
                     <div className="flex items-center justify-center">
-                      <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-white/30 border-t-white border-r-white rounded-full animate-spin mr-2" />
                       <span className="text-sm md:text-base">
                         {selectedTools.length > 0 && selectedCriteria.length > 0 
                           ? 'Sending Email Report...' 

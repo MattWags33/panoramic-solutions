@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
   getUnifiedBumperState,
+  saveUnifiedBumperState,
   shouldShowProductBumper,
   shouldShowExitIntentBumper,
   recordGuidedRankingsClick,
@@ -198,15 +199,17 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     setOverlayClosed(OVERLAY_TYPES.COMPARISON_REPORT);
     
     // Reset Product Bumper eligibility when Report closes (if user never clicked GR)
-    const { getUnifiedBumperState, updateUnifiedBumperState } = require('@/ppm-tool/shared/utils/unifiedBumperState');
     const state = getUnifiedBumperState();
     
     if (!state.hasClickedIntoGuidedRankings) {
       console.log('🔄 Resetting Product Bumper eligibility after Report close (no GR click)');
-      updateUnifiedBumperState({
+      // Create updated state and save it
+      const updatedState = {
+        ...state,
         productBumperShown: false,
         productBumperDismissed: false
-      });
+      };
+      saveUnifiedBumperState(updatedState);
       setHasShownProductBumper(false);
     } else {
       console.log('⚠️ Not resetting Product Bumper - user already clicked into Guided Rankings');
