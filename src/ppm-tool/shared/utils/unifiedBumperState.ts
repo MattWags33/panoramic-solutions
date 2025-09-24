@@ -51,7 +51,7 @@ export interface UnifiedBumperState {
 }
 
 const STORAGE_KEY = 'unifiedBumperState';
-const INITIAL_TIMER_MS = 23000; // 23 seconds
+const INITIAL_TIMER_MS = 10000; // 10 seconds
 const MOUSE_MOVEMENT_TIMER_MS = 3000; // 3 seconds after mouse stops
 const EXIT_INTENT_TIMER_MS = 120000; // 2 minutes for exit intent
 const POST_BUMPER_DELAY_MS = 23000; // 23 seconds after bumper closed
@@ -344,7 +344,7 @@ export function shouldShowProductBumper(): boolean {
     const guidedClosedAt = new Date(state.guidedRankingsClosedAt).getTime();
     const timeSinceGuidedClosed = now - guidedClosedAt;
     
-    // Must wait 23 seconds since Guided Rankings closed
+    // Must wait 10 seconds since Guided Rankings closed
     if (timeSinceGuidedClosed < INITIAL_TIMER_MS) {
       return false;
     }
@@ -370,7 +370,7 @@ export function shouldShowProductBumper(): boolean {
     const reportClosedAt = new Date(state.comparisonReportClosedAt).getTime();
     const timeSinceReportClosed = now - reportClosedAt;
     
-    // Must wait 23 seconds since Comparison Report closed
+    // Must wait 10 seconds since Comparison Report closed
     if (timeSinceReportClosed < INITIAL_TIMER_MS) {
       return false;
     }
@@ -395,7 +395,7 @@ export function shouldShowProductBumper(): boolean {
   if (!state.guidedRankingsOpenedAt && !state.comparisonReportOpenedAt) {
     const timeSinceToolOpened = now - toolOpenedAt;
     
-    // Must wait 23 seconds since tool opened
+    // Must wait 10 seconds since tool opened
     if (timeSinceToolOpened < INITIAL_TIMER_MS) {
       return false;
     }

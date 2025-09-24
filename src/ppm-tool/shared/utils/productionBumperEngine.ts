@@ -231,7 +231,7 @@ export class ProductionBumperEngine {
    * Set up cross-browser compatible timers
    */
   private setupTimers(): void {
-    // Initial 23-second timer
+    // Initial 10-second timer
     this.setupInitialTimer();
     
     // Mouse tracking
@@ -252,7 +252,7 @@ export class ProductionBumperEngine {
 
     // Calculate elapsed time
     const elapsed = Date.now() - new Date(state.toolOpenedAt).getTime();
-    const remaining = Math.max(0, 23000 - elapsed);
+    const remaining = Math.max(0, 10000 - elapsed);
     
     console.log(`[BumperEngine] Starting timer, ${remaining}ms remaining`);
     

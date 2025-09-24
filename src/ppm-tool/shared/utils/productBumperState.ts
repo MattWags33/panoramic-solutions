@@ -16,7 +16,7 @@ export interface ProductBumperState {
 
 const STORAGE_KEY = 'productBumperState';
 const DISMISS_DURATION_DAYS = 30; // Allow re-showing after 30 days
-const INITIAL_TIMER_MS = 23000; // 23 second initial timer
+const INITIAL_TIMER_MS = 10000; // 10 second initial timer
 const MOUSE_MOVEMENT_TIMER_MS = 3000; // 3 second mouse movement timer
 
 /**

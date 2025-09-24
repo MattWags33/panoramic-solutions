@@ -99,15 +99,28 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
   const triggerProductBumper = (bypassRules = false) => {
     console.log('🎯 triggerProductBumper called - current state:', { internalShowProductBumper, hasShownProductBumper, bypassRules });
     
-    // Use unified state management (unless bypassed for testing)
-    if (!bypassRules && !shouldShowProductBumper()) {
-      console.log('⚠️ ProductBumper blocked by unified rules');
+    // PERMANENT RULES - Never bypass these, even for testing
+    const state = getUnifiedBumperState();
+    
+    if (state.hasClickedIntoGuidedRankings) {
+      console.log('⚠️ ProductBumper permanently disabled - user clicked Guided Rankings');
+      return;
+    }
+    
+    if (state.productBumperDismissed) {
+      console.log('⚠️ ProductBumper permanently disabled - already dismissed');
       return;
     }
     
     // Check if already showing (always check this even with bypass)
     if (internalShowProductBumper) {
       console.log('⚠️ ProductBumper already visible, skipping...');
+      return;
+    }
+    
+    // TIMING RULES - Can be bypassed for testing
+    if (!bypassRules && !shouldShowProductBumper()) {
+      console.log('⚠️ ProductBumper blocked by timing rules');
       return;
     }
     
@@ -133,15 +146,33 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
   const triggerExitIntentBumper = (triggerType: 'mouse-leave' | 'tab-switch', bypassRules = false) => {
     console.log('🎯 triggerExitIntentBumper called - trigger type:', triggerType, 'bypassRules:', bypassRules);
     
-    // Use unified state management (unless bypassed for testing)
-    if (!bypassRules && !shouldShowExitIntentBumper()) {
-      console.log('⚠️ ExitIntentBumper blocked by unified rules');
+    // PERMANENT RULES - Never bypass these, even for testing
+    const state = getUnifiedBumperState();
+    
+    if (state.comparisonReportClosedAt) {
+      console.log('⚠️ ExitIntentBumper permanently disabled - Comparison Report was closed');
+      return;
+    }
+    
+    if (state.hasClickedIntoGuidedRankings) {
+      console.log('⚠️ ExitIntentBumper permanently disabled - user clicked Guided Rankings');
+      return;
+    }
+    
+    if (state.exitIntentDismissed) {
+      console.log('⚠️ ExitIntentBumper permanently disabled - already dismissed');
       return;
     }
     
     // Check if already showing (always check this even with bypass)
     if (showExitIntentBumper) {
       console.log('⚠️ ExitIntentBumper already visible, skipping...');
+      return;
+    }
+    
+    // TIMING RULES - Can be bypassed for testing
+    if (!bypassRules && !shouldShowExitIntentBumper()) {
+      console.log('⚠️ ExitIntentBumper blocked by timing rules');
       return;
     }
     

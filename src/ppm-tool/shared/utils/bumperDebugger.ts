@@ -85,7 +85,7 @@ export function getBumperDebugInfo(): BumperDebugInfo {
     productBumperBlocked.push('Already shown');
   }
   if (!unifiedState.initialTimerComplete) {
-    productBumperBlocked.push('Initial 23s timer not complete');
+    productBumperBlocked.push('Initial 10s timer not complete');
   }
   if (!unifiedState.mouseStoppedAt) {
     productBumperBlocked.push('Mouse has not stopped moving');

@@ -31,7 +31,7 @@ export function useUnifiedMouseTracking(options: UseUnifiedMouseTrackingOptions 
   
   const { INITIAL_TIMER_MS, MOUSE_MOVEMENT_TIMER_MS } = getUnifiedBumperTimingConstants();
   
-  // Start the initial 23-second timer on mount
+  // Start the initial 10-second timer on mount
   useEffect(() => {
     if (!enabled) return;
     
@@ -49,11 +49,11 @@ export function useUnifiedMouseTracking(options: UseUnifiedMouseTrackingOptions 
     
     initialTimerStartedRef.current = true;
     
-    console.log('⏱️ Starting initial 23s timer for bumper system');
+    console.log('⏱️ Starting initial 10s timer for bumper system');
     initialTimerRef.current = setTimeout(() => {
       recordInitialTimerComplete();
       onInitialTimerComplete?.();
-      console.log('✅ Initial 23s timer completed');
+      console.log('✅ Initial 10s timer completed');
     }, INITIAL_TIMER_MS);
     
     return () => {
