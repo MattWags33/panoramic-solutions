@@ -8,6 +8,8 @@ import { StructuredData } from '@/features/seo/components/StructuredData'
 import { StructuredData as MainStructuredData, organizationData, websiteData } from '@/components/seo/StructuredData'
 import { generateSiteMetadata } from '@/shared/utils/seo'
 import { Toaster } from "@/components/ui/toaster"
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -101,6 +103,13 @@ export default function RootLayout({
           </div>
           <Toaster />
         </ClientProviders>
+        <SpeedInsights 
+          sampleRate={1}
+          debug={process.env.NODE_ENV === 'development'}
+        />
+        <Analytics 
+          debug={process.env.NODE_ENV === 'development'}
+        />
       </body>
     </html>
   )

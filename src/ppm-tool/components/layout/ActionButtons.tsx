@@ -18,217 +18,231 @@ interface ActionButtonsProps {
   onCloseExitIntentBumper?: () => void;
 }
 
-// 3D Tower Loader Component (smaller version for buttons) - Cross-browser compatible
+// 3D Tower Loader Component (smaller version for buttons) - Mobile Safari compatible
 const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
+  // Generate unique IDs for this instance to avoid conflicts
+  const uniqueId = Math.random().toString(36).substr(2, 9);
+  
   return (
-    <div className={`tower-loader ${className}`}>
-      <style jsx>{`
-        .tower-loader {
-          height: 12px;
-          width: 10px;
-          position: relative;
-          display: inline-block;
-        }
+    <div className={`tower-loader-${uniqueId} ${className}`} style={{
+      height: '12px',
+      width: '10px',
+      position: 'relative',
+      display: 'inline-block'
+    }}>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .tower-loader-${uniqueId} .tower-box {
+            position: relative;
+            opacity: 0;
+            left: 2px;
+            will-change: transform, opacity;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+          }
 
-        .tower-box {
-          position: relative;
-          opacity: 0;
-          left: 2px;
-        }
+          .tower-loader-${uniqueId} .side-left {
+            position: absolute;
+            background-color: #87CEEB;
+            width: 5px;
+            height: 1.5px;
+            top: 4px;
+            left: 3px;
+            transform: skew(0deg, -25deg);
+            -webkit-transform: skew(0deg, -25deg);
+            -moz-transform: skew(0deg, -25deg);
+            -ms-transform: skew(0deg, -25deg);
+            will-change: transform;
+          }
 
-        .side-left {
-          position: absolute;
-          background-color: #87CEEB;
-          width: 5px;
-          height: 1.5px;
-          transform: skew(0deg, -25deg);
-          -webkit-transform: skew(0deg, -25deg);
-          top: 4px;
-          left: 3px;
-        }
+          .tower-loader-${uniqueId} .side-right {
+            position: absolute;
+            background-color: #5DADE2;
+            width: 5px;
+            height: 1.5px;
+            top: 4px;
+            left: -2px;
+            transform: skew(0deg, 25deg);
+            -webkit-transform: skew(0deg, 25deg);
+            -moz-transform: skew(0deg, 25deg);
+            -ms-transform: skew(0deg, 25deg);
+            will-change: transform;
+          }
 
-        .side-right {
-          position: absolute;
-          background-color: #5DADE2;
-          width: 5px;
-          height: 1.5px;
-          transform: skew(0deg, 25deg);
-          -webkit-transform: skew(0deg, 25deg);
-          top: 4px;
-          left: -2px;
-        }
+          .tower-loader-${uniqueId} .side-top {
+            position: absolute;
+            background-color: #AED6F1;
+            width: 5px;
+            height: 5px;
+            transform: rotate(45deg) skew(-20deg, -20deg);
+            -webkit-transform: rotate(45deg) skew(-20deg, -20deg);
+            -moz-transform: rotate(45deg) skew(-20deg, -20deg);
+            -ms-transform: rotate(45deg) skew(-20deg, -20deg);
+            will-change: transform;
+          }
 
-        .side-top {
-          position: absolute;
-          background-color: #AED6F1;
-          width: 5px;
-          height: 5px;
-          transform: rotate(45deg) skew(-20deg, -20deg);
-          -webkit-transform: rotate(45deg) skew(-20deg, -20deg);
-        }
-
-        .tower-box-1 {
-          animation: from-left 4s infinite;
-          -webkit-animation: from-left 4s infinite;
-        }
-
-        .tower-box-2 {
-          animation: from-right 4s infinite;
-          -webkit-animation: from-right 4s infinite;
-          animation-delay: 1s;
-          -webkit-animation-delay: 1s;
-        }
-
-        .tower-box-3 {
-          animation: from-left 4s infinite;
-          -webkit-animation: from-left 4s infinite;
-          animation-delay: 2s;
-          -webkit-animation-delay: 2s;
-        }
-
-        .tower-box-4 {
-          animation: from-right 4s infinite;
-          -webkit-animation: from-right 4s infinite;
-          animation-delay: 3s;
-          -webkit-animation-delay: 3s;
-        }
-
-        @keyframes from-left {
-          0% {
+          .tower-loader-${uniqueId} .tower-box-1 {
+            animation: tower-from-left-${uniqueId} 4s infinite;
+            -webkit-animation: tower-from-left-${uniqueId} 4s infinite;
+            -moz-animation: tower-from-left-${uniqueId} 4s infinite;
             z-index: 20;
-            opacity: 0;
-            transform: translateX(-5px) translateY(-1.5px);
           }
-          20% {
-            z-index: 10;
-            opacity: 1;
-            transform: translateX(0px) translateY(0px);
-          }
-          40% {
-            z-index: 9;
-            transform: translateX(0px) translateY(1px);
-          }
-          60% {
-            z-index: 8;
-            transform: translateX(0px) translateY(2px);
-          }
-          80% {
-            z-index: 7;
-            opacity: 1;
-            transform: translateX(0px) translateY(3px);
-          }
-          100% {
-            z-index: 5;
-            transform: translateX(0px) translateY(8px);
-            opacity: 0;
-          }
-        }
 
-        @keyframes from-right {
-          0% {
-            z-index: 20;
-            opacity: 0;
-            transform: translateX(5px) translateY(-1.5px);
+          .tower-loader-${uniqueId} .tower-box-2 {
+            animation: tower-from-right-${uniqueId} 4s infinite;
+            -webkit-animation: tower-from-right-${uniqueId} 4s infinite;
+            -moz-animation: tower-from-right-${uniqueId} 4s infinite;
+            animation-delay: 1s;
+            -webkit-animation-delay: 1s;
+            -moz-animation-delay: 1s;
+            z-index: 19;
           }
-          20% {
-            z-index: 10;
-            opacity: 1;
-            transform: translateX(0px) translateY(0px);
-          }
-          40% {
-            z-index: 9;
-            transform: translateX(0px) translateY(1px);
-          }
-          60% {
-            z-index: 8;
-            transform: translateX(0px) translateY(2px);
-          }
-          80% {
-            z-index: 7;
-            opacity: 1;
-            transform: translateX(0px) translateY(3px);
-          }
-          100% {
-            z-index: 5;
-            transform: translateX(0px) translateY(8px);
-            opacity: 0;
-          }
-        }
 
-        @-webkit-keyframes from-left {
-          0% {
-            z-index: 20;
-            opacity: 0;
-            -webkit-transform: translateX(-5px) translateY(-1.5px);
-            transform: translateX(-5px) translateY(-1.5px);
+          .tower-loader-${uniqueId} .tower-box-3 {
+            animation: tower-from-left-${uniqueId} 4s infinite;
+            -webkit-animation: tower-from-left-${uniqueId} 4s infinite;
+            -moz-animation: tower-from-left-${uniqueId} 4s infinite;
+            animation-delay: 2s;
+            -webkit-animation-delay: 2s;
+            -moz-animation-delay: 2s;
+            z-index: 18;
           }
-          20% {
-            z-index: 10;
-            opacity: 1;
-            -webkit-transform: translateX(0px) translateY(0px);
-            transform: translateX(0px) translateY(0px);
-          }
-          40% {
-            z-index: 9;
-            -webkit-transform: translateX(0px) translateY(1px);
-            transform: translateX(0px) translateY(1px);
-          }
-          60% {
-            z-index: 8;
-            -webkit-transform: translateX(0px) translateY(2px);
-            transform: translateX(0px) translateY(2px);
-          }
-          80% {
-            z-index: 7;
-            opacity: 1;
-            -webkit-transform: translateX(0px) translateY(3px);
-            transform: translateX(0px) translateY(3px);
-          }
-          100% {
-            z-index: 5;
-            -webkit-transform: translateX(0px) translateY(8px);
-            transform: translateX(0px) translateY(8px);
-            opacity: 0;
-          }
-        }
 
-        @-webkit-keyframes from-right {
-          0% {
-            z-index: 20;
-            opacity: 0;
-            -webkit-transform: translateX(5px) translateY(-1.5px);
-            transform: translateX(5px) translateY(-1.5px);
+          .tower-loader-${uniqueId} .tower-box-4 {
+            animation: tower-from-right-${uniqueId} 4s infinite;
+            -webkit-animation: tower-from-right-${uniqueId} 4s infinite;
+            -moz-animation: tower-from-right-${uniqueId} 4s infinite;
+            animation-delay: 3s;
+            -webkit-animation-delay: 3s;
+            -moz-animation-delay: 3s;
+            z-index: 17;
           }
-          20% {
-            z-index: 10;
-            opacity: 1;
-            -webkit-transform: translateX(0px) translateY(0px);
-            transform: translateX(0px) translateY(0px);
+
+          @keyframes tower-from-left-${uniqueId} {
+            0% {
+              z-index: 20;
+              opacity: 0;
+              transform: translate3d(-5px, -1.5px, 0);
+            }
+            20% {
+              z-index: 10;
+              opacity: 1;
+              transform: translate3d(0px, 0px, 0);
+            }
+            40% {
+              z-index: 9;
+              transform: translate3d(0px, 1px, 0);
+            }
+            60% {
+              z-index: 8;
+              transform: translate3d(0px, 2px, 0);
+            }
+            80% {
+              z-index: 7;
+              opacity: 1;
+              transform: translate3d(0px, 3px, 0);
+            }
+            100% {
+              z-index: 5;
+              transform: translate3d(0px, 8px, 0);
+              opacity: 0;
+            }
           }
-          40% {
-            z-index: 9;
-            -webkit-transform: translateX(0px) translateY(1px);
-            transform: translateX(0px) translateY(1px);
+
+          @keyframes tower-from-right-${uniqueId} {
+            0% {
+              z-index: 20;
+              opacity: 0;
+              transform: translate3d(5px, -1.5px, 0);
+            }
+            20% {
+              z-index: 10;
+              opacity: 1;
+              transform: translate3d(0px, 0px, 0);
+            }
+            40% {
+              z-index: 9;
+              transform: translate3d(0px, 1px, 0);
+            }
+            60% {
+              z-index: 8;
+              transform: translate3d(0px, 2px, 0);
+            }
+            80% {
+              z-index: 7;
+              opacity: 1;
+              transform: translate3d(0px, 3px, 0);
+            }
+            100% {
+              z-index: 5;
+              transform: translate3d(0px, 8px, 0);
+              opacity: 0;
+            }
           }
-          60% {
-            z-index: 8;
-            -webkit-transform: translateX(0px) translateY(2px);
-            transform: translateX(0px) translateY(2px);
+
+          @-webkit-keyframes tower-from-left-${uniqueId} {
+            0% {
+              z-index: 20;
+              opacity: 0;
+              -webkit-transform: translate3d(-5px, -1.5px, 0);
+            }
+            20% {
+              z-index: 10;
+              opacity: 1;
+              -webkit-transform: translate3d(0px, 0px, 0);
+            }
+            40% {
+              z-index: 9;
+              -webkit-transform: translate3d(0px, 1px, 0);
+            }
+            60% {
+              z-index: 8;
+              -webkit-transform: translate3d(0px, 2px, 0);
+            }
+            80% {
+              z-index: 7;
+              opacity: 1;
+              -webkit-transform: translate3d(0px, 3px, 0);
+            }
+            100% {
+              z-index: 5;
+              -webkit-transform: translate3d(0px, 8px, 0);
+              opacity: 0;
+            }
           }
-          80% {
-            z-index: 7;
-            opacity: 1;
-            -webkit-transform: translateX(0px) translateY(3px);
-            transform: translateX(0px) translateY(3px);
+
+          @-webkit-keyframes tower-from-right-${uniqueId} {
+            0% {
+              z-index: 20;
+              opacity: 0;
+              -webkit-transform: translate3d(5px, -1.5px, 0);
+            }
+            20% {
+              z-index: 10;
+              opacity: 1;
+              -webkit-transform: translate3d(0px, 0px, 0);
+            }
+            40% {
+              z-index: 9;
+              -webkit-transform: translate3d(0px, 1px, 0);
+            }
+            60% {
+              z-index: 8;
+              -webkit-transform: translate3d(0px, 2px, 0);
+            }
+            80% {
+              z-index: 7;
+              opacity: 1;
+              -webkit-transform: translate3d(0px, 3px, 0);
+            }
+            100% {
+              z-index: 5;
+              -webkit-transform: translate3d(0px, 8px, 0);
+              opacity: 0;
+            }
           }
-          100% {
-            z-index: 5;
-            -webkit-transform: translateX(0px) translateY(8px);
-            transform: translateX(0px) translateY(8px);
-            opacity: 0;
-          }
-        }
-      `}</style>
+        `
+      }} />
       
       <div className="tower-box tower-box-1">
         <div className="side-left"></div>
