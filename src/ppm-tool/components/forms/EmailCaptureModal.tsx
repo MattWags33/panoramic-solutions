@@ -18,13 +18,13 @@ interface EmailCaptureModalProps {
   selectedCriteria?: Criterion[];
 }
 
-// 3D Tower Loader Component
+// 3D Tower Loader Component - Cross-browser compatible
 const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
   return (
     <div className={`tower-loader ${className}`}>
       <style jsx>{`
         .tower-loader {
-          height: 16px;
+          height: 20px;
           width: 18px;
           position: relative;
           display: inline-block;
@@ -42,6 +42,7 @@ const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
           width: 9px;
           height: 2.5px;
           transform: skew(0deg, -25deg);
+          -webkit-transform: skew(0deg, -25deg);
           top: 6px;
           left: 5px;
         }
@@ -52,6 +53,7 @@ const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
           width: 9px;
           height: 2.5px;
           transform: skew(0deg, 25deg);
+          -webkit-transform: skew(0deg, 25deg);
           top: 6px;
           left: -4px;
         }
@@ -61,56 +63,63 @@ const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
           background-color: #AED6F1;
           width: 9px;
           height: 9px;
-          rotate: 45deg;
-          transform: skew(-20deg, -20deg);
+          transform: rotate(45deg) skew(-20deg, -20deg);
+          -webkit-transform: rotate(45deg) skew(-20deg, -20deg);
         }
 
         .tower-box-1 {
           animation: from-left 4s infinite;
+          -webkit-animation: from-left 4s infinite;
         }
 
         .tower-box-2 {
           animation: from-right 4s infinite;
+          -webkit-animation: from-right 4s infinite;
           animation-delay: 1s;
+          -webkit-animation-delay: 1s;
         }
 
         .tower-box-3 {
           animation: from-left 4s infinite;
+          -webkit-animation: from-left 4s infinite;
           animation-delay: 2s;
+          -webkit-animation-delay: 2s;
         }
 
         .tower-box-4 {
           animation: from-right 4s infinite;
+          -webkit-animation: from-right 4s infinite;
           animation-delay: 3s;
+          -webkit-animation-delay: 3s;
         }
 
         @keyframes from-left {
           0% {
             z-index: 20;
             opacity: 0;
-            translate: -9px -3px;
+            transform: translateX(-9px) translateY(-3px);
           }
           20% {
             z-index: 10;
             opacity: 1;
-            translate: 0px 0px;
+            transform: translateX(0px) translateY(0px);
           }
           40% {
             z-index: 9;
-            translate: 0px 2px;
+            transform: translateX(0px) translateY(2px);
           }
           60% {
             z-index: 8;
-            translate: 0px 4px;
+            transform: translateX(0px) translateY(4px);
           }
           80% {
             z-index: 7;
             opacity: 1;
-            translate: 0px 6px;
+            transform: translateX(0px) translateY(6px);
           }
           100% {
             z-index: 5;
-            translate: 0px 14px;
+            transform: translateX(0px) translateY(14px);
             opacity: 0;
           }
         }
@@ -119,29 +128,104 @@ const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
           0% {
             z-index: 20;
             opacity: 0;
-            translate: 9px -3px;
+            transform: translateX(9px) translateY(-3px);
           }
           20% {
             z-index: 10;
             opacity: 1;
-            translate: 0px 0px;
+            transform: translateX(0px) translateY(0px);
           }
           40% {
             z-index: 9;
-            translate: 0px 2px;
+            transform: translateX(0px) translateY(2px);
           }
           60% {
             z-index: 8;
-            translate: 0px 4px;
+            transform: translateX(0px) translateY(4px);
           }
           80% {
             z-index: 7;
             opacity: 1;
-            translate: 0px 6px;
+            transform: translateX(0px) translateY(6px);
           }
           100% {
             z-index: 5;
-            translate: 0px 14px;
+            transform: translateX(0px) translateY(14px);
+            opacity: 0;
+          }
+        }
+
+        /* Webkit prefixes for Safari */
+        @-webkit-keyframes from-left {
+          0% {
+            z-index: 20;
+            opacity: 0;
+            -webkit-transform: translateX(-9px) translateY(-3px);
+            transform: translateX(-9px) translateY(-3px);
+          }
+          20% {
+            z-index: 10;
+            opacity: 1;
+            -webkit-transform: translateX(0px) translateY(0px);
+            transform: translateX(0px) translateY(0px);
+          }
+          40% {
+            z-index: 9;
+            -webkit-transform: translateX(0px) translateY(2px);
+            transform: translateX(0px) translateY(2px);
+          }
+          60% {
+            z-index: 8;
+            -webkit-transform: translateX(0px) translateY(4px);
+            transform: translateX(0px) translateY(4px);
+          }
+          80% {
+            z-index: 7;
+            opacity: 1;
+            -webkit-transform: translateX(0px) translateY(6px);
+            transform: translateX(0px) translateY(6px);
+          }
+          100% {
+            z-index: 5;
+            -webkit-transform: translateX(0px) translateY(14px);
+            transform: translateX(0px) translateY(14px);
+            opacity: 0;
+          }
+        }
+
+        @-webkit-keyframes from-right {
+          0% {
+            z-index: 20;
+            opacity: 0;
+            -webkit-transform: translateX(9px) translateY(-3px);
+            transform: translateX(9px) translateY(-3px);
+          }
+          20% {
+            z-index: 10;
+            opacity: 1;
+            -webkit-transform: translateX(0px) translateY(0px);
+            transform: translateX(0px) translateY(0px);
+          }
+          40% {
+            z-index: 9;
+            -webkit-transform: translateX(0px) translateY(2px);
+            transform: translateX(0px) translateY(2px);
+          }
+          60% {
+            z-index: 8;
+            -webkit-transform: translateX(0px) translateY(4px);
+            transform: translateX(0px) translateY(4px);
+          }
+          80% {
+            z-index: 7;
+            opacity: 1;
+            -webkit-transform: translateX(0px) translateY(6px);
+            transform: translateX(0px) translateY(6px);
+          }
+          100% {
+            z-index: 5;
+            -webkit-transform: translateX(0px) translateY(14px);
+            transform: translateX(0px) translateY(14px);
             opacity: 0;
           }
         }
@@ -396,7 +480,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                 >
                   {(isLoading || isSendingEmail) ? (
                     <div className="flex items-center justify-center">
-                      <TowerLoader className="mr-4" />
+                      <TowerLoader className="mr-3" />
                       <span className="text-sm md:text-base">
                         Generating Custom Report...
                       </span>

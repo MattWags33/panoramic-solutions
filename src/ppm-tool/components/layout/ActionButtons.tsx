@@ -18,7 +18,7 @@ interface ActionButtonsProps {
   onCloseExitIntentBumper?: () => void;
 }
 
-// 3D Tower Loader Component (smaller version for buttons)
+// 3D Tower Loader Component (smaller version for buttons) - Cross-browser compatible
 const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
   return (
     <div className={`tower-loader ${className}`}>
@@ -42,6 +42,7 @@ const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
           width: 5px;
           height: 1.5px;
           transform: skew(0deg, -25deg);
+          -webkit-transform: skew(0deg, -25deg);
           top: 4px;
           left: 3px;
         }
@@ -52,6 +53,7 @@ const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
           width: 5px;
           height: 1.5px;
           transform: skew(0deg, 25deg);
+          -webkit-transform: skew(0deg, 25deg);
           top: 4px;
           left: -2px;
         }
@@ -61,56 +63,63 @@ const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
           background-color: #AED6F1;
           width: 5px;
           height: 5px;
-          rotate: 45deg;
-          transform: skew(-20deg, -20deg);
+          transform: rotate(45deg) skew(-20deg, -20deg);
+          -webkit-transform: rotate(45deg) skew(-20deg, -20deg);
         }
 
         .tower-box-1 {
           animation: from-left 4s infinite;
+          -webkit-animation: from-left 4s infinite;
         }
 
         .tower-box-2 {
           animation: from-right 4s infinite;
+          -webkit-animation: from-right 4s infinite;
           animation-delay: 1s;
+          -webkit-animation-delay: 1s;
         }
 
         .tower-box-3 {
           animation: from-left 4s infinite;
+          -webkit-animation: from-left 4s infinite;
           animation-delay: 2s;
+          -webkit-animation-delay: 2s;
         }
 
         .tower-box-4 {
           animation: from-right 4s infinite;
+          -webkit-animation: from-right 4s infinite;
           animation-delay: 3s;
+          -webkit-animation-delay: 3s;
         }
 
         @keyframes from-left {
           0% {
             z-index: 20;
             opacity: 0;
-            translate: -5px -1.5px;
+            transform: translateX(-5px) translateY(-1.5px);
           }
           20% {
             z-index: 10;
             opacity: 1;
-            translate: 0px 0px;
+            transform: translateX(0px) translateY(0px);
           }
           40% {
             z-index: 9;
-            translate: 0px 1px;
+            transform: translateX(0px) translateY(1px);
           }
           60% {
             z-index: 8;
-            translate: 0px 2px;
+            transform: translateX(0px) translateY(2px);
           }
           80% {
             z-index: 7;
             opacity: 1;
-            translate: 0px 3px;
+            transform: translateX(0px) translateY(3px);
           }
           100% {
             z-index: 5;
-            translate: 0px 8px;
+            transform: translateX(0px) translateY(8px);
             opacity: 0;
           }
         }
@@ -119,29 +128,103 @@ const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
           0% {
             z-index: 20;
             opacity: 0;
-            translate: 5px -1.5px;
+            transform: translateX(5px) translateY(-1.5px);
           }
           20% {
             z-index: 10;
             opacity: 1;
-            translate: 0px 0px;
+            transform: translateX(0px) translateY(0px);
           }
           40% {
             z-index: 9;
-            translate: 0px 1px;
+            transform: translateX(0px) translateY(1px);
           }
           60% {
             z-index: 8;
-            translate: 0px 2px;
+            transform: translateX(0px) translateY(2px);
           }
           80% {
             z-index: 7;
             opacity: 1;
-            translate: 0px 3px;
+            transform: translateX(0px) translateY(3px);
           }
           100% {
             z-index: 5;
-            translate: 0px 8px;
+            transform: translateX(0px) translateY(8px);
+            opacity: 0;
+          }
+        }
+
+        @-webkit-keyframes from-left {
+          0% {
+            z-index: 20;
+            opacity: 0;
+            -webkit-transform: translateX(-5px) translateY(-1.5px);
+            transform: translateX(-5px) translateY(-1.5px);
+          }
+          20% {
+            z-index: 10;
+            opacity: 1;
+            -webkit-transform: translateX(0px) translateY(0px);
+            transform: translateX(0px) translateY(0px);
+          }
+          40% {
+            z-index: 9;
+            -webkit-transform: translateX(0px) translateY(1px);
+            transform: translateX(0px) translateY(1px);
+          }
+          60% {
+            z-index: 8;
+            -webkit-transform: translateX(0px) translateY(2px);
+            transform: translateX(0px) translateY(2px);
+          }
+          80% {
+            z-index: 7;
+            opacity: 1;
+            -webkit-transform: translateX(0px) translateY(3px);
+            transform: translateX(0px) translateY(3px);
+          }
+          100% {
+            z-index: 5;
+            -webkit-transform: translateX(0px) translateY(8px);
+            transform: translateX(0px) translateY(8px);
+            opacity: 0;
+          }
+        }
+
+        @-webkit-keyframes from-right {
+          0% {
+            z-index: 20;
+            opacity: 0;
+            -webkit-transform: translateX(5px) translateY(-1.5px);
+            transform: translateX(5px) translateY(-1.5px);
+          }
+          20% {
+            z-index: 10;
+            opacity: 1;
+            -webkit-transform: translateX(0px) translateY(0px);
+            transform: translateX(0px) translateY(0px);
+          }
+          40% {
+            z-index: 9;
+            -webkit-transform: translateX(0px) translateY(1px);
+            transform: translateX(0px) translateY(1px);
+          }
+          60% {
+            z-index: 8;
+            -webkit-transform: translateX(0px) translateY(2px);
+            transform: translateX(0px) translateY(2px);
+          }
+          80% {
+            z-index: 7;
+            opacity: 1;
+            -webkit-transform: translateX(0px) translateY(3px);
+            transform: translateX(0px) translateY(3px);
+          }
+          100% {
+            z-index: 5;
+            -webkit-transform: translateX(0px) translateY(8px);
+            transform: translateX(0px) translateY(8px);
             opacity: 0;
           }
         }
