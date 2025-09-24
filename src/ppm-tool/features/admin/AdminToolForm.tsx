@@ -274,7 +274,18 @@ export const AdminToolForm: React.FC<AdminToolFormProps> = ({
         throw submissionError;
       }
 
-      console.log('Tool created with ID:', toolId);
+      // Handle different return shapes from RPC (uuid string or object)
+      const newToolId: string =
+        (typeof toolId === 'string' && toolId) ||
+        (toolId && (toolId.id || toolId.tool_id)) ||
+        '';
+
+      if (!newToolId) {
+        console.error('❌ create_tool_submission returned unexpected payload:', toolId);
+        throw new Error('Failed to create tool: invalid ID returned from database');
+      }
+
+      console.log('✅ Tool created with ID:', newToolId);
 
       // Update criteria
       const criteriaPromises = dbCriteria.map(async (criterion) => {
@@ -294,7 +305,7 @@ export const AdminToolForm: React.FC<AdminToolFormProps> = ({
         
         const { error: criteriaError } = await supabase
           .rpc('update_tool_criteria', {
-            p_tool_id: toolId,
+            p_tool_id: newToolId,
             p_criteria_id: criterion.id,
             p_ranking: rating,
             p_description: description
@@ -325,7 +336,7 @@ export const AdminToolForm: React.FC<AdminToolFormProps> = ({
 
       const { error: tagsError } = await supabase
         .rpc('update_tool_tags', {
-          p_tool_id: toolId,
+          p_tool_id: newToolId,
           p_tag_ids: tagIds
         });
 
@@ -338,7 +349,7 @@ export const AdminToolForm: React.FC<AdminToolFormProps> = ({
       console.log('Submitting tool...');
       const { error: submitError } = await supabase
         .rpc('submit_tool', {
-          p_tool_id: toolId
+          p_tool_id: newToolId
         });
 
       if (submitError) {

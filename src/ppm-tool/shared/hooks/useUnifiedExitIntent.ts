@@ -4,6 +4,8 @@
  * Handles both ProductBumper and ExitIntentBumper triggering based on complex timing rules
  */
 
+'use client';
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { 
   shouldShowProductBumper,

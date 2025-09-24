@@ -1,4 +1,5 @@
 import posthog from 'posthog-js';
+import { getAttribution, captureAttribution } from './attribution';
 
 // Re-export posthog for easy access
 export { posthog };
@@ -53,10 +54,14 @@ export const trackToolUsage = (toolName: string, action: string, properties?: Re
  * Track new visitor (first time user)
  */
 export const trackNewVisitor = (properties?: Record<string, any>) => {
+  // Always include attribution data
+  const attribution = getAttribution() || {};
+  
   posthog.capture('New_Visitor', {
     timestamp: Date.now(),
     user_agent: navigator.userAgent,
     referrer: document.referrer,
+    ...attribution,
     ...properties
   });
 };
@@ -65,9 +70,13 @@ export const trackNewVisitor = (properties?: Record<string, any>) => {
  * Track new active user (made a single action)
  */
 export const trackNewActive = (action: string, properties?: Record<string, any>) => {
+  // Always include attribution data
+  const attribution = getAttribution() || {};
+  
   posthog.capture('New_Active', {
     action,
     timestamp: Date.now(),
+    ...attribution,
     ...properties
   });
 };
@@ -76,8 +85,12 @@ export const trackNewActive = (action: string, properties?: Record<string, any>)
  * Track new ranking submittal
  */
 export const trackNewRankingSubmittal = (properties?: Record<string, any>) => {
+  // Always include attribution data
+  const attribution = getAttribution() || {};
+  
   posthog.capture('New_Ranking_Submittal', {
     timestamp: Date.now(),
+    ...attribution,
     ...properties
   });
 };
@@ -86,8 +99,12 @@ export const trackNewRankingSubmittal = (properties?: Record<string, any>) => {
  * Track new report sent
  */
 export const trackNewReportSent = (properties?: Record<string, any>) => {
+  // Always include attribution data
+  const attribution = getAttribution() || {};
+  
   posthog.capture('New_Report_Sent', {
     timestamp: Date.now(),
+    ...attribution,
     ...properties
   });
 };
@@ -97,6 +114,8 @@ export const trackNewReportSent = (properties?: Record<string, any>) => {
 const STORAGE_KEYS = {
   VISITOR_TRACKED: 'posthog_visitor_tracked',
   ACTIVE_TRACKED: 'posthog_active_tracked',
+  RANKING_TRACKED: 'posthog_ranking_tracked',
+  REPORT_TRACKED: 'posthog_report_tracked',
   SESSION_ID: 'posthog_session_id'
 };
 
@@ -131,6 +150,36 @@ export const checkAndTrackNewActive = (action: string, properties?: Record<strin
 };
 
 /**
+ * Check if this is a new ranking submittal and track if so
+ */
+export const checkAndTrackNewRankingSubmittal = (properties?: Record<string, any>) => {
+  const hasTracked = localStorage.getItem(STORAGE_KEYS.RANKING_TRACKED);
+  
+  if (!hasTracked) {
+    trackNewRankingSubmittal(properties);
+    localStorage.setItem(STORAGE_KEYS.RANKING_TRACKED, 'true');
+    return true;
+  }
+  
+  return false;
+};
+
+/**
+ * Check if this is a new report sent and track if so
+ */
+export const checkAndTrackNewReportSent = (properties?: Record<string, any>) => {
+  const hasTracked = localStorage.getItem(STORAGE_KEYS.REPORT_TRACKED);
+  
+  if (!hasTracked) {
+    trackNewReportSent(properties);
+    localStorage.setItem(STORAGE_KEYS.REPORT_TRACKED, 'true');
+    return true;
+  }
+  
+  return false;
+};
+
+/**
  * Generate a unique session ID
  */
 export const getSessionId = (): string => {
@@ -150,6 +199,8 @@ export const getSessionId = (): string => {
 export const resetTrackingState = () => {
   localStorage.removeItem(STORAGE_KEYS.VISITOR_TRACKED);
   localStorage.removeItem(STORAGE_KEYS.ACTIVE_TRACKED);
+  localStorage.removeItem(STORAGE_KEYS.RANKING_TRACKED);
+  localStorage.removeItem(STORAGE_KEYS.REPORT_TRACKED);
   localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
 };
 
@@ -157,6 +208,8 @@ export const resetTrackingState = () => {
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   (window as any).checkAndTrackNewActive = checkAndTrackNewActive;
   (window as any).checkAndTrackNewVisitor = checkAndTrackNewVisitor;
+  (window as any).checkAndTrackNewRankingSubmittal = checkAndTrackNewRankingSubmittal;
+  (window as any).checkAndTrackNewReportSent = checkAndTrackNewReportSent;
   (window as any).resetTrackingState = resetTrackingState;
   (window as any).trackNewActive = trackNewActive;
   (window as any).trackNewVisitor = trackNewVisitor;

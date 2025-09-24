@@ -142,7 +142,7 @@ export const AdminDashboard: React.FC = () => {
     }
   };
   
-  const handleApproveRejectTool = async (toolId: string, status: 'approved' | 'rejected') => {
+  const handleApproveRejectTool = async (toolId: string, status: 'approved' | 'rejected' | 'submitted') => {
     try {
       setError(null);
       
@@ -319,6 +319,7 @@ export const AdminDashboard: React.FC = () => {
                 onDelete={handleDeleteTool}
                 onApproveReject={handleApproveRejectTool}
                 onApproveAll={handleApproveAll}
+                onAddNewTool={handleAddNewTool}
               />
             )
           )}

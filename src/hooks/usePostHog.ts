@@ -11,6 +11,8 @@ import {
   trackNewReportSent,
   checkAndTrackNewVisitor,
   checkAndTrackNewActive,
+  checkAndTrackNewRankingSubmittal,
+  checkAndTrackNewReportSent,
   getSessionId,
   resetTrackingState
 } from '@/lib/posthog';
@@ -82,6 +84,14 @@ export const usePostHog = () => {
     return checkAndTrackNewActive(action, properties);
   }, []);
 
+  const checkAndTrackRanking = useCallback((properties?: Record<string, any>) => {
+    return checkAndTrackNewRankingSubmittal(properties);
+  }, []);
+
+  const checkAndTrackReport = useCallback((properties?: Record<string, any>) => {
+    return checkAndTrackNewReportSent(properties);
+  }, []);
+
   const getSession = useCallback(() => {
     return getSessionId();
   }, []);
@@ -105,9 +115,11 @@ export const usePostHog = () => {
     trackActive,
     trackRanking,
     trackReport,
-    // Automatic tracking utilities
+    // Session-aware tracking utilities
     checkAndTrackVisitor,
     checkAndTrackActive,
+    checkAndTrackRanking,
+    checkAndTrackReport,
     getSession,
     resetState,
   };

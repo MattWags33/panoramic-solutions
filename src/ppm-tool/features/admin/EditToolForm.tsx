@@ -81,12 +81,13 @@ export const EditToolForm: React.FC<EditToolFormProps> = ({
         const descriptions: Record<string, string> = {};
         
         if (tool && Array.isArray(tool.criteria)) {
-          console.log("Tool criteria:", tool.criteria);
+          console.log('🔍 EDIT FORM DEBUG - Tool criteria structure:', tool.criteria);
           tool.criteria.forEach((criterion: any) => {
-            if (criterion.id) {
-              ratings[criterion.id] = criterion.ranking || 0;
-              descriptions[criterion.id] = criterion.description || '';
-              console.log(`Setting initial rating for ${criterion.id}: ${criterion.ranking}`);
+            const criterionId = criterion.criteria_id || criterion.id;
+            if (criterionId) {
+              ratings[criterionId] = criterion.ranking ?? criterion.rating ?? 0;
+              descriptions[criterionId] = criterion.description || '';
+              console.log(`✅ Initial rating for ${criterion.name || criterionId}: ${ratings[criterionId]}`);
             }
           });
         }
@@ -157,17 +158,18 @@ export const EditToolForm: React.FC<EditToolFormProps> = ({
           
           // Initialize methodologies and functions from tool data
           if (tool && Array.isArray(tool.tags)) {
-            console.log("Tool tags:", tool.tags);
+            console.log('🔍 EDIT FORM DEBUG - Tool tags:', tool.tags);
             const methodologySet = new Set<string>();
             const functionSet = new Set<string>();
             
             tool.tags.forEach((tag: any) => {
-              if (tag.type === 'Methodology') {
+              const tagTypeName = tag.type || tag.tag_type || tag.tag_type_name;
+              if (tagTypeName === 'Methodology') {
                 methodologySet.add(tag.name);
-                console.log(`Adding methodology: ${tag.name}`);
-              } else if (tag.type === 'Function') {
+                console.log(`✅ Methodology: ${tag.name}`);
+              } else if (tagTypeName === 'Function') {
                 functionSet.add(tag.name);
-                console.log(`Adding function: ${tag.name}`);
+                console.log(`✅ Function: ${tag.name}`);
               }
             });
             

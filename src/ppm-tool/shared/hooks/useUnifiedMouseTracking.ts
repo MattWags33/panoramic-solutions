@@ -4,6 +4,8 @@
  * Tracks mouse movement and stillness for timing-based bumper triggers
  */
 
+'use client';
+
 import { useEffect, useRef, useCallback } from 'react';
 import { 
   recordMouseMovement, 

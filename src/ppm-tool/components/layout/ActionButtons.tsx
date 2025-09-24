@@ -18,6 +18,159 @@ interface ActionButtonsProps {
   onCloseExitIntentBumper?: () => void;
 }
 
+// 3D Tower Loader Component (smaller version for buttons)
+const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
+  return (
+    <div className={`tower-loader ${className}`}>
+      <style jsx>{`
+        .tower-loader {
+          height: 12px;
+          width: 10px;
+          position: relative;
+          display: inline-block;
+        }
+
+        .tower-box {
+          position: relative;
+          opacity: 0;
+          left: 2px;
+        }
+
+        .side-left {
+          position: absolute;
+          background-color: #87CEEB;
+          width: 5px;
+          height: 1.5px;
+          transform: skew(0deg, -25deg);
+          top: 4px;
+          left: 3px;
+        }
+
+        .side-right {
+          position: absolute;
+          background-color: #5DADE2;
+          width: 5px;
+          height: 1.5px;
+          transform: skew(0deg, 25deg);
+          top: 4px;
+          left: -2px;
+        }
+
+        .side-top {
+          position: absolute;
+          background-color: #AED6F1;
+          width: 5px;
+          height: 5px;
+          rotate: 45deg;
+          transform: skew(-20deg, -20deg);
+        }
+
+        .tower-box-1 {
+          animation: from-left 4s infinite;
+        }
+
+        .tower-box-2 {
+          animation: from-right 4s infinite;
+          animation-delay: 1s;
+        }
+
+        .tower-box-3 {
+          animation: from-left 4s infinite;
+          animation-delay: 2s;
+        }
+
+        .tower-box-4 {
+          animation: from-right 4s infinite;
+          animation-delay: 3s;
+        }
+
+        @keyframes from-left {
+          0% {
+            z-index: 20;
+            opacity: 0;
+            translate: -5px -1.5px;
+          }
+          20% {
+            z-index: 10;
+            opacity: 1;
+            translate: 0px 0px;
+          }
+          40% {
+            z-index: 9;
+            translate: 0px 1px;
+          }
+          60% {
+            z-index: 8;
+            translate: 0px 2px;
+          }
+          80% {
+            z-index: 7;
+            opacity: 1;
+            translate: 0px 3px;
+          }
+          100% {
+            z-index: 5;
+            translate: 0px 8px;
+            opacity: 0;
+          }
+        }
+
+        @keyframes from-right {
+          0% {
+            z-index: 20;
+            opacity: 0;
+            translate: 5px -1.5px;
+          }
+          20% {
+            z-index: 10;
+            opacity: 1;
+            translate: 0px 0px;
+          }
+          40% {
+            z-index: 9;
+            translate: 0px 1px;
+          }
+          60% {
+            z-index: 8;
+            translate: 0px 2px;
+          }
+          80% {
+            z-index: 7;
+            opacity: 1;
+            translate: 0px 3px;
+          }
+          100% {
+            z-index: 5;
+            translate: 0px 8px;
+            opacity: 0;
+          }
+        }
+      `}</style>
+      
+      <div className="tower-box tower-box-1">
+        <div className="side-left"></div>
+        <div className="side-right"></div>
+        <div className="side-top"></div>
+      </div>
+      <div className="tower-box tower-box-2">
+        <div className="side-left"></div>
+        <div className="side-right"></div>
+        <div className="side-top"></div>
+      </div>
+      <div className="tower-box tower-box-3">
+        <div className="side-left"></div>
+        <div className="side-right"></div>
+        <div className="side-top"></div>
+      </div>
+      <div className="tower-box tower-box-4">
+        <div className="side-left"></div>
+        <div className="side-right"></div>
+        <div className="side-top"></div>
+      </div>
+    </div>
+  );
+};
+
 export const ActionButtons: React.FC<ActionButtonsProps> = ({ 
   selectedTools = [], 
   selectedCriteria = [],

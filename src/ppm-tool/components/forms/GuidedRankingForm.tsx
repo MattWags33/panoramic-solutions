@@ -8,7 +8,7 @@ import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/ppm-tool/components/ui/button';
 import { Slider } from '@/ppm-tool/components/ui/slider';
-import { trackNewRankingSubmittal, checkAndTrackNewActive } from '@/lib/posthog';
+import { checkAndTrackNewRankingSubmittal, checkAndTrackNewActive } from '@/lib/posthog';
 import { markGuidedRankingComplete } from '@/ppm-tool/shared/utils/productBumperState';
 
 interface GuidedRankingFormProps {
@@ -468,9 +468,9 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     markGuidedRankingComplete();
     console.log('✅ Guided ranking completed - ProductBumper will no longer show');
     
-    // Track PostHog New_Ranking_Submittal event
+    // Track PostHog New_Ranking_Submittal event (once per session)
     try {
-      trackNewRankingSubmittal({
+      checkAndTrackNewRankingSubmittal({
         ranking_type: 'guided',
         questions_answered: Object.keys(answers).length,
         has_personalization: Object.keys(personalizationData).length > 0,

@@ -208,11 +208,15 @@ export const useToolOrderShuffle = (
       currentOrder.some((id, index) => id !== previousOrder[index]);
 
     if (orderChanged && previousOrder.length > 0) {
+      // Update ref BEFORE triggering animation to prevent flash
+      previousOrderRef.current = currentOrder;
+      
       // Tools have been reordered, trigger shuffle
       shuffleHook.triggerShuffle();
+    } else {
+      // Update ref for first render or when no change
+      previousOrderRef.current = currentOrder;
     }
-
-    previousOrderRef.current = currentOrder;
   }, [tools, shuffleHook, triggerOnChange]);
 
   return {

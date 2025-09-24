@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/ppm-tool/components/common/ErrorBoundary';
 import { EmbeddedPPMToolFlow } from '@/ppm-tool/components/common/EmbeddedPPMToolFlow';
 // REMOVED: FullscreenProvider - no longer needed, using simple mobile detection
 import { GuidanceProvider } from '@/ppm-tool/shared/contexts/GuidanceContext';
+import { BumperSystemProvider } from '@/ppm-tool/components/BumperSystemProvider';
 import { HowItWorksOverlay } from '@/ppm-tool/components/overlays/HowItWorksOverlay';
 import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES } from '@/ppm-tool/shared/utils/homeState';
 import { LegalDisclaimer } from '@/ppm-tool/components/common/LegalDisclaimer';
@@ -44,9 +45,10 @@ export default function PPMToolPage() {
 
   return (
     <ErrorBoundary>
-              <GuidanceProvider>
+      <GuidanceProvider>
+        <BumperSystemProvider enabled={true}>
           {/* PPM Tool Section */}
-          <div className="min-h-screen" style={{ backgroundColor: '#F0F4FE' }}>
+          <div className="min-h-screen ppm-tool-container" style={{ backgroundColor: '#F0F4FE' }}>
             <EmbeddedPPMToolFlow 
               onOpenGuidedRanking={handleOpenGuidedRanking}
               guidedButtonRef={guidedButtonRef}
@@ -70,7 +72,8 @@ export default function PPMToolPage() {
               <LegalDisclaimer />
             </div>
           </div>
-        </GuidanceProvider>
+        </BumperSystemProvider>
+      </GuidanceProvider>
     </ErrorBoundary>
   );
 }

@@ -1,5 +1,6 @@
 // This file configures client-side initialization
 import posthog from 'posthog-js';
+import { captureAttribution } from '@/lib/attribution';
 
 // Only initialize PostHog on the client side
 if (typeof window !== 'undefined') {
@@ -35,6 +36,9 @@ if (typeof window !== 'undefined') {
     
     // Loaded callback for additional configuration
     loaded: (posthog) => {
+      // Capture user attribution on first PostHog load
+      captureAttribution();
+      
       // Enable debug mode in development
       if (process.env.NODE_ENV === 'development') {
         posthog.debug();

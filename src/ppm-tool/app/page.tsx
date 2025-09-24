@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/ppm-tool/components/common/ErrorBoundary';
 import { EmbeddedPPMToolFlow } from '@/ppm-tool/components/common/EmbeddedPPMToolFlow';
 // REMOVED: FullscreenProvider - no longer needed, using simple mobile detection
 import { GuidanceProvider } from '@/ppm-tool/shared/contexts/GuidanceContext';
+import { BumperSystemProvider } from '@/ppm-tool/components/BumperSystemProvider';
 import { HowItWorksOverlay } from '@/ppm-tool/components/overlays/HowItWorksOverlay';
 import { usePostHog } from '@/hooks/usePostHog';
 import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES, addDevelopmentKeyboardShortcuts } from '@/ppm-tool/shared/utils/homeState';
@@ -87,26 +88,28 @@ export default function Home() {
   return (
     <ErrorBoundary>
       <GuidanceProvider>
-        <div className="min-h-screen bg-background" role="main">
-            <EmbeddedPPMToolFlow 
-              showGuidedRanking={showGuidedRanking}
-              onGuidedRankingComplete={handleGuidedRankingComplete}
-              onOpenGuidedRanking={handleOpenGuidedRanking}
-              onShowHowItWorks={handleShowHowItWorks}
-              guidedButtonRef={guidedButtonRef}
-            />
-            
-            {/* How It Works Overlay - triggered manually via button */}
-            <HowItWorksOverlay
-              isVisible={showHowItWorks}
-              onClose={() => {
-                setShowHowItWorks(false);
-                setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
-              }}
-              onGetStarted={handleGetStarted}
-              onManualRanking={handleManualRanking}
-            />
-        </div>
+        <BumperSystemProvider enabled={true}>
+          <div className="min-h-screen bg-background ppm-tool-container" role="main">
+              <EmbeddedPPMToolFlow 
+                showGuidedRanking={showGuidedRanking}
+                onGuidedRankingComplete={handleGuidedRankingComplete}
+                onOpenGuidedRanking={handleOpenGuidedRanking}
+                onShowHowItWorks={handleShowHowItWorks}
+                guidedButtonRef={guidedButtonRef}
+              />
+              
+              {/* How It Works Overlay - triggered manually via button */}
+              <HowItWorksOverlay
+                isVisible={showHowItWorks}
+                onClose={() => {
+                  setShowHowItWorks(false);
+                  setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
+                }}
+                onGetStarted={handleGetStarted}
+                onManualRanking={handleManualRanking}
+              />
+          </div>
+        </BumperSystemProvider>
       </GuidanceProvider>
     </ErrorBoundary>
   );

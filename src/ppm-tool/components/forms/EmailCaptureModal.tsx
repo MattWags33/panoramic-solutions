@@ -18,6 +18,159 @@ interface EmailCaptureModalProps {
   selectedCriteria?: Criterion[];
 }
 
+// 3D Tower Loader Component
+const TowerLoader: React.FC<{ className?: string }> = ({ className = "" }) => {
+  return (
+    <div className={`tower-loader ${className}`}>
+      <style jsx>{`
+        .tower-loader {
+          height: 16px;
+          width: 18px;
+          position: relative;
+          display: inline-block;
+        }
+
+        .tower-box {
+          position: relative;
+          opacity: 0;
+          left: 4px;
+        }
+
+        .side-left {
+          position: absolute;
+          background-color: #87CEEB;
+          width: 9px;
+          height: 2.5px;
+          transform: skew(0deg, -25deg);
+          top: 6px;
+          left: 5px;
+        }
+
+        .side-right {
+          position: absolute;
+          background-color: #5DADE2;
+          width: 9px;
+          height: 2.5px;
+          transform: skew(0deg, 25deg);
+          top: 6px;
+          left: -4px;
+        }
+
+        .side-top {
+          position: absolute;
+          background-color: #AED6F1;
+          width: 9px;
+          height: 9px;
+          rotate: 45deg;
+          transform: skew(-20deg, -20deg);
+        }
+
+        .tower-box-1 {
+          animation: from-left 4s infinite;
+        }
+
+        .tower-box-2 {
+          animation: from-right 4s infinite;
+          animation-delay: 1s;
+        }
+
+        .tower-box-3 {
+          animation: from-left 4s infinite;
+          animation-delay: 2s;
+        }
+
+        .tower-box-4 {
+          animation: from-right 4s infinite;
+          animation-delay: 3s;
+        }
+
+        @keyframes from-left {
+          0% {
+            z-index: 20;
+            opacity: 0;
+            translate: -9px -3px;
+          }
+          20% {
+            z-index: 10;
+            opacity: 1;
+            translate: 0px 0px;
+          }
+          40% {
+            z-index: 9;
+            translate: 0px 2px;
+          }
+          60% {
+            z-index: 8;
+            translate: 0px 4px;
+          }
+          80% {
+            z-index: 7;
+            opacity: 1;
+            translate: 0px 6px;
+          }
+          100% {
+            z-index: 5;
+            translate: 0px 14px;
+            opacity: 0;
+          }
+        }
+
+        @keyframes from-right {
+          0% {
+            z-index: 20;
+            opacity: 0;
+            translate: 9px -3px;
+          }
+          20% {
+            z-index: 10;
+            opacity: 1;
+            translate: 0px 0px;
+          }
+          40% {
+            z-index: 9;
+            translate: 0px 2px;
+          }
+          60% {
+            z-index: 8;
+            translate: 0px 4px;
+          }
+          80% {
+            z-index: 7;
+            opacity: 1;
+            translate: 0px 6px;
+          }
+          100% {
+            z-index: 5;
+            translate: 0px 14px;
+            opacity: 0;
+          }
+        }
+      `}</style>
+      
+      <div className="tower-box tower-box-1">
+        <div className="side-left"></div>
+        <div className="side-right"></div>
+        <div className="side-top"></div>
+      </div>
+      <div className="tower-box tower-box-2">
+        <div className="side-left"></div>
+        <div className="side-right"></div>
+        <div className="side-top"></div>
+      </div>
+      <div className="tower-box tower-box-3">
+        <div className="side-left"></div>
+        <div className="side-right"></div>
+        <div className="side-top"></div>
+      </div>
+      <div className="tower-box tower-box-4">
+        <div className="side-left"></div>
+        <div className="side-right"></div>
+        <div className="side-top"></div>
+      </div>
+    </div>
+  );
+};
+
 export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
   isOpen,
   onClose,
@@ -230,7 +383,6 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                     </motion.p>
                   )}
                 </div>
-                
                 <motion.button
                   type="submit"
                   className="w-full bg-alpine-blue-400 hover:bg-alpine-blue-500 text-white px-4 py-2 md:py-2.5 text-sm md:text-base rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -238,18 +390,15 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                   whileHover={!(isLoading || isSendingEmail) ? { scale: 1.02 } : {}}
                   whileTap={!(isLoading || isSendingEmail) ? { scale: 0.98 } : {}}
                   animate={{
-                    backgroundColor: (isLoading || isSendingEmail) ? '#9ca3af' : '#0057B7'
+                    backgroundColor: (isLoading || isSendingEmail) ? '#0047A3' : '#0057B7'
                   }}
                   transition={{ duration: 0.2 }}
                 >
                   {(isLoading || isSendingEmail) ? (
                     <div className="flex items-center justify-center">
-                      <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-white/30 border-t-white border-r-white rounded-full animate-spin mr-2" />
+                      <TowerLoader className="mr-4" />
                       <span className="text-sm md:text-base">
-                        {selectedTools.length > 0 && selectedCriteria.length > 0 
-                          ? 'Sending Email Report...' 
-                          : 'Generating Report...'
-                        }
+                        Generating Custom Report...
                       </span>
                     </div>
                   ) : (

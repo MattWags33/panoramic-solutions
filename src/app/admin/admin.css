@@ -7,6 +7,32 @@
   box-sizing: border-box;
 }
 
+/* Ensure admin header is always visible */
+.admin-app .admin-header {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+  background-color: white !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  width: 100% !important;
+}
+
+/* Ensure header content is visible */
+.admin-app .admin-header * {
+  visibility: visible !important;
+  display: initial !important;
+}
+
+/* Ensure header buttons are visible and styled properly */
+.admin-app .admin-header button {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 .admin-app {
   min-height: 100vh;
   background: #f8fafc;

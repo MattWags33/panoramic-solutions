@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { AlertCircle, Plus, LogOut, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AlertCircle, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/ppm-tool/shared/hooks/useAuth';
 import { AdminLogin } from './AdminLogin';
@@ -19,8 +19,6 @@ export const StandaloneAdminApp: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingTool, setIsAddingTool] = useState(false);
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickAddName, setQuickAddName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [criteria, setCriteria] = useState<Criterion[]>([]);
@@ -32,14 +30,6 @@ export const StandaloneAdminApp: React.FC = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  useEffect(() => {
-    if (user) {
-      fetchTools();
-      fetchCriteria();
-      debugAdminAuth();
-    }
-  }, [user]);
 
   const debugAdminAuth = async () => {
     try {
@@ -60,7 +50,7 @@ export const StandaloneAdminApp: React.FC = () => {
     }
   };
 
-  const fetchTools = async () => {
+  const fetchTools = useCallback(async () => {
     try {
       if (!isLoading) {
         console.log('🔄 Refreshing tools data...');
@@ -82,26 +72,48 @@ export const StandaloneAdminApp: React.FC = () => {
       if (data) {
         console.log('📊 Fetched tools from database:', data.length, 'tools');
         console.log('📋 Sample tool data (first tool):', data[0]);
-        
-        // Find Asana specifically for debugging
-        const asanaData = data.find((tool: any) => tool.name === 'Asana');
-        if (asanaData) {
-          console.log('🎯 Asana data from database:', {
-            name: asanaData.name,
-            status: asanaData.submission_status,
-            criteriaCount: asanaData.criteria?.length || 0,
-            tagsCount: asanaData.tags?.length || 0,
-            hasData: !!(asanaData.criteria && asanaData.tags)
-          });
-        }
-        
-        // Add updated_at field if it doesn't exist
-        const toolsWithUpdated = data.map((tool: Tool) => ({
-          ...tool,
-          updated_at: tool.updated_at || tool.submitted_at || tool.approved_at || tool.created_on
-        }));
-        
-        setTools(toolsWithUpdated as Tool[]);
+
+        const normalizeCriteria = (criteria: any): any[] => {
+          if (!Array.isArray(criteria)) return [];
+          return criteria.map((c: any) => ({
+            id: c?.criteria_id || c?.id || c?.criterion_id || '',
+            name: c?.name || c?.criteria_name || c?.criterion_name || 'Unnamed Criterion',
+            ranking: (c?.ranking ?? c?.rank ?? c?.rating ?? 0) as number,
+            description: c?.description ?? c?.criteria_description ?? ''
+          }));
+        };
+
+        const normalizeTags = (tags: any, fallbackType?: string): any[] => {
+          if (Array.isArray(tags)) {
+            return tags.map((t: any) => {
+              if (typeof t === 'string') {
+                return { id: '', name: t, type: fallbackType || '' };
+              }
+              return {
+                id: t?.id || '',
+                name: t?.name || '',
+                type: t?.type || t?.tag_type || t?.tag_type_name || ''
+              };
+            });
+          }
+          // Some views may expose tag_names as an array of strings
+          if (Array.isArray((tags as any)?.tag_names)) {
+            return (tags as any).tag_names.map((n: string) => ({ id: '', name: n, type: '' }));
+          }
+          return [];
+        };
+
+        const normalizedTools = (data as any[]).map((t: any) => {
+          const normalized = {
+            ...t,
+            criteria: normalizeCriteria(t.criteria),
+            tags: normalizeTags(t.tags),
+            updated_at: t.updated_at || t.submitted_at || t.approved_at || t.created_on
+          } as any;
+          return normalized;
+        });
+
+        setTools(normalizedTools as Tool[]);
       }
     } catch (err: unknown) {
       console.error('Error fetching tools:', err);
@@ -109,8 +121,16 @@ export const StandaloneAdminApp: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading]);
   
+  useEffect(() => {
+    if (user) {
+      fetchTools();
+      fetchCriteria();
+      debugAdminAuth();
+    }
+  }, [user, fetchTools]);
+
   const fetchCriteria = async () => {
     try {
       if (!supabase) {
@@ -145,10 +165,30 @@ export const StandaloneAdminApp: React.FC = () => {
     }
   };
   
-  const handleEditTool = (tool: Tool) => {
-    setSelectedTool(tool);
-    setIsEditing(true);
-    setIsAddingTool(false);
+  const handleEditTool = async (tool: Tool) => {
+    try {
+      setIsEditing(true);
+      setIsAddingTool(false);
+      // Fetch freshest version from DB to avoid stale tags/criteria
+      if (!supabase) {
+        setSelectedTool(tool);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('admin_tools_view')
+        .select('*')
+        .eq('id', tool.id)
+        .maybeSingle();
+      if (error || !data) {
+        console.warn('⚠️ Could not refetch tool by id, using in-memory copy:', error);
+        setSelectedTool(tool);
+        return;
+      }
+      setSelectedTool(data as unknown as Tool);
+    } catch (e) {
+      console.warn('⚠️ Error refetching tool for edit:', e);
+      setSelectedTool(tool);
+    }
   };
   
   const handleAddNewTool = () => {
@@ -157,48 +197,6 @@ export const StandaloneAdminApp: React.FC = () => {
     setSelectedTool(null);
   };
 
-  const handleQuickAddTool = async () => {
-    if (!quickAddName.trim()) {
-      setError('Please enter a tool name');
-      return;
-    }
-
-    try {
-      setError(null);
-      setIsUpdating(true);
-      
-      if (!supabase) {
-        throw new Error('Supabase client not configured');
-      }
-      
-      console.log('🚀 Quick adding tool:', quickAddName);
-      
-      const { data, error } = await supabase.rpc('simple_create_tool', {
-        p_name: quickAddName.trim(),
-        p_type: 'application'
-      });
-      
-      if (error) {
-        console.error('❌ Quick add error:', error);
-        throw error;
-      }
-      
-      console.log('✅ Tool quick added:', data);
-      
-      // Reset form
-      setQuickAddName('');
-      setShowQuickAdd(false);
-      
-      // Refresh from database immediately
-      await fetchTools();
-    } catch (err: unknown) {
-      console.error('❌ Failed to quick add tool:', err);
-      setError(`Failed to add tool: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-  
   const handleDeleteTool = async (toolId: string) => {
     if (!confirm('Are you sure you want to delete this tool? This action cannot be undone.')) {
       return;
@@ -229,7 +227,7 @@ export const StandaloneAdminApp: React.FC = () => {
     }
   };
   
-  const handleApproveRejectTool = async (toolId: string, status: 'approved' | 'rejected') => {
+  const handleApproveRejectTool = async (toolId: string, status: 'approved' | 'rejected' | 'submitted') => {
     try {
       setError(null);
       setIsUpdating(true);
@@ -240,25 +238,11 @@ export const StandaloneAdminApp: React.FC = () => {
       
       console.log('🔧 Admin attempting to update tool status:', { toolId, status });
       
-      // Use direct database update for reliable operation
-      const now = new Date().toISOString();
-      let updateData: any = {
-        submission_status: status,
-        updated_at: now
-      };
-      
-      // Set appropriate timestamps based on status
-      if (status === 'approved') {
-        updateData.approved_at = now;
-      } else if (status === 'rejected') {
-        updateData.approved_at = null;
-      }
-      
-      const { data, error } = await supabase
-        .from('tools')
-        .update(updateData)
-        .eq('id', toolId)
-        .select();
+      // Prefer RPC to encapsulate business logic in the DB
+      const { data, error } = await supabase.rpc('update_tool_status', {
+        p_tool_id: toolId,
+        p_status: status
+      });
       
       if (error) {
         console.error('❌ Admin Database Error:', {
@@ -282,13 +266,13 @@ export const StandaloneAdminApp: React.FC = () => {
         }
       }
       
-      console.log('✅ Admin tool status updated successfully:', { toolId, status, result: data });
+      console.log('✅ Admin tool status updated successfully (RPC):', { toolId, status, result: data });
       
       // Refresh tools data immediately to get the updated information with all criteria/tags preserved
       await fetchTools();
     } catch (err: unknown) {
-      console.error(`❌ Error ${status === 'approved' ? 'approving' : 'rejecting'} tool:`, err);
-      setError(`Failed to ${status === 'approved' ? 'approve' : 'reject'} tool: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      console.error(`❌ Error updating tool status to ${status}:`, err);
+      setError(`Failed to update tool status to ${status}: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsUpdating(false);
     }
@@ -412,7 +396,7 @@ export const StandaloneAdminApp: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Admin Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-40">
+      <div className="admin-header bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
@@ -427,88 +411,16 @@ export const StandaloneAdminApp: React.FC = () => {
               )}
             </div>
             
-            <div className="flex items-center space-x-4">
-              {/* Refresh button */}
-              <button 
-                onClick={() => {
-                  console.log('🔄 Manual refresh triggered');
-                  fetchTools();
-                  fetchCriteria();
-                }}
-                className="flex items-center px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors shadow-sm"
-                title="Refresh data from database"
-                disabled={isUpdating}
+            {/* User Menu Only */}
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-600">{user.email}</span>
+              <button
+                onClick={signOut}
+                className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <RefreshCw className={`w-4 h-4 mr-1 ${isUpdating ? 'animate-spin' : ''}`} />
-                Refresh
+                <LogOut className="w-4 h-4 mr-1" />
+                Sign Out
               </button>
-              
-              {/* Quick Add Tool */}
-              {showQuickAdd ? (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Tool name..."
-                    value={quickAddName}
-                    onChange={(e) => setQuickAddName(e.target.value)}
-                    className="px-3 py-2 border rounded-lg text-sm"
-                    onKeyPress={(e) => e.key === 'Enter' && handleQuickAddTool()}
-                    autoFocus
-                    disabled={isUpdating}
-                  />
-                  <button 
-                    onClick={handleQuickAddTool}
-                    className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? 'Adding...' : 'Add'}
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setShowQuickAdd(false);
-                      setQuickAddName('');
-                    }}
-                    className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
-                    disabled={isUpdating}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/* Quick Add button */}
-                  <button 
-                    onClick={() => setShowQuickAdd(true)}
-                    className="flex items-center px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm text-sm disabled:opacity-50"
-                    disabled={isUpdating}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Quick Add
-                  </button>
-                  
-                  {/* Add New Tool button */}
-                  <button 
-                    onClick={handleAddNewTool}
-                    className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm disabled:opacity-50"
-                    disabled={isUpdating}
-                  >
-                    <Plus className="w-5 h-5 mr-2" />
-                    Add New Tool
-                  </button>
-                </>
-              )}
-              
-              {/* User Menu */}
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-600">{user.email}</span>
-                <button
-                  onClick={signOut}
-                  className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <LogOut className="w-4 h-4 mr-1" />
-                  Sign Out
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -526,9 +438,11 @@ export const StandaloneAdminApp: React.FC = () => {
         {isAddingTool && (
           <AdminToolForm 
             onClose={() => setIsAddingTool(false)}
-            onSuccess={() => {
+            onSuccess={async () => {
               setIsAddingTool(false);
-              fetchTools();
+              // small delay to allow view to reflect new joins
+              await new Promise(r => setTimeout(r, 250));
+              await fetchTools();
             }}
             selectedCriteria={criteria}
           />
@@ -541,10 +455,12 @@ export const StandaloneAdminApp: React.FC = () => {
               setIsEditing(false);
               setSelectedTool(null);
             }}
-            onSuccess={() => {
+            onSuccess={async () => {
               setIsEditing(false);
               setSelectedTool(null);
-              fetchTools();
+              // small delay to ensure the view reflects updates
+              await new Promise(r => setTimeout(r, 200));
+              await fetchTools();
             }}
           />
         ) : (
@@ -556,6 +472,7 @@ export const StandaloneAdminApp: React.FC = () => {
               onDelete={handleDeleteTool}
               onApproveReject={handleApproveRejectTool}
               onApproveAll={handleApproveAll}
+              onAddNewTool={handleAddNewTool}
             />
           )
         )}

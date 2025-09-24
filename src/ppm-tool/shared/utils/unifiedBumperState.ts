@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Unified Bumper State Management
  * Handles all timing and coordination logic for ProductBumper and ExitIntentBumper

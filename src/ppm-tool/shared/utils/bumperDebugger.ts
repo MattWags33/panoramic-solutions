@@ -337,6 +337,9 @@ if (typeof window !== 'undefined') {
   (window as any).resetAllBumperState = resetAllBumperState;
   (window as any).forceTriggerConditions = forceTriggerConditions;
   
+  // Import production test helpers
+  import('./productionTestHelpers');
+  
   // Production environment detection
   const isProduction = process.env.NODE_ENV === 'production' || 
                       !window.location.hostname.includes('localhost');

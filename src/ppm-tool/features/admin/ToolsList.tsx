@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, Check, X, Filter, ChevronDown, ChevronUp, Search, Calendar } from 'lucide-react';
+import { Edit, Trash2, Check, X, Filter, ChevronDown, ChevronUp, Search, Calendar, Plus } from 'lucide-react';
 import { Tool } from '@/ppm-tool/shared/types';
 import { StatusDropdown } from './StatusDropdown';
 import { supabase } from '@/lib/supabase';
@@ -9,8 +9,9 @@ interface ToolsListProps {
   isLoading: boolean;
   onEdit: (tool: Tool) => void;
   onDelete: (toolId: string) => void;
-  onApproveReject: (toolId: string, status: 'approved' | 'rejected') => void;
+  onApproveReject: (toolId: string, status: 'approved' | 'rejected' | 'submitted') => void;
   onApproveAll: () => void;
+  onAddNewTool: () => void;
 }
 
 export const ToolsList: React.FC<ToolsListProps> = ({
@@ -19,7 +20,8 @@ export const ToolsList: React.FC<ToolsListProps> = ({
   onEdit,
   onDelete,
   onApproveReject,
-  onApproveAll
+  onApproveAll,
+  onAddNewTool
 }) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,8 +127,8 @@ export const ToolsList: React.FC<ToolsListProps> = ({
       setMobileStatusDropdownId(null);
       
       // Delegate to parent component which has the proper state management
-      if (newStatus === 'approved' || newStatus === 'rejected') {
-        onApproveReject(toolId, newStatus as 'approved' | 'rejected');
+      if (newStatus === 'approved' || newStatus === 'rejected' || newStatus === 'submitted') {
+        onApproveReject(toolId, newStatus as 'approved' | 'rejected' | 'submitted');
       }
     } catch (err: any) {
       console.error('❌ ToolsList: Failed to update status:', err);
@@ -193,6 +195,16 @@ export const ToolsList: React.FC<ToolsListProps> = ({
               </select>
               <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             </div>
+            
+            {/* Add New Tool Button */}
+            <button 
+              onClick={onAddNewTool}
+              className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm text-sm font-medium whitespace-nowrap"
+              title="Create a new tool with complete details and submit for approval"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Tool
+            </button>
           </div>
         </div>
       </div>

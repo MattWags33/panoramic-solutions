@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Tool, Criterion } from '../types';
 import { PPMEmailTemplateGenerator } from '../utils/emailTemplateGenerator';
-import { trackNewReportSent } from '@/lib/posthog';
+import { checkAndTrackNewReportSent } from '@/lib/posthog';
 
 interface UseEmailReportOptions {
   onSuccess?: (response: any) => void;
@@ -29,10 +29,12 @@ interface EmailResponse {
 export const useEmailReport = (options: UseEmailReportOptions = {}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string>('');
 
   const sendEmailReport = async (data: EmailReportData): Promise<EmailResponse> => {
     setIsLoading(true);
     setError(null);
+    setProgress('Preparing report...');
 
     try {
       // Validate inputs
@@ -40,10 +42,13 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         throw new Error('Missing required data for email report (email, first name, last name, tools, and criteria are required)');
       }
 
+      setProgress('Analyzing your criteria...');
+
       // Generate chart image if not provided
       let chartImageUrl = data.chartImageUrl;
       if (!chartImageUrl) {
         try {
+          setProgress('Creating visualizations...');
           chartImageUrl = await generateChartImage(data.selectedTools, data.selectedCriteria);
         } catch (chartError) {
           console.warn('Failed to generate chart image, continuing without chart:', chartError);
@@ -54,6 +59,8 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
       // Check if we're in test mode (useful for debugging email delivery)
       const isTestMode = typeof window !== 'undefined' && 
         new URLSearchParams(window.location.search).get('emailTest') === 'true';
+
+      setProgress('Generating personalized insights...');
 
       // Generate email payload
       const emailPayload = await PPMEmailTemplateGenerator.generateResendPayload({
@@ -93,6 +100,8 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         }
       }
 
+      setProgress('Sending your custom report...');
+
       // Send via API endpoint using new React email format
       const response = await fetch('/api/send-email', {
         method: 'POST',
@@ -119,6 +128,8 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
 
       const result: EmailResponse = await response.json();
       
+      setProgress('Finalizing delivery...');
+
       // Track email send event (optional analytics)
       try {
         await trackEmailSent(data.userEmail, data.selectedTools.length, data.selectedCriteria.length);
@@ -127,9 +138,9 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         // Don't fail the email send for tracking issues
       }
 
-      // Track PostHog New_Report_Sent event
+      // Track PostHog New_Report_Sent event (once per session)
       try {
-        trackNewReportSent({
+        checkAndTrackNewReportSent({
           tool_count: data.selectedTools.length,
           criteria_count: data.selectedCriteria.length,
           has_chart: !!chartImageUrl,
@@ -143,16 +154,20 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         // Don't fail the email send for PostHog tracking issues
       }
       
+      setProgress('Complete!');
       options.onSuccess?.(result);
       return result;
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
+      setProgress('');
       options.onError?.(err as Error);
       throw err;
     } finally {
       setIsLoading(false);
+      // Clear progress after a short delay
+      setTimeout(() => setProgress(''), 1000);
     }
   };
 
@@ -162,6 +177,7 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
     sendEmailReport,
     isLoading,
     error,
+    progress,
     clearError
   };
 };
