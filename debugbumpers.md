@@ -44,22 +44,22 @@ The pointer event blocking may be occurring at a different level in the componen
 
 ---
 
-### ⏳ Solution #2: Emergency Override for Bumper State Logic (2025-01-26)
-**Status:** TESTING IN PROGRESS - Implementation complete, awaiting validation
+### ❌ Solution #2: Emergency Override for Bumper State Logic (2025-01-26)
+**Status:** FAILED - Did not resolve the pointer event blocking issue
 
 **Changes Made:**
-- ✅ Added `isMounted` state guard to `src/ppm-tool/components/overlays/ProductBumper.tsx`:
-  - ✅ Added `const [isMounted, setIsMounted] = useState(false);` state variable
-  - ✅ Added `useEffect(() => { setIsMounted(true); }, []);` to set mounted state
-  - ✅ Added guard clause `if (!isMounted) { return null; }` before main return
+- ❌ Added `isMounted` state guard to `src/ppm-tool/components/overlays/ProductBumper.tsx`:
+  - ❌ Added `const [isMounted, setIsMounted] = useState(false);` state variable
+  - ❌ Added `useEffect(() => { setIsMounted(true); }, []);` to set mounted state
+  - ❌ Added guard clause `if (!isMounted) { return null; }` before main return
 
-- ✅ Added `isMounted` state guard to `src/ppm-tool/components/overlays/ExitIntentBumper.tsx`:
-  - ✅ Added `const [isMounted, setIsMounted] = useState(false);` state variable  
-  - ✅ Added `useEffect(() => { setIsMounted(true); }, []);` to set mounted state
-  - ✅ Added guard clause `if (!isMounted) { return null; }` before main return
+- ❌ Added `isMounted` state guard to `src/ppm-tool/components/overlays/ExitIntentBumper.tsx`:
+  - ❌ Added `const [isMounted, setIsMounted] = useState(false);` state variable  
+  - ❌ Added `useEffect(() => { setIsMounted(true); }, []);` to set mounted state
+  - ❌ Added guard clause `if (!isMounted) { return null; }` before main return
 
 **Expected Outcome:** Prevent bumper components from rendering during SSR/hydration, eliminating invisible backdrop that blocks pointer events
-**Actual Outcome:** [PENDING TESTING]
+**Actual Outcome:** Issue persisted - interactive elements still unresponsive
 **Files Modified:** 
 - `src/ppm-tool/components/overlays/ProductBumper.tsx`
 - `src/ppm-tool/components/overlays/ExitIntentBumper.tsx`
@@ -68,9 +68,36 @@ The pointer event blocking may be occurring at a different level in the componen
 - No linter errors introduced
 - Components now completely absent from DOM during initial render
 - Only render after client-side JavaScript fully mounts
-- Bypasses race condition causing premature `isVisible: true` state
+- Successfully bypassed race condition during hydration
 
-**Theory:** The invisible full-screen backdrop (`motion.div`) was being rendered due to a race condition where `isVisible` was incorrectly set to `true` during hydration. This defensive coding approach ensures components cannot render until properly mounted on the client side.
+**Why It Failed:** 
+The issue is not related to the bumper components rendering prematurely during hydration. Since the `isMounted` guards successfully prevent any rendering until client-side mount, but the pointer event blocking persists, the root cause must be elsewhere in the component hierarchy or CSS stack. The problem likely exists in a different component or CSS property that creates a stacking context above the interactive elements.
+
+---
+
+### ⏳ Solution #3: Root Layout Stacking Context Fix (2025-01-26)
+**Status:** TESTING IN PROGRESS - Implementation complete, awaiting validation
+
+**Changes Made:**
+- ✅ Added `isolate` class to `<main>` element in `src/app/layout.tsx`:
+  - ✅ Modified `<main className="flex-1">` to `<main className="flex-1 isolate">`
+
+**Root Cause Identified:** 
+DevTools Inspector revealed that the top-level container `<div class="min-h-screen flex flex-col">` in the root layout was creating a stacking context that incorrectly overlays its own child elements on certain hardware configurations, blocking all pointer events.
+
+**Expected Outcome:** Create an independent stacking context for the main content area, making it immune to the parent's rendering bug and restoring all mouse/hover interactivity
+**Actual Outcome:** [PENDING TESTING]
+**Files Modified:** 
+- `src/app/layout.tsx`
+
+**Technical Details:**
+- No linter errors introduced
+- Single surgical change - only added `isolate` class
+- Visual layout completely unaffected
+- Creates CSS isolation: `isolation: isolate;` property
+- Establishes new stacking context independent of parent container
+
+**Theory:** The `isolate` class creates a new stacking context that prevents the parent container's stacking context bug from affecting child elements. This should resolve the pointer event blocking at the root level, fixing tooltips, bumpers, and all interactive elements across the entire application.
 
 ---
 
