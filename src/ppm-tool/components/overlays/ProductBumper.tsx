@@ -20,6 +20,11 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
   const popupRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // Check for mobile device
   useEffect(() => {
@@ -120,6 +125,11 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
   };
 
 
+
+  // Add this guard clause
+  if (!isMounted) {
+    return null;
+  }
 
   // Don't render anything on mobile
   if (isMobile) {

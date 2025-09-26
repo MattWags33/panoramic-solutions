@@ -32,6 +32,11 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
     width: '200px',
     height: '50px' 
   });
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   // Exit intent detection state
   const [lastMouseY, setLastMouseY] = useState(0);
@@ -275,6 +280,11 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
       }
     }
   };
+
+  // Add this guard clause
+  if (!isMounted) {
+    return null;
+  }
 
   // Don't render anything on mobile
   if (isMobile) {
