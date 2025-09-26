@@ -1120,7 +1120,7 @@ Panoramic Solutions
       `.trim();
 
       return {
-        from: 'Matt Wagner <reports@app.panoramic-solutions.com>',
+        from: 'Matt Wagner <donotreply@app.panoramic-solutions.com>',
         to: data.userEmail,
         subject: '[TEST] PPM Tool Comparison System',
         html: simpleHtml,
@@ -1138,7 +1138,7 @@ Panoramic Solutions
       'Your PPM Tool Comparison Report (See Results Below)';
 
     return {
-      from: 'Matt Wagner <reports@app.panoramic-solutions.com>',
+      from: 'Matt Wagner <donotreply@app.panoramic-solutions.com>',
       to: data.userEmail,
       subject: subjectLine,
       html: await this.generateHTMLEmail(data),

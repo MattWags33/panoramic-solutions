@@ -222,7 +222,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
   );
 
   return (
-    <div id="tools-section" className="bg-white rounded-lg shadow-lg flex flex-col h-full overflow-hidden min-h-0 border border-gray-200">
+    <div id="tools-section" className="bg-white rounded-lg shadow-none flex flex-col h-full overflow-hidden min-h-0 border border-gray-200">
       {/* Fixed Header Section */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 md:p-6 pb-3 md:pb-4 border-b bg-white rounded-t-lg">
         <div className="flex items-center">

@@ -403,7 +403,7 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
 
   // SIMPLIFIED: Always use standard layout (removed fullscreen complexity)
   return (
-    <div id="recommendations-section" className="bg-white rounded-lg border shadow-sm">
+    <div id="recommendations-section" className="bg-white rounded-lg border shadow-none">
       <div className="flex flex-col h-full">
         {content}
       </div>

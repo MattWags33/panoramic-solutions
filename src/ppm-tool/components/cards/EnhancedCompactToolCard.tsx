@@ -122,7 +122,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
 
   return (
     <Card 
-      className="transition-all duration-200 hover:shadow-lg border-2 hover:border-alpine-blue-200 cursor-pointer !bg-white"
+      className="border border-gray-200 hover:border-alpine-blue-300 cursor-pointer !bg-white shadow-none rounded-xl overflow-hidden transition-colors duration-200"
       onClick={onToggleExpand}
     >
       <CardHeader className="pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
@@ -174,7 +174,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
       </CardHeader>
 
       <CardContent className="space-y-2 md:space-y-3 px-4 md:px-6 pb-4 md:pb-6">
-        <div className="cursor-pointer -mx-4 md:-mx-6 px-4 md:px-6 py-2 md:py-3 bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-200 flex items-center justify-center gap-2 text-xs md:text-sm font-medium text-alpine-blue-500">
+        <div className="cursor-pointer -mx-4 md:-mx-6 px-4 md:px-6 py-2 md:py-3 bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-200 flex items-center justify-center gap-2 text-xs md:text-sm font-medium text-alpine-blue-500 rounded-b-xl">
           {isExpanded ? (
             <>
               <ChevronUp className="w-3 h-3 md:w-4 md:h-4" />

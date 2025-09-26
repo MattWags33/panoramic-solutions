@@ -5,7 +5,7 @@ import { ErrorBoundary } from '@/ppm-tool/components/common/ErrorBoundary';
 import { EmbeddedPPMToolFlow } from '@/ppm-tool/components/common/EmbeddedPPMToolFlow';
 // REMOVED: FullscreenProvider - no longer needed, using simple mobile detection
 import { GuidanceProvider } from '@/ppm-tool/shared/contexts/GuidanceContext';
-import { BumperSystemProvider } from '@/ppm-tool/components/BumperSystemProvider';
+import { UniversalBumperProvider } from '@/ppm-tool/components/UniversalBumperProvider';
 import { HowItWorksOverlay } from '@/ppm-tool/components/overlays/HowItWorksOverlay';
 import { usePostHog } from '@/hooks/usePostHog';
 import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES, addDevelopmentKeyboardShortcuts } from '@/ppm-tool/shared/utils/homeState';
@@ -88,7 +88,7 @@ export default function Home() {
   return (
     <ErrorBoundary>
       <GuidanceProvider>
-        <BumperSystemProvider enabled={true}>
+        <UniversalBumperProvider>
           <div className="min-h-screen bg-background ppm-tool-container" role="main">
               <EmbeddedPPMToolFlow 
                 showGuidedRanking={showGuidedRanking}
@@ -109,7 +109,7 @@ export default function Home() {
                 onManualRanking={handleManualRanking}
               />
           </div>
-        </BumperSystemProvider>
+        </UniversalBumperProvider>
       </GuidanceProvider>
     </ErrorBoundary>
   );

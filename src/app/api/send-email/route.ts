@@ -1217,7 +1217,7 @@ Create a unique, varied description for ${tool.name} that stands out from other 
 
     // Send email via Resend
     const { data, error } = await resend.emails.send({
-      from: 'Matt Wagner <reports@app.panoramic-solutions.com>', // Use verified domain
+      from: 'Matt Wagner <donotreply@app.panoramic-solutions.com>', // Use verified domain
       to: [userEmail],
       subject: 'Your PPM Tool Analysis Report',
       html: emailHtml,
@@ -1369,7 +1369,7 @@ export async function POST(request: NextRequest) {
 
     // Send email via Resend
     const data = await resend.emails.send({
-      from: from || 'Matt Wagner <reports@app.panoramic-solutions.com>',
+      from: from || 'Matt Wagner <donotreply@app.panoramic-solutions.com>',
       to: [to],
       subject,
       html,

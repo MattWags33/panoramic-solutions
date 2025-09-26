@@ -5,7 +5,7 @@ import { ErrorBoundary } from '@/ppm-tool/components/common/ErrorBoundary';
 import { EmbeddedPPMToolFlow } from '@/ppm-tool/components/common/EmbeddedPPMToolFlow';
 // REMOVED: FullscreenProvider - no longer needed, using simple mobile detection
 import { GuidanceProvider } from '@/ppm-tool/shared/contexts/GuidanceContext';
-import { BumperSystemProvider } from '@/ppm-tool/components/BumperSystemProvider';
+import { UniversalBumperProvider } from '@/ppm-tool/components/UniversalBumperProvider';
 import { HowItWorksOverlay } from '@/ppm-tool/components/overlays/HowItWorksOverlay';
 import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES } from '@/ppm-tool/shared/utils/homeState';
 import { LegalDisclaimer } from '@/ppm-tool/components/common/LegalDisclaimer';
@@ -46,7 +46,7 @@ export default function PPMToolPage() {
   return (
     <ErrorBoundary>
       <GuidanceProvider>
-        <BumperSystemProvider enabled={true}>
+        <UniversalBumperProvider>
           {/* PPM Tool Section */}
           <div className="min-h-screen ppm-tool-container" style={{ backgroundColor: '#F0F4FE' }}>
             <EmbeddedPPMToolFlow 
@@ -72,7 +72,7 @@ export default function PPMToolPage() {
               <LegalDisclaimer />
             </div>
           </div>
-        </BumperSystemProvider>
+        </UniversalBumperProvider>
       </GuidanceProvider>
     </ErrorBoundary>
   );
