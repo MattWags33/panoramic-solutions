@@ -51,9 +51,9 @@ export const SplitView: React.FC<SplitViewProps> = ({
   const isMobile = useMobileDetection();
 
   return (
-    <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-6'} h-[calc(100dvh-180px)] min-h-[400px] max-h-[800px] overflow-hidden rounded-lg shadow-sm`} style={{ backgroundColor: '#F0F4FE' }}>
+    <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-6'} h-[calc(100dvh-180px)] min-h-[400px] max-h-[800px] overflow-hidden rounded-lg shadow-sm pointer-events-passthrough`} style={{ backgroundColor: '#F0F4FE' }}>
       {/* Criteria Section */}
-      <div className="h-full min-h-0">
+      <div className="h-full min-h-0 pointer-events-auto">
         <CriteriaSection
           criteria={criteria}
           onCriteriaChange={onCriteriaChange}
@@ -64,7 +64,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
       </div>
 
       {/* Tools and Recommendations Section */}
-      <div className="h-full min-h-0">
+      <div className="h-full min-h-0 pointer-events-auto">
         <ToolSection
           tools={tools}
           selectedTools={selectedTools}

@@ -612,4 +612,13 @@
       transition: none !important;
     }
   }
+
+/* SURGICAL FIX: Resolve pointer event blocking in SplitView stacking context */
+.pointer-events-passthrough {
+  pointer-events: none;
+}
+
+.pointer-events-auto {
+  pointer-events: auto;
+}
 }
