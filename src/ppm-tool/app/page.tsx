@@ -9,12 +9,19 @@ import { UniversalBumperProvider } from '@/ppm-tool/components/UniversalBumperPr
 import { HowItWorksOverlay } from '@/ppm-tool/components/overlays/HowItWorksOverlay';
 import { usePostHog } from '@/hooks/usePostHog';
 import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES, addDevelopmentKeyboardShortcuts } from '@/ppm-tool/shared/utils/homeState';
+import { ProductBumper } from '@/ppm-tool/components/overlays/ProductBumper';
+import { ExitIntentBumper } from '@/ppm-tool/components/overlays/ExitIntentBumper';
 
 export default function Home() {
   const [showHowItWorks, setShowHowItWorks] = useState(false); // Changed from auto-popup to manual trigger
   const [showGuidedRanking, setShowGuidedRanking] = useState(false);
   const guidedButtonRef = useRef<HTMLButtonElement>(null);
   const { trackClick, trackTool, checkAndTrackVisitor, checkAndTrackActive } = usePostHog();
+  
+  // Bumper UI state controlled by UniversalBumperProvider triggers
+  const [showProductBumper, setShowProductBumper] = useState(false);
+  const [showExitIntentBumper, setShowExitIntentBumper] = useState(false);
+  const [exitIntentTriggerType, setExitIntentTriggerType] = useState<'mouse-leave' | 'tab-switch'>('mouse-leave');
 
   // Track new visitor and active user on page load
   useEffect(() => {
@@ -88,7 +95,15 @@ export default function Home() {
   return (
     <ErrorBoundary>
       <GuidanceProvider>
-        <UniversalBumperProvider>
+        <UniversalBumperProvider
+          onProductBumperTrigger={() => {
+            setShowProductBumper(true);
+          }}
+          onExitIntentBumperTrigger={(triggerType) => {
+            setExitIntentTriggerType(triggerType);
+            setShowExitIntentBumper(true);
+          }}
+        >
           <div className="min-h-screen bg-background ppm-tool-container" role="main">
               <EmbeddedPPMToolFlow 
                 showGuidedRanking={showGuidedRanking}
@@ -107,6 +122,22 @@ export default function Home() {
                 }}
                 onGetStarted={handleGetStarted}
                 onManualRanking={handleManualRanking}
+              />
+
+              {/* Product Bumper - shown when Universal engine triggers */}
+              <ProductBumper
+                isVisible={showProductBumper}
+                onClose={() => setShowProductBumper(false)}
+                onUseGuided={handleOpenGuidedRanking}
+                guidedButtonRef={guidedButtonRef}
+              />
+
+              {/* Exit Intent Bumper - shown when Universal engine triggers */}
+              <ExitIntentBumper
+                isVisible={showExitIntentBumper}
+                onClose={() => setShowExitIntentBumper(false)}
+                triggerType={exitIntentTriggerType}
+                emailButtonRef={guidedButtonRef}
               />
           </div>
         </UniversalBumperProvider>
