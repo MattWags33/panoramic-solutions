@@ -102,8 +102,8 @@ The `isolate` class successfully created an independent stacking context for the
 
 ---
 
-### ⏳ Solution #4: CSS Filter Stacking Context Fix (2025-01-26)
-**Status:** TESTING IN PROGRESS - Potential root cause identified, awaiting validation
+### ❌ Solution #4: CSS Filter Stacking Context Fix (2025-01-26)
+**Status:** FAILED - Did not resolve the pointer event blocking issue
 
 **ROOT CAUSE DISCOVERED:**
 The issue was caused by CSS filter effects creating invisible stacking contexts that block pointer events. Specifically:
@@ -125,9 +125,7 @@ The issue was caused by CSS filter effects creating invisible stacking contexts 
   ```
 
 **Expected Outcome:** Remove CSS filter that creates stacking context, restoring all pointer event functionality
-**Actual Outcome:** [PENDING TESTING - Need to validate across multiple computers/browsers]
-
-**IMPORTANT NOTE:** This solution may not fully explain the inconsistent cross-device behavior where tooltips work on some computers but not others. The CSS filter issue would be consistent across all devices. Additional investigation may be needed if this solution doesn't resolve the device-specific inconsistencies.
+**Actual Outcome:** Issue persisted - interactive elements still unresponsive across devices
 **Files Modified:** 
 - `src/app/globals.css`
 
@@ -137,14 +135,45 @@ The issue was caused by CSS filter effects creating invisible stacking contexts 
 - The blur effect was being applied even when bumpers weren't visible due to class management
 - This explains why all previous solutions failed - they targeted the wrong layer
 
+**Why It Failed:** 
+The CSS filter was successfully disabled, but the pointer event blocking persists. This confirms that the issue is not related to the ProductBumper blur effects. The root cause must be at an even more fundamental level - likely in the basic HTML/CSS layout structure itself.
+
 **Why Previous Solutions Failed:**
 1. **Solution #1**: Targeted SplitView container - wrong layer, issue was at body/header level
 2. **Solution #2**: Prevented bumper rendering - correct approach but CSS class still applied
 3. **Solution #3**: Root layout isolation - wrong layer, issue was CSS filter stacking context
+4. **Solution #4**: Disabled CSS filter - correct identification but not the root cause
 
 ---
 
-## Next Steps to Investigate (If Solution #4 Fails)
+### ⏳ Solution #5: Root Element Layout Conflict Fix (2025-01-26)
+**Status:** TESTING IN PROGRESS - Implementation complete, awaiting validation
+
+**ROOT CAUSE IDENTIFIED:**
+Diagnostic "Inspect" tool confirmed that a root layout element is blocking all pointer events. The issue is a style conflict in `src/app/globals.css` where applying `min-height: 100vh` to both `<html>` and `<body>` elements creates an ambiguous layout that causes the `<html>` element to overlay the `<body>` on certain hardware configurations.
+
+**Changes Made:**
+- ✅ Modified CSS in `src/app/globals.css`:
+  - ✅ Removed `min-height: 100vh;` from `html, body` selector
+  - ✅ Added `min-height: 100vh;` to `body` selector only
+  - ✅ Made body solely responsible for application height
+
+**Expected Outcome:** Eliminate root layout conflict and stacking context bug, restoring all UI interactions across all devices
+**Actual Outcome:** [PENDING TESTING]
+**Files Modified:** 
+- `src/app/globals.css`
+
+**Technical Details:**
+- Conflicting height declarations on html and body can create ambiguous stacking contexts
+- Hardware-specific rendering differences explain device inconsistencies
+- Body element now has sole responsibility for viewport height
+- Eliminates potential html element overlay on body content
+
+**Theory:** The dual `min-height: 100vh` declarations were creating a layout conflict where the html element could overlay the body element on certain hardware/browser combinations, blocking all pointer events to the body's content.
+
+---
+
+## Next Steps to Investigate (If Solution #5 Fails)
 
 ### Device-Specific Issues to Explore:
 The inconsistent behavior across different computers suggests the issue may be:

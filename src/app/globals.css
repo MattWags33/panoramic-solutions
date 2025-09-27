@@ -157,11 +157,12 @@
     -webkit-text-size-adjust: 100%;
     margin: 0;
     padding: 0;
-    min-height: 100vh;
+    /* min-height: 100vh; <-- REMOVED FROM HERE */
     font-family: 'Inter', system-ui, sans-serif;
   }
 
   body {
+    min-height: 100vh; /* <-- ADDED HERE */
     color: hsl(var(--foreground));
     background: hsl(var(--background));
     font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
