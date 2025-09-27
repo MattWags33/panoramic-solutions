@@ -544,12 +544,12 @@
     height: 100dvh;
   }
 
-  /* Product Bumper blur effects */
-  body.product-bumper-active header {
+  /* Product Bumper blur effects - DISABLED to prevent stacking context issues */
+  /* body.product-bumper-active header {
     transition: all 0.3s ease;
     filter: blur(2px);
     opacity: 0.75;
-  }
+  } */
 
   /* ========== CROSS-BROWSER SLIDER COMPATIBILITY ========== */
   
