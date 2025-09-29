@@ -128,7 +128,7 @@ export class ProductionBumperEngine {
         const isReady = document.readyState === 'complete' || document.readyState === 'interactive';
         
         // Strategy 4: Check if React has rendered (more lenient)
-        const hasReactElements = document.querySelectorAll('[data-react*], [class*="react"], div, main, section').length > 0;
+        const hasReactElements = document.querySelectorAll('[data-reactroot], [class*="react"], div, main, section').length > 0;
         
         // More lenient hydration detection - any two conditions met
         const conditionsMet = [hasReactRoot, hasContent, isReady, hasReactElements].filter(Boolean).length;
