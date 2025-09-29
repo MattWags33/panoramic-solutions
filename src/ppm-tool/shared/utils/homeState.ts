@@ -31,41 +31,39 @@ export const OVERLAY_TYPES = {
 export type OverlayType = typeof OVERLAY_TYPES[keyof typeof OVERLAY_TYPES];
 
 /**
- * Get current home state from localStorage with safe fallbacks
+ * Get current home state from localStorage
  */
 export function getHomeState(): HomeState {
   try {
-    // Import safe storage dynamically to avoid SSR issues
-    const { safeLocalStorageJSON } = require('./safeStorage');
-    
-    const defaultState: HomeState = {
-      isInHomeState: true,
-      openOverlays: [],
-      lastStateChangeAt: new Date().toISOString()
-    };
-    
-    return safeLocalStorageJSON.getItem(STORAGE_KEY, defaultState);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        isInHomeState: parsed.isInHomeState ?? true,
+        openOverlays: parsed.openOverlays ?? [],
+        lastStateChangeAt: parsed.lastStateChangeAt ?? new Date().toISOString()
+      };
+    }
   } catch (error) {
-    console.warn('Error reading home state from storage:', error);
-    
-    // Ultimate fallback
-    return {
-      isInHomeState: true,
-      openOverlays: [],
-      lastStateChangeAt: new Date().toISOString()
-    };
+    console.warn('Error reading home state from localStorage:', error);
   }
+  
+  // Default state - tool starts in home state
+  return {
+    isInHomeState: true,
+    openOverlays: [],
+    lastStateChangeAt: new Date().toISOString()
+  };
 }
 
 /**
- * Save home state to localStorage with safe fallbacks
+ * Save home state to localStorage
  */
 function saveHomeState(state: HomeState): void {
   try {
-    const { safeLocalStorageJSON } = require('./safeStorage');
-    safeLocalStorageJSON.setItem(STORAGE_KEY, state);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (error) {
-    console.warn('Error saving home state to storage:', error);
+    console.warn('Error saving home state to localStorage:', error);
   }
 }
 

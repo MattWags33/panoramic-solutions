@@ -298,7 +298,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
           {/* Create four separate blur rectangles around the button area */}
           {/* Top rectangle */}
           <motion.div 
-            className="fixed z-[3000]"
+            className="fixed z-[70]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -316,7 +316,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
 
           {/* Bottom rectangle */}
           <motion.div 
-            className="fixed z-[3000]"
+            className="fixed z-[70]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -334,7 +334,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
 
           {/* Left rectangle */}
           <motion.div 
-            className="fixed z-[3000]"
+            className="fixed z-[70]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -352,7 +352,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
 
           {/* Right rectangle */}
           <motion.div 
-            className="fixed z-[3000]"
+            className="fixed z-[70]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -371,7 +371,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
           {/* Exit Intent Popup - Positioned near header button */}
           <motion.div
             ref={popupRef}
-            className="fixed z-[3100]" 
+            className="fixed z-[80]" 
             variants={popupVariants}
             initial="hidden"
             animate="visible"

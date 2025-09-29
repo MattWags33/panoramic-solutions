@@ -179,8 +179,8 @@ While the theory about conflicting min-height declarations was sound, removing t
 
 ---
 
-### ✅ Solution #6: Comprehensive SSR and Environment Compatibility Fix (2025-01-29)
-**Status:** IN PROGRESS - Systematic fixes applied based on debugging guide analysis
+### ❌ Solution #6: Comprehensive SSR and Environment Compatibility Fix (2025-01-29)
+**Status:** FAILED - Broke tooltip hover functionality, fully reverted
 
 **ROOT CAUSE ANALYSIS:**
 Comprehensive codebase analysis revealed multiple environment-specific issues causing selective component failures:
@@ -237,23 +237,122 @@ Eliminate environment-specific failures by providing robust fallbacks for:
 - Different browser configurations
 - Touch device detection variations
 
-**Technical Details:**
-- All Portal components now have SSR protection preventing hydration mismatches
-- Browser API access moved to useEffect hooks with proper guards
-- Consistent z-index hierarchy prevents tooltip invisibility
-- Memory storage fallback ensures functionality even with blocked localStorage
-- Comprehensive error handling prevents silent component failures
+**Actual Outcome:** ❌ FAILED - Tooltip hover functionality completely broken
+**Files Reverted:** All changes from Solution #6 completely reverted
 
-**Testing Strategy:**
-1. Test with `npm run build && npm run start` to verify production SSR behavior
-2. Test with browser extensions disabled and in incognito mode
-3. Test on corporate networks with restrictive policies
-4. Test across different devices and browsers (Chrome, Firefox, Safari, Edge)
-5. Test with localStorage/sessionStorage blocked (private browsing)
+**Critical Issue Discovered:**
+The SSR guards added to Portal components (`if (typeof window === 'undefined') return null;`) prevented tooltips from rendering properly on the client side, breaking all hover interactions. The SSR protection was too aggressive and interfered with normal client-side rendering.
+
+**Why It Failed:**
+1. **SSR Guards Too Restrictive**: The `typeof window === 'undefined'` check prevented proper client-side Portal rendering
+2. **Tooltip Interaction Broken**: Hover tooltips stopped working entirely after SSR protection was added
+3. **User Experience Degraded**: The "fix" created a worse user experience than the original selective failures
+
+**Lessons Learned:**
+- SSR guards must be more nuanced than simple window checks
+- Portal components require careful hydration handling without breaking client functionality
+- User-facing features (tooltips) should not be sacrificed for theoretical SSR compatibility
+- Need to test tooltip functionality immediately after any Portal-related changes
+
+**All Changes Reverted:**
+- ✅ Removed SSR guards from tooltip Portal components
+- ✅ Restored original z-index values (z-50, z-[70], z-[80], z-[100])
+- ✅ Reverted browser API protection changes
+- ✅ Restored original localStorage access patterns
+- ✅ Deleted safeStorage.ts utility file
+- ✅ Restored `will-change-transform` properties
 
 ---
 
-## Next Steps to Investigate (If Solution #6 Fails)
+### ✅ Solution #7: Separation of Concerns Architecture (2025-01-29)
+**Status:** IN PROGRESS - Complete architectural redesign implemented
+
+**ROOT CAUSE ANALYSIS:**
+Based on React guidance best practices, the core issue is **tightly coupled concerns** in our guidance components. We were mixing presentation logic, business logic, and environment detection in single components, making them fragile across different environments.
+
+**ARCHITECTURAL APPROACH:**
+Implemented a complete separation of concerns following React best practices:
+
+1. **Business Logic Layer**: Pure logic for determining WHEN to show guidance
+2. **Environment Layer**: Capability detection and fallback strategies  
+3. **Presentation Layer**: Pure UI components that render consistently
+4. **Orchestration Layer**: Combines all layers with graceful degradation
+
+**Changes Made:**
+
+**Phase 1: Business Logic Layer**
+- ✅ Created `src/ppm-tool/shared/hooks/useGuidanceState.ts`
+- ✅ Implemented user-centric triggers: user-action, user-intent, user-progress
+- ✅ Added user preference management and guidance history tracking
+- ✅ Separated business logic from UI concerns completely
+
+**Phase 2: Environment Layer**
+- ✅ Created `src/ppm-tool/shared/services/environmentCapabilities.ts`
+- ✅ Comprehensive capability detection: touch, storage, portals, performance
+- ✅ Corporate policy and private browsing detection
+- ✅ Memory storage fallback for blocked localStorage
+- ✅ Environment-specific rendering strategies
+
+**Phase 3: Presentation Layer**
+- ✅ Created `src/ppm-tool/components/guidance/GuidanceRenderer.tsx`
+- ✅ Pure UI components: TooltipRenderer, PopoverRenderer, ModalRenderer
+- ✅ No environment detection in presentation components
+- ✅ Strategy-aware rendering with fallback options
+
+**Phase 4: Graceful Degradation**
+- ✅ Created `src/ppm-tool/components/guidance/UniversalGuidanceSystem.tsx`
+- ✅ Universal guidance hook that orchestrates all layers
+- ✅ Automatic fallback: Full → Reduced → Minimal → Static
+- ✅ Environment-aware component selection
+
+**Phase 5: User-Centric Triggers**
+- ✅ Created `src/ppm-tool/components/guidance/MigratedTooltipExample.tsx`
+- ✅ Replaced device-based triggers with user behavior triggers
+- ✅ Migration examples for existing tooltip components
+- ✅ Integration patterns for PPM Tool components
+
+**Files Created:**
+- `src/ppm-tool/shared/hooks/useGuidanceState.ts` (Business Logic)
+- `src/ppm-tool/shared/services/environmentCapabilities.ts` (Environment Layer)
+- `src/ppm-tool/components/guidance/GuidanceRenderer.tsx` (Presentation Layer)
+- `src/ppm-tool/components/guidance/UniversalGuidanceSystem.tsx` (Orchestration)
+- `src/ppm-tool/components/guidance/MigratedTooltipExample.tsx` (Migration Guide)
+
+**Key Architectural Benefits:**
+
+1. **Consistent Behavior**: Guidance works the same way across all environments
+2. **Graceful Degradation**: Always shows something, never fails silently
+3. **User-Centric**: Triggers based on user behavior, not device type
+4. **Environment Agnostic**: Adapts to capabilities without breaking
+5. **Maintainable**: Clear separation makes debugging and updates easier
+
+**Expected Outcome:**
+- Eliminate selective failures by providing consistent fallbacks
+- Replace device-based triggers with user behavior triggers
+- Ensure guidance always works in some form (never silent failure)
+- Provide clear upgrade path for existing components
+
+**Migration Strategy:**
+1. **Gradual Migration**: Use `MigrateTooltip` helper to gradually replace existing tooltips
+2. **Feature Flag**: `useNewSystem` prop allows A/B testing during migration
+3. **Backward Compatibility**: Old system remains functional during transition
+4. **Progressive Enhancement**: Start with basic functionality, add features based on capabilities
+
+**Testing Strategy:**
+1. Test with `GuidanceSystemProvider` wrapper around existing components
+2. Verify fallback behavior in constrained environments (corporate networks, low-end devices)
+3. Test user-centric triggers across different interaction patterns
+4. Validate graceful degradation from full → reduced → minimal → static
+
+**CRITICAL BUG FIX (2025-01-29):**
+- ✅ Fixed CSS selector syntax error in `productionBumperEngine.ts:131`
+- ✅ Replaced invalid `[data-react*]` selector with proper `[data-reactroot]`
+- ✅ Split complex selector into multiple safe queries to prevent SyntaxError
+- ✅ Error: "Failed to execute 'querySelectorAll' on 'Document': '[data-react*], [class*="react"], div, main, section' is not a valid selector"
+
+---
+
+## Next Steps to Investigate (If Solution #7 Fails)
 
 ### Device-Specific Issues to Explore:
 The inconsistent behavior across different computers suggests the issue may be:

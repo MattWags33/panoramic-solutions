@@ -156,7 +156,7 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
                      {/* Enhanced Popup positioned under Guided Rankings button */}
            <motion.div
              ref={popupRef}
-             className="fixed z-[2000]" 
+             className="fixed z-50" 
              variants={popupVariants}
              initial="hidden"
              animate="visible"
