@@ -85,6 +85,17 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 }) => {
   // Unified mobile detection to prevent hydration mismatches
   const { isMobile, isTouchDevice, isHydrated } = useUnifiedMobileDetection();
+
+  // ADD THESE LOGS FOR VERIFICATION:
+  useEffect(() => {
+    console.log('🔍 Detection Results:', {
+      isMobile,
+      isTouchDevice,
+      screenWidth: window.innerWidth,
+      maxTouchPoints: navigator.maxTouchPoints,
+      hasHover: window.matchMedia('(hover: hover)').matches
+    });
+  }, [isMobile, isTouchDevice]);
   
   // Disable Lenis smooth scroll on mobile to prevent tooltip interference
   useLenis({
@@ -138,7 +149,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 
   // Unified mouse tracking for timing-based triggers
   useUnifiedMouseTracking({
-    enabled: !isMobile,
+    enabled: !isTouchDevice, // Changed from !isMobile
     onInitialTimerComplete: () => {
       console.log('⏱️ Initial timer complete - checking for Product Bumper');
     },
@@ -149,7 +160,8 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 
   // Unified exit intent detection
   const { hasTriggeredProductBumper, hasTriggeredExitIntent } = useUnifiedExitIntent({
-    enabled: !isMobile,
+    enabled: !isTouchDevice, // Changed from !isMobile
+    isTouchDevice, // Pass the value to the hook
     onTriggerProductBumper: triggerProductBumper,
     onTriggerExitIntentBumper: triggerExitIntentBumper
   });

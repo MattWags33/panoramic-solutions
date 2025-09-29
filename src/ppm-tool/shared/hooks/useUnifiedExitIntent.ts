@@ -16,6 +16,7 @@ import {
 
 interface UseUnifiedExitIntentOptions {
   enabled?: boolean;
+  isTouchDevice?: boolean; // ADD THIS
   onTriggerProductBumper?: () => void;
   onTriggerExitIntentBumper?: (triggerType: 'mouse-leave' | 'tab-switch') => void;
 }
@@ -25,12 +26,12 @@ interface BrowserInfo {
   isFirefox: boolean;
   isSafari: boolean;
   isEdge: boolean;
-  isMobile: boolean;
+  isTouchDevice: boolean;
 }
 
 const getBrowserInfo = (): BrowserInfo => {
   if (typeof window === 'undefined') {
-    return { isChrome: false, isFirefox: false, isSafari: false, isEdge: false, isMobile: false };
+    return { isChrome: false, isFirefox: false, isSafari: false, isEdge: false, isTouchDevice: false };
   }
   
   const userAgent = navigator.userAgent;
@@ -44,16 +45,16 @@ const getBrowserInfo = (): BrowserInfo => {
     isFirefox: /Firefox/.test(userAgent),
     isSafari: /Safari/.test(userAgent) && !/Chrome/.test(userAgent),
     isEdge: isEdgeDetected,
-    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/.test(userAgent)
+    isTouchDevice: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/.test(userAgent)
   };
 };
 
 export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) {
-  const { enabled = true, onTriggerProductBumper, onTriggerExitIntentBumper } = options;
+  const { enabled = true, isTouchDevice = false, onTriggerProductBumper, onTriggerExitIntentBumper } = options;
   
   const [hasTriggeredProductBumper, setHasTriggeredProductBumper] = useState(false);
   const [hasTriggeredExitIntent, setHasTriggeredExitIntent] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  // REMOVED: const [isTouchDevice, setIsMobile] = useState(false);
   const [browserInfo] = useState(getBrowserInfo());
   
   const mouseLeaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,23 +63,11 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
   
   const { EXIT_INTENT_TIMER_MS } = getUnifiedBumperTimingConstants();
   
-  // Mobile detection
-  useEffect(() => {
-    const checkMobile = () => {
-      const width = window.innerWidth;
-      const isTouchDevice = 'ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
-      const isMobileUA = browserInfo.isMobile;
-      setIsMobile(width < 768 || isTouchDevice || isMobileUA);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [browserInfo.isMobile]);
+  // REMOVED: Mobile detection useEffect - now using passed isTouchDevice parameter
   
   // Periodic check for timing-based triggers
   useEffect(() => {
-    if (!enabled || isMobile) return;
+    if (!enabled || isTouchDevice) return;
     
     const checkTimingBasedTriggers = () => {
       // Check if Product Bumper should be shown
@@ -112,11 +101,11 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
         clearInterval(checkTimersRef.current);
       }
     };
-  }, [enabled, isMobile, hasTriggeredProductBumper, hasTriggeredExitIntent, EXIT_INTENT_TIMER_MS, onTriggerProductBumper, onTriggerExitIntentBumper]);
+  }, [enabled, isTouchDevice, hasTriggeredProductBumper, hasTriggeredExitIntent, EXIT_INTENT_TIMER_MS, onTriggerProductBumper, onTriggerExitIntentBumper]);
   
   // Mouse leave detection for exit intent
   useEffect(() => {
-    if (!enabled || hasTriggeredExitIntent || isMobile) return;
+    if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleMouseLeave = (e: MouseEvent) => {
       // Only trigger exit intent if it should be shown
@@ -162,11 +151,11 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [enabled, hasTriggeredExitIntent, isMobile, browserInfo, onTriggerExitIntentBumper]);
+  }, [enabled, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
   
   // Tab switch detection for exit intent
   useEffect(() => {
-    if (!enabled || hasTriggeredExitIntent || isMobile) return;
+    if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleVisibilityChange = () => {
       if (document.hidden && shouldShowExitIntentBumper()) {
@@ -181,11 +170,11 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [enabled, hasTriggeredExitIntent, isMobile, onTriggerExitIntentBumper]);
+  }, [enabled, hasTriggeredExitIntent, isTouchDevice, onTriggerExitIntentBumper]);
   
   // Mouse movement tracking for enhanced exit detection
   useEffect(() => {
-    if (!enabled || hasTriggeredExitIntent || isMobile) return;
+    if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleMouseMove = (e: MouseEvent) => {
       // Clear existing timeout
@@ -262,7 +251,7 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
         clearTimeout(mouseLeaveTimeoutRef.current);
       }
     };
-  }, [enabled, hasTriggeredExitIntent, isMobile, browserInfo, onTriggerExitIntentBumper]);
+  }, [enabled, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
   
   // Reset function for testing
   const reset = useCallback(() => {
@@ -273,7 +262,6 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
   return {
     hasTriggeredProductBumper,
     hasTriggeredExitIntent,
-    isMobile,
     browserInfo,
     reset
   };
