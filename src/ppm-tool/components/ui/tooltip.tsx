@@ -113,6 +113,8 @@ const TooltipContent = React.forwardRef<
           "will-change-transform",
           // Better mobile positioning and overflow handling
           isTouchDevice ? "max-w-[90vw] break-words pointer-events-auto" : "max-w-[85vw] break-words pointer-events-auto",
+          // Increase z-index on mobile to ensure visibility
+          isTouchDevice ? "z-[9999]" : "z-50",
           className
         )}
         avoidCollisions={true}

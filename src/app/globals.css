@@ -1404,10 +1404,10 @@ input[type="reset"] {
   @apply space-y-2;
 }
 
-  /* Tooltip positioning */
-  .tooltip {
-    @apply absolute z-50;
-  }
+/* Tooltip positioning */
+.tooltip {
+  @apply absolute z-50;
+}
 
 /* Mobile tooltip optimizations */
 @media (max-width: 640px) {

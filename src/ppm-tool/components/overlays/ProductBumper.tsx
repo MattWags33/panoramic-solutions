@@ -26,10 +26,8 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
     setIsMounted(true);
   }, []);
   
-  // Check for mobile device with SSR protection
+  // Check for mobile device
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -52,9 +50,9 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
         let viewportTop = rect.bottom + 12; // 12px gap below button
         const viewportLeft = rect.left + (rect.width / 2); // Center of button
         
-        // Check if popup would go off-screen at bottom (with SSR protection)
+        // Check if popup would go off-screen at bottom
         const popupHeight = 220; // Approximate height of popup
-        const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+        const viewportHeight = window.innerHeight;
         if (viewportTop + popupHeight > viewportHeight - 20) {
           // Position above the button instead
           viewportTop = rect.top - popupHeight - 12;
