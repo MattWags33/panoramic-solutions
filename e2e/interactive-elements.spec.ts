@@ -184,7 +184,7 @@ test.describe('Interactive Elements - Cross Browser Compatibility', () => {
   test('Tooltips and hover effects work properly', async ({ page, browserName, isMobile }) => {
     // Skip hover tests on mobile devices
     if (isMobile) {
-      test.skip('Skipping hover tests on mobile');
+      test.skip(isMobile, 'Skipping hover tests on mobile');
     }
     
     await page.goto('/ppm-tool');

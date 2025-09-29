@@ -100,6 +100,11 @@ const TooltipContent = React.forwardRef<
     return () => clearTimeout(timer);
   }, [isTouchDevice]);
 
+  // SSR Protection: Only render Portal on client-side to prevent hydration mismatches
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
@@ -109,12 +114,12 @@ const TooltipContent = React.forwardRef<
           "z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           // Mobile optimizations
           "origin-[--radix-tooltip-content-transform-origin]",
-          // Ensure proper touch interaction on mobile
-          "will-change-transform",
+          // Remove will-change to prevent stacking context issues
+          // "will-change-transform", // REMOVED - can create stacking contexts
           // Better mobile positioning and overflow handling
-          isTouchDevice ? "max-w-[90vw] break-words pointer-events-auto" : "max-w-[85vw] break-words pointer-events-auto",
-          // Increase z-index on mobile to ensure visibility
-          isTouchDevice ? "z-[9999]" : "z-50",
+          isTouchDevice ? "max-w-[90vw] break-words pointer-events-auto" : "max-w-[85vw] pointer-events-auto",
+          // Standardized z-index hierarchy to prevent conflicts
+          isTouchDevice ? "z-[1000]" : "z-[1000]", // Consistent z-index
           className
         )}
         avoidCollisions={true}

@@ -26,8 +26,10 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
     setIsMounted(true);
   }, []);
   
-  // Check for mobile device
+  // Check for mobile device with SSR protection
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -50,9 +52,9 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
         let viewportTop = rect.bottom + 12; // 12px gap below button
         const viewportLeft = rect.left + (rect.width / 2); // Center of button
         
-        // Check if popup would go off-screen at bottom
+        // Check if popup would go off-screen at bottom (with SSR protection)
         const popupHeight = 220; // Approximate height of popup
-        const viewportHeight = window.innerHeight;
+        const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
         if (viewportTop + popupHeight > viewportHeight - 20) {
           // Position above the button instead
           viewportTop = rect.top - popupHeight - 12;
@@ -154,7 +156,7 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
                      {/* Enhanced Popup positioned under Guided Rankings button */}
            <motion.div
              ref={popupRef}
-             className="fixed z-50" 
+             className="fixed z-[2000]" 
              variants={popupVariants}
              initial="hidden"
              animate="visible"

@@ -145,9 +145,8 @@ The CSS filter was successfully disabled, but the pointer event blocking persist
 4. **Solution #4**: Disabled CSS filter - correct identification but not the root cause
 
 ---
-
-### ✅ Solution #5: Root Element Layout Conflict Fix (2025-01-26)
-**Status:** SUCCESSFUL - Cross-browser/device validation completed
+### ❌ Solution #5: Root Element Layout Conflict Fix (2025-01-26)
+**Status:** FAILED - Cross-browser/device validation completed
 
 **ROOT CAUSE IDENTIFIED:**
 Diagnostic "Inspect" tool confirmed that a root layout element is blocking all pointer events. The issue is a style conflict in `src/app/globals.css` where applying `min-height: 100vh` to both `<html>` and `<body>` elements creates an ambiguous layout that causes the `<html>` element to overlay the `<body>` on certain hardware configurations.
@@ -159,7 +158,7 @@ Diagnostic "Inspect" tool confirmed that a root layout element is blocking all p
   - ✅ Made body solely responsible for application height
 
 **Expected Outcome:** Eliminate root layout conflict and stacking context bug, restoring all UI interactions across all devices
-**Actual Outcome:** ✅ CONFIRMED SUCCESS - MCP browser testing validates tooltips are working perfectly
+**Actual Outcome:** ❌ FAILED - Pointer event blocking persists across browsers and devices
 **Files Modified:** 
 - `src/app/globals.css`
 
@@ -169,31 +168,92 @@ Diagnostic "Inspect" tool confirmed that a root layout element is blocking all p
 - Body element now has sole responsibility for viewport height
 - Eliminates potential html element overlay on body content
 
-**Theory:** The dual `min-height: 100vh` declarations were creating a layout conflict where the html element could overlay the body element on certain hardware/browser combinations, blocking all pointer events to the body's content.
+**Why It Failed:**
+While the theory about conflicting min-height declarations was sound, removing them did not resolve the pointer event blocking. This suggests the root cause lies elsewhere in the application architecture, possibly in how the overlay components are mounted or how event propagation is being handled at a more fundamental level.
 
-**Validation Results:**
-- ✅ **305 Cross-browser/device tests executed**
-- ✅ **266 tests passed (87.2% success rate)**
-- ✅ **No critical functionality failures detected**
-- ✅ **Interactive elements working across all browsers**: Chromium, Firefox, WebKit
-- ✅ **Mobile devices validated**: iPhone 12/14, Pixel 7, Samsung Galaxy S23
-- ✅ **Tablet compatibility confirmed**: iPad Pro, iPad Mini
-- ✅ **Desktop resolutions tested**: 1920x1080, 1366x768
-- ✅ **No pointer-events blocking detected** in comprehensive testing
-- ✅ **Tooltips and hover effects functioning** where expected
-- ✅ **Touch interactions working** on mobile devices
-- ✅ **Responsive design adapting** correctly across viewports
-
-**Minor Issues Found (Non-Critical):**
-- Page titles need customization for About/Contact pages (SEO improvement)
-- Some mobile heading fonts could be increased to 18px (accessibility improvement)
-- Form validation behavior is correct (test expectation was wrong)
-
-**Conclusion:** The root element layout conflict fix successfully resolved the pointer event blocking issue. The application now provides consistent interactive functionality across all tested browsers, devices, and screen sizes.
+**Next Steps:**
+1. Investigate event propagation through React's synthetic event system
+2. Review overlay component mounting strategy
+3. Analyze interaction between React portals and root layout
+4. Consider alternative approaches to modal/overlay architecture
 
 ---
 
-## Next Steps to Investigate (If Solution #5 Fails)
+### ✅ Solution #6: Comprehensive SSR and Environment Compatibility Fix (2025-01-29)
+**Status:** IN PROGRESS - Systematic fixes applied based on debugging guide analysis
+
+**ROOT CAUSE ANALYSIS:**
+Comprehensive codebase analysis revealed multiple environment-specific issues causing selective component failures:
+
+1. **SSR Hydration Mismatches**: Portal components rendering without proper server-side guards
+2. **Browser API Access**: Direct `window`/`document` access during render causing hydration conflicts  
+3. **CSS Stacking Context Conflicts**: Inconsistent z-index hierarchy and `will-change` properties creating invisible overlays
+4. **Storage Access Failures**: localStorage/sessionStorage blocked by corporate policies or private browsing
+5. **Touch Device Detection**: Complex detection logic potentially failing in different browser environments
+
+**Changes Made:**
+
+**Phase 1: SSR Portal Protection**
+- ✅ Added SSR guards to `src/ppm-tool/components/ui/tooltip.tsx`
+- ✅ Added SSR guards to `src/ppm-tool/components/ui/basic-hover-tooltip.tsx`
+- ✅ Implemented client-side only Portal rendering: `if (typeof window === 'undefined') return null;`
+
+**Phase 2: Browser API Protection**
+- ✅ Protected window access in `src/ppm-tool/components/overlays/ProductBumper.tsx`
+- ✅ Protected document access in `src/ppm-tool/components/ui/MobileTooltip.tsx`
+- ✅ Added SSR guards to all viewport size calculations
+
+**Phase 3: CSS Stacking Context Fix**
+- ✅ Standardized z-index hierarchy in `src/app/globals.css`:
+  - z-1000: Tooltips and basic overlays
+  - z-2000: Product bumpers and modals  
+  - z-3000: Exit intent and critical overlays
+  - z-3100: Exit intent popups (highest priority)
+- ✅ Updated all component z-index values to use consistent hierarchy
+- ✅ Removed problematic `will-change-transform` properties that create stacking contexts
+- ✅ Fixed conflicting z-index values (z-50 vs z-[9999] vs z-[100])
+
+**Phase 4: Safe Storage Implementation**
+- ✅ Created `src/ppm-tool/shared/utils/safeStorage.ts` with fallback mechanisms
+- ✅ Implemented memory storage fallback for blocked localStorage/sessionStorage
+- ✅ Added corporate policy and private browsing compatibility
+- ✅ Updated `src/ppm-tool/shared/utils/homeState.ts` to use safe storage
+
+**Files Modified:**
+- `src/ppm-tool/components/ui/tooltip.tsx`
+- `src/ppm-tool/components/ui/basic-hover-tooltip.tsx`
+- `src/ppm-tool/components/ui/MobileTooltip.tsx`
+- `src/ppm-tool/components/overlays/ProductBumper.tsx`
+- `src/ppm-tool/components/overlays/ExitIntentBumper.tsx`
+- `src/app/globals.css`
+- `src/ppm-tool/shared/utils/homeState.ts`
+- `src/ppm-tool/shared/utils/safeStorage.ts` (NEW)
+
+**Expected Outcome:** 
+Eliminate environment-specific failures by providing robust fallbacks for:
+- SSR/hydration scenarios
+- Blocked browser APIs
+- Corporate network restrictions
+- Different browser configurations
+- Touch device detection variations
+
+**Technical Details:**
+- All Portal components now have SSR protection preventing hydration mismatches
+- Browser API access moved to useEffect hooks with proper guards
+- Consistent z-index hierarchy prevents tooltip invisibility
+- Memory storage fallback ensures functionality even with blocked localStorage
+- Comprehensive error handling prevents silent component failures
+
+**Testing Strategy:**
+1. Test with `npm run build && npm run start` to verify production SSR behavior
+2. Test with browser extensions disabled and in incognito mode
+3. Test on corporate networks with restrictive policies
+4. Test across different devices and browsers (Chrome, Firefox, Safari, Edge)
+5. Test with localStorage/sessionStorage blocked (private browsing)
+
+---
+
+## Next Steps to Investigate (If Solution #6 Fails)
 
 ### Device-Specific Issues to Explore:
 The inconsistent behavior across different computers suggests the issue may be:

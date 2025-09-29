@@ -50,13 +50,15 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   }, [forceOpen]);
 
   useEffect(() => {
-    if (!isTouchDevice || !effectiveIsOpen || forceOpen) return;
+    if (!isTouchDevice || !effectiveIsOpen || forceOpen || typeof document === 'undefined') return;
     
     document.addEventListener('click', handleClickOutside);
     const timer = setTimeout(() => setIsOpen(false), 4000);
     
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('click', handleClickOutside);
+      }
       clearTimeout(timer);
     };
   }, [effectiveIsOpen, isTouchDevice, forceOpen, handleClickOutside]);
@@ -129,10 +131,10 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
         break;
     }
 
-    // Viewport boundary checking
+    // Viewport boundary checking (with SSR protection)
     const padding = 8;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
 
     if (left < padding) left = padding;
     if (left + tooltipRect.width > viewportWidth - padding) {
@@ -176,7 +178,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
       {effectiveIsOpen && (
         <div
           ref={tooltipRef}
-          className={`fixed z-[100] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}
+          className={`fixed z-[1000] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}
           style={{
             top: `${position.top}px`,
             left: `${position.left}px`,

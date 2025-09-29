@@ -1404,10 +1404,16 @@ input[type="reset"] {
   @apply space-y-2;
 }
 
-/* Tooltip positioning */
-.tooltip {
-  @apply absolute z-50;
-}
+  /* Z-Index Hierarchy - Standardized to prevent stacking context conflicts */
+  /* 
+   * z-1000: Tooltips and basic overlays
+   * z-2000: Product bumpers and modals  
+   * z-3000: Exit intent and critical overlays
+   * z-3100: Exit intent popups (highest priority)
+   */
+  .tooltip {
+    @apply absolute z-[1000];
+  }
 
 /* Mobile tooltip optimizations */
 @media (max-width: 640px) {
@@ -1416,7 +1422,7 @@ input[type="reset"] {
     max-width: 90vw !important;
     word-wrap: break-word;
     hyphens: auto;
-    z-index: 9999 !important;
+    z-index: 1000 !important;
     /* Ensure tooltips are above all other content */
     position: fixed !important;
     /* Better touch handling */
@@ -1441,12 +1447,12 @@ input[type="reset"] {
   /* Ensure tooltips stay within viewport bounds */
   [data-radix-popper-content-wrapper] {
     transform-origin: var(--radix-tooltip-content-transform-origin) !important;
-    z-index: 9999 !important;
+    z-index: 1000 !important;
   }
 
   /* Portal container for tooltips */
   [data-radix-portal] {
-    z-index: 9999 !important;
+    z-index: 1000 !important;
   }
   
   /* Prevent scrolling interference with tooltips */
