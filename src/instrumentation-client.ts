@@ -26,6 +26,9 @@ if (typeof window !== 'undefined') {
     opt_out_capturing_by_default: false,
     cross_subdomain_cookie: true,
     
+    // Production domain configuration
+    secure_cookie: true, // Ensure HTTPS cookies for production
+    
     // Development settings - reduced logging
     debug: false, // Disabled to reduce console noise
     
@@ -50,9 +53,24 @@ if (typeof window !== 'undefined') {
         // Capture user attribution on first PostHog load
         captureAttribution();
         
-        // Reduced logging in development
+        // Domain validation for production tracking
+        const currentDomain = window.location.hostname;
+        const isProduction = process.env.NODE_ENV === 'production';
+        const isProductionDomain = currentDomain === 'panoramic-solutions.com' || 
+                                 currentDomain.endsWith('.panoramic-solutions.com');
+        
+        // Warn if production environment but not on production domain
+        if (isProduction && !isProductionDomain) {
+          console.warn('⚠️ PostHog: Production environment detected but not on production domain:', currentDomain);
+        }
+        
+        // Log successful initialization
         if (process.env.NODE_ENV === 'development') {
           console.log('🎯 PostHog initialized successfully');
+          console.log('📍 Domain:', currentDomain);
+          console.log('🌍 Environment:', process.env.NODE_ENV);
+        } else if (isProductionDomain) {
+          console.log('🎯 PostHog tracking active on production domain');
         }
       } catch (error) {
         console.warn('PostHog initialization warning:', error);
@@ -62,7 +80,9 @@ if (typeof window !== 'undefined') {
       posthog.register({
         'app_version': '1.0.0',
         'environment': process.env.NODE_ENV || 'production',
-        'app_name': 'PPM Tool Finder'
+        'app_name': 'PPM Tool Finder',
+        'domain': window.location.hostname,
+        'site_url': window.location.origin
       });
       
       // Make PostHog available globally for debugging and manual calls

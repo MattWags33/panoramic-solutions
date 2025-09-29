@@ -3,7 +3,7 @@
 /**
  * Universal Bumper State Manager
  * Ensures consistent state management across all browsers, devices, and environments
- * Works on both panoramic-solutions.com and panoramic-solutions-staging.vercel.app
+ * Optimized for panoramic-solutions.com production domain
  */
 
 export interface BumperState {

@@ -3,7 +3,7 @@
 /**
  * Universal Bumper Engine
  * Production-safe bumper system that works across all browsers and environments
- * Designed for both panoramic-solutions.com and panoramic-solutions-staging.vercel.app
+ * Optimized for panoramic-solutions.com production domain
  */
 
 import { stateManager, BumperState } from '../state/UniversalBumperStateManager';
