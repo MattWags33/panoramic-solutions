@@ -28,7 +28,7 @@ export const ComparisonSection: React.FC<ComparisonSectionProps> = ({
     } catch (error) {
       console.warn('Failed to track comparison section view:', error);
     }
-  }, []); // Only track on initial mount
+  }, [selectedTools.length, selectedCriteria.length, comparedTools.size]); // Track when counts change
   
   // SIMPLIFIED: Always use standard layout (removed fullscreen complexity)
 

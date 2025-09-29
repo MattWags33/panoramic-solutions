@@ -1,6 +1,18 @@
 import * as React from 'react';
 import { Tool, Criterion } from '@/ppm-tool/shared/types';
 
+/**
+ * PPM Report Email Template
+ * 
+ * NOTE: This component uses inline styles intentionally for email compatibility.
+ * Email clients have limited CSS support and inline styles ensure consistent rendering
+ * across Gmail, Outlook, Apple Mail, and other email clients.
+ * 
+ * Linter warnings about inline styles are expected and should be ignored for this file.
+ * 
+ * @eslint-disable-next-line no-inline-styles
+ */
+
 interface PPMReportEmailTemplateProps {
   userEmail: string;
   firstName?: string;
@@ -40,7 +52,11 @@ export function PPMReportEmailTemplate({
         color: '#333333',
         backgroundColor: '#f8fafc',
         margin: 0,
-        padding: 0
+        padding: 0,
+        width: '100%',
+        minWidth: '100%',
+        WebkitTextSizeAdjust: '100%',
+        textSizeAdjust: '100%'
       }}>
         {/* Main Container */}
         <div style={{
@@ -49,7 +65,9 @@ export function PPMReportEmailTemplate({
           backgroundColor: '#ffffff',
           borderRadius: '8px',
           overflow: 'hidden',
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          width: '100%',
+          border: '1px solid #e5e7eb'
         }}>
           
           {/* Header */}

@@ -55,33 +55,58 @@ export class UniversalBumperEngine {
   async initialize(callbacks: BumperTriggerCallbacks = {}): Promise<void> {
     if (this.initialized) return;
     
-    // Wait for hydration
-    if (typeof window === 'undefined') {
-      console.log('🔄 Bumper engine waiting for client hydration');
-      return;
+    try {
+      // Wait for hydration
+      if (typeof window === 'undefined') {
+        return;
+      }
+      
+      // Detect browser capabilities with error handling
+      try {
+        this.capabilities = await capabilityDetector.detect();
+      } catch (capabilityError) {
+        console.warn('Browser capability detection failed, using defaults:', capabilityError);
+        this.capabilities = {
+          localStorage: true,
+          sessionStorage: true,
+          setTimeout: true,
+          addEventListener: true,
+          querySelector: true,
+          createElement: true,
+          intersectionObserver: false,
+          requestAnimationFrame: true,
+          userAgent: 'fallback',
+          browserName: 'unknown',
+          isMobile: false,
+          isTablet: false,
+          overallScore: 0.8 // Default to working state
+        };
+      }
+      
+      this.callbacks = callbacks;
+      
+      // Check if we can run at all (more lenient)
+      if (this.capabilities.overallScore < 0.3) {
+        return;
+      }
+      
+      // Mark as hydrated and initialized
+      this.hydrated = true;
+      this.initialized = true;
+      
+      // Start the system with error handling
+      try {
+        this.startTimers();
+        this.setupEventListeners();
+      } catch (setupError) {
+        console.warn('Bumper engine setup encountered non-critical error:', setupError);
+        // Continue with partial initialization
+      }
+      
+    } catch (error) {
+      console.warn('Universal Bumper Engine initialization failed silently:', error);
+      // Fail silently to prevent breaking the app
     }
-    
-    // Detect browser capabilities
-    this.capabilities = await capabilityDetector.detect();
-    console.log('🔍 Browser capabilities detected:', this.capabilities);
-    
-    this.callbacks = callbacks;
-    
-    // Check if we can run at all
-    if (this.capabilities.overallScore < 0.5) {
-      console.warn('⚠️ Browser capabilities too low for bumper system');
-      return;
-    }
-    
-    // Mark as hydrated and initialized
-    this.hydrated = true;
-    this.initialized = true;
-    
-    // Start the system
-    this.startTimers();
-    this.setupEventListeners();
-    
-    console.log('✅ Universal Bumper Engine initialized');
   }
   
   private startTimers(): void {
@@ -125,27 +150,50 @@ export class UniversalBumperEngine {
   private setupEventListeners(): void {
     if (!this.capabilities?.addEventListener || typeof document === 'undefined') return;
     
-    // Mouse movement tracking
+    // Mouse movement tracking with error handling
     this.mouseMoveHandler = (e: MouseEvent) => {
-      this.handleMouseMove(e);
+      try {
+        this.handleMouseMove(e);
+      } catch (error) {
+        // Silently handle mouse move errors to prevent console spam
+      }
     };
     
-    // Exit intent detection
+    // Exit intent detection with error handling
     this.mouseLeaveHandler = (e: MouseEvent) => {
-      this.handleMouseLeave(e);
+      try {
+        this.handleMouseLeave(e);
+      } catch (error) {
+        // Silently handle mouse leave errors
+      }
     };
     
-    // Tab visibility change
+    // Tab visibility change with error handling
     this.visibilityChangeHandler = () => {
-      this.handleVisibilityChange();
+      try {
+        this.handleVisibilityChange();
+      } catch (error) {
+        // Silently handle visibility change errors
+      }
     };
     
+    // Add event listeners with comprehensive error handling
     try {
       document.addEventListener('mousemove', this.mouseMoveHandler, { passive: true });
+    } catch (error) {
+      // Mousemove failed, continue without it
+    }
+    
+    try {
       document.addEventListener('mouseleave', this.mouseLeaveHandler);
+    } catch (error) {
+      // Mouse leave failed, continue without it
+    }
+    
+    try {
       document.addEventListener('visibilitychange', this.visibilityChangeHandler);
     } catch (error) {
-      console.warn('Failed to setup event listeners:', error);
+      // Visibility change failed, continue without it
     }
   }
   

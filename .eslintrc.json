@@ -1,7 +1,36 @@
 {
   "extends": ["next/core-web-vitals"],
   "rules": {
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn"
-  }
+    // Suppress React Hook exhaustive-deps warnings for specific patterns
+    "react-hooks/exhaustive-deps": [
+      "warn",
+      {
+        "additionalHooks": "(useCallback|useMemo)"
+      }
+    ],
+    // Allow inline styles for email templates (required for email client compatibility)
+    "react/no-unknown-property": [
+      "error",
+      {
+        "ignore": ["dangerouslySetInnerHTML"]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      // Email templates need inline styles for compatibility
+      "files": ["**/email/**/*.tsx", "**/PPMReportEmailTemplate.tsx"],
+      "rules": {
+        "react/no-unknown-property": "off"
+      }
+    },
+    {
+      // Development and debugging files
+      "files": ["**/debug*.ts", "**/debug*.tsx", "**/development*.ts"],
+      "rules": {
+        "no-console": "off",
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ]
 }

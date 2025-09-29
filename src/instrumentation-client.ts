@@ -26,25 +26,36 @@ if (typeof window !== 'undefined') {
     opt_out_capturing_by_default: false,
     cross_subdomain_cookie: true,
     
-    // Development settings
-    debug: process.env.NODE_ENV === 'development',
+    // Development settings - reduced logging
+    debug: false, // Disabled to reduce console noise
     
     // Custom properties for all events
     bootstrap: {
       distinctID: undefined, // Let PostHog handle this
     },
     
+    // Error handling for network issues
+    on_request_error: (error) => {
+      // Silently handle PostHog network errors in development
+      if (process.env.NODE_ENV === 'development') {
+        // Don't log every network error to reduce console noise
+        return;
+      }
+      console.warn('PostHog request failed:', error);
+    },
+    
     // Loaded callback for additional configuration
     loaded: (posthog) => {
-      // Capture user attribution on first PostHog load
-      captureAttribution();
-      
-      // Enable debug mode in development
-      if (process.env.NODE_ENV === 'development') {
-        posthog.debug();
-        console.log('🎯 PostHog initialized successfully (DEV MODE)');
-      } else {
-        console.log('🎯 PostHog initialized successfully');
+      try {
+        // Capture user attribution on first PostHog load
+        captureAttribution();
+        
+        // Reduced logging in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🎯 PostHog initialized successfully');
+        }
+      } catch (error) {
+        console.warn('PostHog initialization warning:', error);
       }
       
       // Set default properties for all events

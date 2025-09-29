@@ -21,8 +21,14 @@ export function TestimonialCarousel({
 }: TestimonialCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isUserInteracting, setIsUserInteracting] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   const autoPlayTimerRef = useRef<NodeJS.Timeout | null>(null)
   const resetTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Prevent hydration mismatches by waiting for client-side hydration
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   const clearAutoPlayTimer = useCallback(() => {
     if (autoPlayTimerRef.current) {
@@ -61,9 +67,9 @@ export function TestimonialCarousel({
     setIsUserInteracting(true)
   }, [prevTestimonial])
 
-  // Auto-play effect
+  // Auto-play effect - only start after hydration to prevent mismatches
   useEffect(() => {
-    if (!autoPlay || isUserInteracting) {
+    if (!autoPlay || isUserInteracting || !isHydrated) {
       clearAutoPlayTimer()
       return
     }
@@ -75,7 +81,7 @@ export function TestimonialCarousel({
     return () => {
       clearAutoPlayTimer()
     }
-  }, [autoPlay, interval, isUserInteracting, nextTestimonial, clearAutoPlayTimer])
+  }, [autoPlay, interval, isUserInteracting, isHydrated, nextTestimonial, clearAutoPlayTimer])
 
   // Reset user interaction after some time
   useEffect(() => {
@@ -156,11 +162,10 @@ export function TestimonialCarousel({
           {testimonials.map((_, index) => (
             <button
               key={index}
-              className={`w-3 h-3 rounded-full transition-colors ${
+              className={`w-6 h-6 min-w-6 min-h-6 rounded-full transition-colors ${
                 index === currentIndex ? 'bg-alpine' : 'bg-midnight/20'
               }`}
               onClick={() => goToTestimonial(index)}
-              style={{ minWidth: '24px', minHeight: '24px' }}
               aria-label={`Go to testimonial ${index + 1}`}
             />
           ))}

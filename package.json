@@ -40,7 +40,7 @@
     "gray-matter": "^4.0.3",
     "lenis": "^1.3.4",
     "lucide-react": "^0.344.0",
-    "next": "^14.2.32",
+    "next": "^15.5.4",
     "next-mdx-remote": "^4.4.1",
     "next-sitemap": "^4.2.3",
     "openai": "^5.15.0",
@@ -56,6 +56,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.1",
     "@types/mdx": "^2.0.9",
     "@types/node": "^20",
     "@types/react": "^18.3.5",

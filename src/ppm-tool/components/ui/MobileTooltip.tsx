@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
 import { BasicHoverTooltip } from './basic-hover-tooltip';
 
@@ -41,13 +41,13 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     setIsOpen(!isOpen);
   };
 
-  const handleClickOutside = (e: MouseEvent) => {
+  const handleClickOutside = useCallback((e: MouseEvent) => {
     if (forceOpen) return; // Don't handle outside clicks when externally controlled
     if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node) &&
         triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
       setIsOpen(false);
     }
-  };
+  }, [forceOpen]);
 
   useEffect(() => {
     if (!isTouchDevice || !effectiveIsOpen || forceOpen) return;
@@ -59,7 +59,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
       document.removeEventListener('click', handleClickOutside);
       clearTimeout(timer);
     };
-  }, [effectiveIsOpen, isTouchDevice, forceOpen]);
+  }, [effectiveIsOpen, isTouchDevice, forceOpen, handleClickOutside]);
 
   useEffect(() => {
     if (!isTouchDevice || !effectiveIsOpen || !triggerRef.current || !tooltipRef.current) return;

@@ -383,13 +383,14 @@ function generateRadarChart(params: any, canvasCreate: any): Buffer {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { params: string[] } }
+  context: { params: Promise<{ params: string[] }> }
 ) {
   try {
     // Clear cache for testing
     chartCache.clear();
     console.log('🗑️ Cache cleared for fresh generation');
     
+    const params = await context.params;
     console.log('📊 Chart request received:', params.params);
     
     const canvasCreate = await getCanvasModule();

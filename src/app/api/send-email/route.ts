@@ -1267,7 +1267,10 @@ Create a unique, varied description for ${tool.name} that stands out from other 
             tool_count: selectedTools.length,
             criteria_count: selectedCriteria.length,
             user_agent: userAgent || request.headers.get('user-agent'),
-            ip_address: request.ip,
+            ip_address: (() => {
+              const forwarded = request.headers.get('x-forwarded-for');
+              return forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
+            })(),
             // Add guided ranking data for marketing insights
             guided_ranking_answers: guidedRankingAnswers,
             personalization_data: personalizationData,

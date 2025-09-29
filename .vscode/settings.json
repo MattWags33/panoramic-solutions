@@ -1,0 +1,71 @@
+{
+  "css.lint.compatibleVendorPrefixes": "ignore",
+  "css.lint.vendorPrefix": "ignore",
+  "css.lint.unknownProperties": "ignore",
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false,
+  "stylelint.enable": false,
+  "css.customData": [
+    {
+      "version": 1.1,
+      "properties": [
+        {
+          "name": "scrollbar-width",
+          "description": "Modern browsers (Firefox) - Sets the width of the scrollbar",
+          "browsers": ["FF"]
+        },
+        {
+          "name": "scrollbar-color", 
+          "description": "Modern browsers (Firefox) - Sets the color of the scrollbar",
+          "browsers": ["FF"]
+        },
+        {
+          "name": "-webkit-overflow-scrolling",
+          "description": "Legacy iOS support (deprecated but harmless)",
+          "browsers": ["S"]
+        },
+        {
+          "name": "text-size-adjust",
+          "description": "Modern text size adjustment with webkit fallback",
+          "browsers": ["C", "FF", "S", "E"]
+        }
+      ]
+    }
+  ],
+  "emmet.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  "problems.decorations.enabled": true,
+  "problems.showCurrentInStatus": true,
+  "typescript.surveys.enabled": false,
+  "html.validate.styles": false,
+  "css.lint.important": "ignore",
+  "markdownlint.config": {
+    "MD013": {
+      "line_length": 120,
+      "code_blocks": false
+    },
+    "MD033": {
+      "allowed_elements": ["div", "span", "br", "img", "a", "strong", "em"]
+    },
+    "MD041": false,
+    "MD022": false,
+    "MD031": false,
+    "MD032": false
+  }
+}

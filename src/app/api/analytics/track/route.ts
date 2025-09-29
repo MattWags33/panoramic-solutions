@@ -20,12 +20,16 @@ export async function POST(request: NextRequest) {
     // - Store in your database for custom analytics
     // - Send to multiple analytics providers
     
+    // Get IP from headers (Next.js 15 compatible)
+    const forwarded = request.headers.get('x-forwarded-for');
+    const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
+    
     console.log('Analytics Event:', {
       event,
       properties: {
         ...properties,
         timestamp: new Date().toISOString(),
-        ip: request.ip,
+        ip,
         userAgent: request.headers.get('user-agent')
       }
     });

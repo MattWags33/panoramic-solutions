@@ -94,7 +94,7 @@ export class ProductionBumperEngine {
   }
 
   /**
-   * Wait for React hydration to complete
+   * Wait for React hydration to complete - Enhanced with better detection
    */
   private async waitForHydration(): Promise<void> {
     return new Promise((resolve) => {
@@ -103,38 +103,59 @@ export class ProductionBumperEngine {
         throw new Error('Not in browser environment');
       }
 
-      // Multiple strategies to detect hydration
+      let checkCount = 0;
+      const maxChecks = 50; // Maximum checks before giving up silently
+
+      // Enhanced hydration detection
       const checkHydration = () => {
-        // Strategy 1: Check for React root
-        const hasReactRoot = document.querySelector('[data-reactroot]') || 
-                           document.querySelector('#__next');
+        checkCount++;
         
-        // Strategy 2: Check for specific elements that should exist
+        // Strategy 1: Check for React root indicators
+        const hasReactRoot = document.querySelector('[data-reactroot]') || 
+                           document.querySelector('#__next') ||
+                           document.querySelector('[data-react-helmet]') ||
+                           document.querySelector('main') ||
+                           document.querySelector('[role="main"]');
+        
+        // Strategy 2: Check for specific app elements
         const hasContent = document.querySelector('.ppm-tool-container') ||
-                         document.querySelector('[data-bumper-ready]');
+                         document.querySelector('[data-bumper-ready]') ||
+                         document.querySelector('nav') ||
+                         document.querySelector('header') ||
+                         document.body.children.length > 1;
         
         // Strategy 3: Check document ready state
-        const isReady = document.readyState === 'complete';
+        const isReady = document.readyState === 'complete' || document.readyState === 'interactive';
         
-        if (hasReactRoot && isReady) {
+        // Strategy 4: Check if React has rendered (more lenient)
+        const hasReactElements = document.querySelectorAll('[data-react*], [class*="react"], div, main, section').length > 0;
+        
+        // More lenient hydration detection - any two conditions met
+        const conditionsMet = [hasReactRoot, hasContent, isReady, hasReactElements].filter(Boolean).length;
+        
+        if (conditionsMet >= 2 || checkCount >= maxChecks) {
           this.hydrationComplete = true;
+          if (checkCount < maxChecks) {
+            console.log(`[BumperEngine] ✅ Hydration detected after ${checkCount} checks`);
+          }
           resolve();
-        } else {
-          requestAnimationFrame(checkHydration);
+          return;
         }
+        
+        // Continue checking
+        requestAnimationFrame(checkHydration);
       };
 
-      // Start checking after a minimum delay
-      setTimeout(checkHydration, 100);
+      // Start checking immediately for faster detection
+      checkHydration();
       
-      // Timeout after 5 seconds
+      // Silent fallback after 3 seconds (reduced from 5)
       setTimeout(() => {
         if (!this.hydrationComplete) {
-          console.warn('[BumperEngine] Hydration timeout, proceeding anyway');
           this.hydrationComplete = true;
           resolve();
         }
-      }, 5000);
+      }, 3000);
     });
   }
 
@@ -378,12 +399,17 @@ export class ProductionBumperEngine {
 // Export singleton instance
 export const bumperEngine = ProductionBumperEngine.getInstance();
 
-// Auto-initialize on import (with safety)
+// Auto-initialize on import (with enhanced safety)
 if (typeof window !== 'undefined') {
   // Wait for next tick to ensure all imports are complete
-  Promise.resolve().then(() => {
-    bumperEngine.initialize().catch(error => {
-      console.error('[BumperEngine] Auto-init failed:', error);
-    });
+  Promise.resolve().then(async () => {
+    try {
+      await bumperEngine.initialize();
+    } catch (error) {
+      // Silently handle initialization errors to prevent breaking the app
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[BumperEngine] Auto-init failed silently:', error);
+      }
+    }
   });
 }

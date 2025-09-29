@@ -66,14 +66,16 @@ export default function AboutPage() {
             >
               <div className="relative max-w-md mx-auto lg:max-w-none">
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white">
-                  <Image
-                    src="/images/MattWagnerHeadshot.webp"
-                    alt="Matt Wagner - Solutions Architect & Founder at Panoramic Solutions"
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover"
-                    priority
-                  />
+                  <div className="relative w-full h-full">
+                    <Image
+                      src="/images/MattWagnerHeadshot.webp"
+                      alt="Matt Wagner - Solutions Architect & Founder at Panoramic Solutions"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover"
+                      priority
+                    />
+                  </div>
                 </div>
                 {/* Floating card */}
                 <div className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 bg-white p-4 sm:p-6 rounded-xl shadow-xl border border-gray-200">

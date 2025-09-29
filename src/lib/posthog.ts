@@ -123,6 +123,9 @@ const STORAGE_KEYS = {
  * Check if this is a new visitor and track if so
  */
 export const checkAndTrackNewVisitor = (properties?: Record<string, any>) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
   const hasTracked = localStorage.getItem(STORAGE_KEYS.VISITOR_TRACKED);
   
   if (!hasTracked) {
@@ -138,6 +141,9 @@ export const checkAndTrackNewVisitor = (properties?: Record<string, any>) => {
  * Check if this is a new active user and track if so
  */
 export const checkAndTrackNewActive = (action: string, properties?: Record<string, any>) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
   const hasTracked = localStorage.getItem(STORAGE_KEYS.ACTIVE_TRACKED);
   
   if (!hasTracked) {
@@ -153,6 +159,9 @@ export const checkAndTrackNewActive = (action: string, properties?: Record<strin
  * Check if this is a new ranking submittal and track if so
  */
 export const checkAndTrackNewRankingSubmittal = (properties?: Record<string, any>) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
   const hasTracked = localStorage.getItem(STORAGE_KEYS.RANKING_TRACKED);
   
   if (!hasTracked) {
@@ -168,6 +177,9 @@ export const checkAndTrackNewRankingSubmittal = (properties?: Record<string, any
  * Check if this is a new report sent and track if so
  */
 export const checkAndTrackNewReportSent = (properties?: Record<string, any>) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
   const hasTracked = localStorage.getItem(STORAGE_KEYS.REPORT_TRACKED);
   
   if (!hasTracked) {
@@ -183,6 +195,9 @@ export const checkAndTrackNewReportSent = (properties?: Record<string, any>) => 
  * Generate a unique session ID
  */
 export const getSessionId = (): string => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return `session_ssr_${Date.now()}`;
+  
   let sessionId = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
   
   if (!sessionId) {
@@ -197,6 +212,9 @@ export const getSessionId = (): string => {
  * Reset tracking state (useful for testing or user logout)
  */
 export const resetTrackingState = () => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return;
+  
   localStorage.removeItem(STORAGE_KEYS.VISITOR_TRACKED);
   localStorage.removeItem(STORAGE_KEYS.ACTIVE_TRACKED);
   localStorage.removeItem(STORAGE_KEYS.RANKING_TRACKED);
@@ -213,5 +231,5 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   (window as any).resetTrackingState = resetTrackingState;
   (window as any).trackNewActive = trackNewActive;
   (window as any).trackNewVisitor = trackNewVisitor;
-  console.log('🔧 PostHog tracking functions available globally for debugging');
+  // Reduced logging
 }

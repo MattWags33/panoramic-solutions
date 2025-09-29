@@ -44,10 +44,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
+        {/* Favicon and touch icons - proper order and format */}
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/images/Logo_Panoramic_Solutions.webp" sizes="180x180" />
         <StructuredData />
         <MainStructuredData data={organizationData} />
         <MainStructuredData data={websiteData} />
-        
         {/* Critical CSS to prevent mobile flashing */}
         <style dangerouslySetInnerHTML={{
           __html: `
