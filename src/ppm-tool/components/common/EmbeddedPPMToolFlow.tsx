@@ -85,17 +85,6 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 }) => {
   // Unified mobile detection to prevent hydration mismatches
   const { isMobile, isTouchDevice, isHydrated } = useUnifiedMobileDetection();
-
-  // ADD THESE LOGS FOR VERIFICATION:
-  useEffect(() => {
-    console.log('🔍 Detection Results:', {
-      isMobile,
-      isTouchDevice,
-      screenWidth: window.innerWidth,
-      maxTouchPoints: navigator.maxTouchPoints,
-      hasHover: window.matchMedia('(hover: hover)').matches
-    });
-  }, [isMobile, isTouchDevice]);
   
   // Disable Lenis smooth scroll on mobile to prevent tooltip interference
   useLenis({
