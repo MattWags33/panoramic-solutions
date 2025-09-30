@@ -74,16 +74,16 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
 
   // Calculate navigation height (fixed - no scroll changes)
   const getNavigationHeight = useCallback(() => {
-    // Navigation uses pt-4 pb-3 (28px padding total)
-    // Plus content height - reduced for mobile with 2-line text
-    const padding = 28; // pt-4 + pb-3 = 16px + 12px = 28px
-    const contentHeight = isMobile ? 45 : 40; // Slightly taller on mobile for 2-line text
+    // Navigation uses py-2 (16px padding) consistently
+    // Plus content height ~40px
+    const padding = 16; // py-2 = 16px (fixed)
+    const contentHeight = 40; // Approximate content height
     
     // Add extra spacing below toggles on mobile for logo
     const mobileLogoSpacing = isMobile ? 8 : 0; // Extra space below toggles for mobile logo
     
-    // Increased spacing for better logo visibility
-    const extraSpacing = isMobile ? 20 : 28; // Increased mobile spacing to show logo better
+    // Comfortable spacing between navigation and main content
+    const extraSpacing = isMobile ? 28 : 28; // Increased spacing for better visual separation
     
     return padding + contentHeight + mobileLogoSpacing + extraSpacing;
   }, [isMobile]);
@@ -177,9 +177,9 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
 
   const steps: NavigationStep[] = isMobile 
     ? [
-        { id: 'criteria', label: 'Rank Your<br>Criteria', description: 'Set importance levels' },
-        { id: 'tools', label: 'Tools &<br>Recommendations', description: 'Choose PPM solutions' },
-        { id: 'chart', label: 'Tools -<br>Criteria Comparison', description: 'Visual comparison' },
+        { id: 'criteria', label: 'Rank Your Criteria', description: 'Set importance levels' },
+        { id: 'tools', label: 'Tools & Recommendations', description: 'Choose PPM solutions' },
+        { id: 'chart', label: 'Tools - Criteria Comparison', description: 'Visual comparison' },
       ]
     : [
         { id: 'criteria-tools', label: 'Criteria + Tools', description: 'Set criteria & select tools' },
@@ -195,13 +195,13 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
       )}
       style={{ 
         backgroundColor: '#F0F4FE',
-        top: `${getHeaderHeight()}px`, // Position directly below header
+        top: `${getHeaderHeight() + 8}px`, // Position below header with additional spacing
         '--total-fixed-height': `${getTotalFixedHeight() + 8}px` // Expose total height for content padding (including extra spacing)
       } as React.CSSProperties}
       aria-label="PPM Tool Navigation"
       role="navigation"
     >
-      <div className="container mx-auto px-2 md:px-4 pt-4 pb-3">
+      <div className="container mx-auto px-2 md:px-4 pt-4 pb-2">
         <div className={cn(
           "flex items-center",
           isMobile ? "justify-center" : "justify-between"
@@ -231,7 +231,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                     ref={isChartStep ? chartButtonRef : undefined}
                     onClick={() => onStepChange(step.id)}
                     className={cn(
-                      'relative py-2 font-bold transition-all duration-300 flex items-center justify-center',
+                      'relative py-2 font-bold transition-all duration-300',
                       isMobile ? 'px-2 text-center' : 'px-1',
                       isActive
                         ? 'text-blue-600'
@@ -239,13 +239,9 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                       shouldGlow && 'chart-toggle-glow'
                     )}
                   >
-                    <span 
-                      className={cn(
-                        "text-sm md:text-base leading-tight text-center relative",
-                        isMobile ? "block" : "inline"
-                      )}
-                      dangerouslySetInnerHTML={{ __html: isMobile ? step.label : step.label.replace(/<br>/g, ' ') }}
-                    />
+                    <span className="text-sm md:text-base">
+                      {step.label}
+                    </span>
                     {isChartStep && compareCount > 0 && (
                       <div className={cn(
                         'absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full text-xs font-medium',
