@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { useTouchDevice } from '../shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '../shared/hooks/useUnifiedMobileDetection';
 
 export const DisclaimerTooltip: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
 
   const disclaimerContent = (
     <div className="space-y-2">

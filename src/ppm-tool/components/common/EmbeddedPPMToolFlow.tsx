@@ -957,14 +957,14 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           >
             {/* Mobile Logo - Scrollable, appears above content */}
             {isMobile && (
-              <div className="text-center mb-4 pb-2 border-b border-gray-200/50">
-                <div className="flex justify-center px-4 mt-2">
+              <div className="text-center mb-6 pb-3 border-b border-gray-200/50">
+                <div className="flex justify-center px-4">
                   <Image
                     src="/images/PPM_Tool_Finder.png"
                     alt="PPM Tool Finder"
-                    width={200}
-                    height={60}
-                    className="h-8 md:h-10 w-auto object-contain"
+                    width={240}
+                    height={72}
+                    className="h-12 w-auto object-contain"
                     priority
                   />
                 </div>

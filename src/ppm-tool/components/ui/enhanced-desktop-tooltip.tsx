@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 import { cn } from "@/ppm-tool/shared/lib/utils"
 
 interface EnhancedDesktopTooltipProps {
@@ -33,7 +33,7 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
   const hideTimeoutRef = useRef<NodeJS.Timeout>();
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
 
   // External control: forceOpen overrides internal state
   const effectiveIsVisible = forceOpen || isVisible;

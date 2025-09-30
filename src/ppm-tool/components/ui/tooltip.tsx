@@ -2,7 +2,7 @@ import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/ppm-tool/shared/lib/utils"
-import { useTouchDevice } from "@/ppm-tool/shared/hooks/useTouchDevice"
+import { useUnifiedMobileDetection } from "@/ppm-tool/shared/hooks/useUnifiedMobileDetection"
 
 // Enhanced TooltipProvider with mobile-optimized settings
 const TooltipProvider = ({ children, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) => {
@@ -22,7 +22,7 @@ const Tooltip = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>
 >(({ children, open, onOpenChange, ...props }, ref) => {
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
   const [internalOpen, setInternalOpen] = React.useState(false);
 
   // Use controlled state for mobile, uncontrolled for desktop
@@ -49,7 +49,7 @@ const TooltipTrigger = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
 >(({ onClick, asChild, children, className, ...props }, ref) => {
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
 
   const handleClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     // On touch devices, let Radix handle the tooltip toggle naturally
@@ -82,7 +82,7 @@ const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 4, children, ...props }, ref) => {
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
 
   // Auto-close tooltip on mobile after 4 seconds (but only when tooltip is visible)
   const [isContentVisible, setIsContentVisible] = React.useState(false);

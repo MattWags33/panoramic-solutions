@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 import { BasicHoverTooltip } from './basic-hover-tooltip';
 
 interface MobileTooltipProps {
@@ -29,7 +29,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
 
   // External control: forceOpen overrides internal state
   const effectiveIsOpen = forceOpen || isOpen;

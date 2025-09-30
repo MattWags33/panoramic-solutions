@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from './tooltip';
-import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 
 interface DesktopTooltipProps {
   content: React.ReactNode;
@@ -21,7 +21,7 @@ export const DesktopTooltip: React.FC<DesktopTooltipProps> = ({
   align = 'center',
   className = ''
 }) => {
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
 
   // Debug logging
   React.useEffect(() => {

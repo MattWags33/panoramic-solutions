@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
 
 interface MobileTooltipProps {
@@ -21,7 +21,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
 
   const handleClick = (e: React.MouseEvent) => {
     if (isTouchDevice) {

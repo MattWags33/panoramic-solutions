@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Info, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ppm-tool/components/ui/tooltip';
-import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 
 export const LegalDisclaimer: React.FC = () => {
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
   const [showModal, setShowModal] = useState(false);
   
   const detailedDisclaimer = `The information is:

@@ -10,7 +10,7 @@ import { CriteriaGuidance } from '@/ppm-tool/components/overlays/CriteriaGuidanc
 import { Slider } from '@/ppm-tool/components/ui/slider';
 import { MobileTooltip } from '@/ppm-tool/components/ui/MobileTooltip';
 import { EnhancedDesktopTooltip } from '@/ppm-tool/components/ui/enhanced-desktop-tooltip';
-import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 
 import { useGuidance } from '@/ppm-tool/shared/contexts/GuidanceContext';
 import { checkAndTrackNewActive } from '@/lib/posthog';
@@ -43,7 +43,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
   };
 
   const sectionRef = useRef<HTMLDivElement>(null);
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
   const { 
     showManualGuidance, 
     closeManualGuidance,

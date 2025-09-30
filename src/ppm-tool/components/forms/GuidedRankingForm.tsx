@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { Criterion } from '@/ppm-tool/shared/types';
 import { useClickOutside } from '@/ppm-tool/shared/hooks/useClickOutside';
-import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/ppm-tool/components/ui/button';
 import { Slider } from '@/ppm-tool/components/ui/slider';
@@ -208,7 +208,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   const [otherAnswers, setOtherAnswers] = React.useState<Record<string, string>>({});
 
   const formRef = React.useRef<HTMLDivElement>(null);
-  const isTouchDevice = useTouchDevice();
+  const { isTouchDevice } = useUnifiedMobileDetection();
   
   // Create stable reference for onRealTimeUpdate to prevent unnecessary re-renders
   const onRealTimeUpdateRef = React.useRef(onRealTimeUpdate);
