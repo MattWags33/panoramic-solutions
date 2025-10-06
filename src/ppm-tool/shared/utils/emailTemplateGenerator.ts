@@ -954,16 +954,10 @@ Create a concise business insight (max 60 chars) that explains the VALUE this to
                                             We'll walk through your results and map the fastest path to adoption success.
                                         </p>
                                         
-                                        <!-- CTA Button -->
-                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
-                                            <tr>
-                                                <td style="background-color: #2E8B57; border-radius: 6px; text-align: center;">
-                                                    <a href="${bookingLink}" style="display: inline-block; padding: 16px 32px; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; color: #ffffff; text-decoration: none; border-radius: 6px;" class="mobile-text">
-                                                        📅 Book My Strategy Call
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        </table>
+                                        <!-- Contact Information -->
+                                        <p style="margin: 0; color: #4a5568; font-size: 15px; line-height: 22px; text-align: center;" class="mobile-small">
+                                            Questions about your results? Reply to this email and we'll help you interpret the findings.
+                                        </p>
                                     </td>
                                 </tr>
                             </table>
@@ -1120,7 +1114,7 @@ Panoramic Solutions
       `.trim();
 
       return {
-        from: 'Matt Wagner <donotreply@app.panoramic-solutions.com>',
+        from: 'Matt Wagner <matt.wagner@panoramic-solutions.com>',
         to: data.userEmail,
         subject: '[TEST] PPM Tool Comparison System',
         html: simpleHtml,
@@ -1138,7 +1132,7 @@ Panoramic Solutions
       'Your PPM Tool Comparison Report (See Results Below)';
 
     return {
-      from: 'Matt Wagner <donotreply@app.panoramic-solutions.com>',
+      from: 'Matt Wagner <matt.wagner@panoramic-solutions.com>',
       to: data.userEmail,
       subject: subjectLine,
       html: await this.generateHTMLEmail(data),

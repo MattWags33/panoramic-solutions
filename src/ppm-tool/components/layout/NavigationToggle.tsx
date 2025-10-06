@@ -74,18 +74,18 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
 
   // Calculate navigation height (fixed - no scroll changes)
   const getNavigationHeight = useCallback(() => {
-    // Navigation uses py-2 (16px padding) consistently
-    // Plus content height ~40px
-    const padding = 16; // py-2 = 16px (fixed)
+    // Navigation uses different top padding for mobile vs desktop
+    const topPadding = isMobile ? 32 : 16; // pt-8 (32px) on mobile, pt-4 (16px) on desktop
+    const bottomPadding = 8; // pb-2 = 8px (fixed)
     const contentHeight = 40; // Approximate content height
     
-    // Add extra spacing below toggles on mobile for logo
+    // Add extra spacing below toggles on mobile for logo (original desktop logic)
     const mobileLogoSpacing = isMobile ? 8 : 0; // Extra space below toggles for mobile logo
     
-    // Comfortable spacing between navigation and main content
-    const extraSpacing = isMobile ? 28 : 28; // Increased spacing for better visual separation
+    // Larger spacing between navigation and main content
+    const extraSpacing = isMobile ? 28 : 16; // Keep mobile spacing, increase desktop gap
     
-    return padding + contentHeight + mobileLogoSpacing + extraSpacing;
+    return topPadding + bottomPadding + contentHeight + mobileLogoSpacing + extraSpacing;
   }, [isMobile]);
 
   // Total combined height for content offset
@@ -193,15 +193,18 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
         isProductBumperVisible && "blur-sm opacity-75",
         isScrolled && "shadow-md shadow-gray-300/70"
       )}
-      style={{ 
-        backgroundColor: '#F0F4FE',
-        top: `${getHeaderHeight() + 8}px`, // Position below header with additional spacing
-        '--total-fixed-height': `${getTotalFixedHeight() + 8}px` // Expose total height for content padding (including extra spacing)
-      } as React.CSSProperties}
+        style={{ 
+          backgroundColor: '#F0F4FE',
+          top: `${getHeaderHeight() + (isMobile ? 0 : 8)}px`, // Flush on mobile, more space on desktop
+          '--total-fixed-height': `${getTotalFixedHeight() + (isMobile ? 0 : 8)}px` // Expose total height for content padding
+        } as React.CSSProperties}
       aria-label="PPM Tool Navigation"
       role="navigation"
     >
-      <div className="container mx-auto px-2 md:px-4 pt-4 pb-2">
+      <div className={cn(
+        "container mx-auto px-2 md:px-4 pb-2",
+        isMobile ? "pt-8" : "pt-4" // More top padding on mobile
+      )}>
         <div className={cn(
           "flex items-center",
           isMobile ? "justify-center" : "justify-between"

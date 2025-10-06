@@ -62,18 +62,18 @@ export function Header() {
     >
       <nav className="container px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-3 group">
-          <div className="relative h-10 w-10 sm:h-12 sm:w-12">
+        <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
+          <div className="relative h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12">
             <Image
               src="/images/Logo_Panoramic_Solutions.webp"
               alt="Panoramic Solutions Logo"
               fill
-              sizes="(max-width: 640px) 40px, 48px"
+              sizes="(max-width: 640px) 32px, (max-width: 768px) 40px, 48px"
               className="object-contain group-hover:opacity-80 transition-opacity"
               priority
             />
           </div>
-          <span className="text-lg sm:text-xl font-semibold text-midnight">
+          <span className="text-base sm:text-lg md:text-xl font-semibold text-midnight">
             <span className="hidden sm:inline">Panoramic Solutions</span>
             <span className="sm:hidden">Panoramic</span>
           </span>

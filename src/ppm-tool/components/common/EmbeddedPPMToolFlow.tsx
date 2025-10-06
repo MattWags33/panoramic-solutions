@@ -12,7 +12,8 @@ import { FilterCondition } from '@/ppm-tool/components/filters/FilterSystem';
 import { filterTools } from '@/ppm-tool/shared/utils/filterTools';
 import { supabase } from '@/lib/supabase';
 import { ErrorBoundary } from '@/ppm-tool/components/common/ErrorBoundary';
-import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
+import { useMobileDetection } from '@/ppm-tool/shared/hooks/useMobileDetection';
+import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
 import { useLenis } from '@/ppm-tool/shared/hooks/useLenis';
 import { CriteriaSection } from '@/ppm-tool/features/criteria/components/CriteriaSection';
 import { ToolSection } from '@/ppm-tool/features/tools/ToolSection';
@@ -83,8 +84,9 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   onShowHowItWorks,
   guidedButtonRef
 }) => {
-  // Unified mobile detection to prevent hydration mismatches
-  const { isMobile, isTouchDevice, isHydrated } = useUnifiedMobileDetection();
+  const isMobile = useMobileDetection();
+  const isTouchDevice = useTouchDevice();
+  const isHydrated = true; // Simple fallback for now
   
   // Disable Lenis smooth scroll on mobile to prevent tooltip interference
   useLenis({
@@ -957,14 +959,14 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           >
             {/* Mobile Logo - Scrollable, appears above content */}
             {isMobile && (
-              <div className="text-center mb-4 pb-2 border-b border-gray-200/50">
-                <div className="flex justify-center px-4 mt-2">
+              <div className="text-center mb-6 pb-4 border-b border-gray-200/50">
+                <div className="flex justify-center px-4">
                   <Image
                     src="/images/PPM_Tool_Finder.png"
                     alt="PPM Tool Finder"
-                    width={200}
-                    height={60}
-                    className="h-8 md:h-10 w-auto object-contain"
+                    width={220}
+                    height={66}
+                    className="h-10 w-auto object-contain"
                     priority
                   />
                 </div>

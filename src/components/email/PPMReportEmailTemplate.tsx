@@ -294,21 +294,13 @@ export function PPMReportEmailTemplate({
                 Let&apos;s discuss how to successfully implement your chosen PPM tool 
                 and maximize your project portfolio success.
               </p>
-              <a 
-                href="https://app.onecal.io/b/matt-wagner/schedule-a-meeting-with-matt"
-                style={{
-                  display: 'inline-block',
-                  backgroundColor: '#ffffff',
-                  color: '#0057B7',
-                  padding: '12px 24px',
-                  borderRadius: '6px',
-                  textDecoration: 'none',
-                  fontWeight: 'bold',
-                  fontSize: '14px'
-                }}
-              >
-                Schedule Free Consultation
-              </a>
+              <p style={{
+                color: '#e0e7ff',
+                fontSize: '14px',
+                marginBottom: '0'
+              }}>
+                Questions about your results? Reply to this email for guidance.
+              </p>
             </div>
           </div>
 

@@ -1194,8 +1194,8 @@ Create a unique, varied description for ${tool.name} that stands out from other 
             <div style="font-size:12px;margin:0 0 8px 0;">
               <a href="https://panoramic-solutions.com" style="color:#1565c0;text-decoration:none;">🌐 panoramic-solutions.com</a>
             </div>
-            <div style="font-size:12px;margin:0 0 16px 0;">
-              <a href="https://app.onecal.io/b/matt-wagner/schedule-a-meeting-with-matt" style="color:#1565c0;text-decoration:none;">📅 Schedule a Meeting</a>
+            <div style="font-size:12px;margin:0 0 16px 0;color:#6c757d;">
+              Questions about your results? Reply to this email for guidance.
             </div>
 
 
@@ -1217,7 +1217,7 @@ Create a unique, varied description for ${tool.name} that stands out from other 
 
     // Send email via Resend
     const { data, error } = await resend.emails.send({
-      from: 'Matt Wagner <donotreply@app.panoramic-solutions.com>', // Use verified domain
+      from: 'Matt Wagner <matt.wagner@panoramic-solutions.com>', // Use Matt's verified email
       to: [userEmail],
       subject: 'Your PPM Tool Analysis Report',
       html: emailHtml,
@@ -1372,7 +1372,7 @@ export async function POST(request: NextRequest) {
 
     // Send email via Resend
     const data = await resend.emails.send({
-      from: from || 'Matt Wagner <donotreply@app.panoramic-solutions.com>',
+      from: from || 'Matt Wagner <matt.wagner@panoramic-solutions.com>',
       to: [to],
       subject,
       html,
