@@ -217,7 +217,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
             {/* Simple Tab Navigation */}
             <div className={cn(
               "flex items-center relative",
-              isMobile ? "space-x-4" : "space-x-6"
+              isMobile ? "space-x-3" : "space-x-6"
             )}>
               {/* Continuous base line - mobile only */}
               {isMobile && (
@@ -234,15 +234,18 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                     ref={isChartStep ? chartButtonRef : undefined}
                     onClick={() => onStepChange(step.id)}
                     className={cn(
-                      'relative py-2 font-bold transition-all duration-300 flex flex-col items-center justify-center',
-                      isMobile ? 'px-2 text-center min-h-[3rem]' : 'px-1',
+                      'relative py-2 font-bold transition-all duration-300 flex flex-col items-center justify-end',
+                      isMobile ? 'px-1 text-center h-14 flex-1' : 'px-1',
                       isActive
                         ? 'text-blue-600'
                         : 'text-gray-700',
                       shouldGlow && 'chart-toggle-glow'
                     )}
                   >
-                    <span className="text-sm md:text-base text-center leading-tight">
+                    <span className={cn(
+                      "text-center leading-tight",
+                      isMobile ? "text-xs pb-1" : "text-sm md:text-base"
+                    )}>
                       {step.id === 'criteria' ? (
                         <>
                           Rank Your<br />Criteria
