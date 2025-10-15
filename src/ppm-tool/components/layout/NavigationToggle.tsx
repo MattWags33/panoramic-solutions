@@ -177,7 +177,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
 
   const steps: NavigationStep[] = isMobile 
     ? [
-        { id: 'criteria', label: 'Rank Your\nCriteria', description: 'Set importance levels' },
+        { id: 'criteria', label: 'Rank Your Criteria', description: 'Set importance levels' },
         { id: 'tools', label: 'Tools & Recommendations', description: 'Choose PPM solutions' },
         { id: 'chart', label: 'Tools - Criteria Comparison', description: 'Visual comparison' },
       ]
@@ -229,21 +229,27 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                 const isChartStep = step.id === 'chart';
                 const shouldGlow = isChartStep && isChartGlowing;
                 return (
-                  <button
+                    <button
                     key={step.id}
                     ref={isChartStep ? chartButtonRef : undefined}
                     onClick={() => onStepChange(step.id)}
                     className={cn(
-                      'relative py-2 font-bold transition-all duration-300',
-                      isMobile ? 'px-2 text-center' : 'px-1',
+                      'relative py-2 font-bold transition-all duration-300 flex flex-col items-center justify-center',
+                      isMobile ? 'px-2 text-center min-h-[3rem]' : 'px-1',
                       isActive
                         ? 'text-blue-600'
                         : 'text-gray-700',
                       shouldGlow && 'chart-toggle-glow'
                     )}
                   >
-                    <span className="text-sm md:text-base whitespace-pre-line">
-                      {step.label}
+                    <span className="text-sm md:text-base text-center leading-tight">
+                      {step.id === 'criteria' ? (
+                        <>
+                          Rank Your<br />Criteria
+                        </>
+                      ) : (
+                        step.label
+                      )}
                     </span>
                     {isChartStep && compareCount > 0 && (
                       <div className={cn(
