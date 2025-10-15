@@ -65,7 +65,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     // py-2 = 8px bottom (top portion is overridden by style)
     // Logo height: h-8 (32px) on mobile, h-10 (40px) on desktop
     const topPadding = 12; // From style override: max(12px, env(safe-area-inset-top, 12px))
-    const bottomPadding = 8; // From py-2 (bottom portion only)
+    const bottomPadding = isMobile ? 4 : 8; // Reduced bottom padding on mobile
     const logoHeight = isMobile ? 32 : 40; // h-8 = 32px, h-10 = 40px
     
     // Total header height: top padding + bottom padding + logo height
@@ -75,7 +75,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
   // Calculate navigation height (fixed - no scroll changes)
   const getNavigationHeight = useCallback(() => {
     // Navigation uses different top padding for mobile vs desktop
-    const topPadding = isMobile ? 32 : 16; // pt-8 (32px) on mobile, pt-4 (16px) on desktop
+    const topPadding = isMobile ? 8 : 8; // 8px on mobile to match bottom padding, keep 16px on desktop
     const bottomPadding = 8; // pb-2 = 8px (fixed)
     const contentHeight = 40; // Approximate content height
     
@@ -83,7 +83,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     const mobileLogoSpacing = isMobile ? 8 : 0; // Extra space below toggles for mobile logo
     
     // Larger spacing between navigation and main content
-    const extraSpacing = isMobile ? 48 : 16; // Increased mobile spacing for logo separation, keep desktop gap
+    const extraSpacing = isMobile ? 28 : 8; // Increased mobile spacing for logo separation, keep desktop gap
     
     return topPadding + bottomPadding + contentHeight + mobileLogoSpacing + extraSpacing;
   }, [isMobile]);
@@ -179,7 +179,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     ? [
         { id: 'criteria', label: 'Rank Your Criteria', description: 'Set importance levels' },
         { id: 'tools', label: 'Tools & Recommendations', description: 'Choose PPM solutions' },
-        { id: 'chart', label: 'Tools - Criteria Comparison', description: 'Visual comparison' },
+        { id: 'chart', label: 'Tool - Criteria Comparisons', description: 'Visual comparison' },
       ]
     : [
         { id: 'criteria-tools', label: 'Criteria + Tools', description: 'Set criteria & select tools' },
@@ -202,8 +202,8 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
       role="navigation"
     >
       <div className={cn(
-        "container mx-auto px-2 md:px-4 pb-2",
-        isMobile ? "pt-8" : "pt-4" // More top padding on mobile
+        "container mx-auto pb-2",
+        isMobile ? "px-4 pt-4" : "px-4 pt-4" // Reduce from pt-8 to pt-4 on mobile for less spacing
       )}>
         <div className={cn(
           "flex items-center",
@@ -217,7 +217,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
             {/* Simple Tab Navigation */}
             <div className={cn(
               "flex items-center relative",
-              isMobile ? "space-x-3" : "space-x-6"
+              isMobile ? "space-x-0.5" : "space-x-6" // Reduced from space-x-2 to space-x-1 for mobile
             )}>
               {/* Continuous base line - mobile only */}
               {isMobile && (
@@ -309,4 +309,3 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
      </nav>
   );
 }; 
-
