@@ -33,7 +33,7 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
   const hideTimeoutRef = useRef<NodeJS.Timeout>();
-  const { isTouchDevice } = useUnifiedMobileDetection();
+  const { isTouchDevice, hasTouch } = useUnifiedMobileDetection();
 
   // External control: forceOpen overrides internal state
   const effectiveIsVisible = forceOpen || isVisible;
@@ -270,15 +270,27 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
     };
   }, []);
 
-  // Don't show tooltip on touch devices unless forced
+  // Don't show tooltip on true mobile devices unless forced
   if (isTouchDevice && !forceOpen) {
     return <>{children}</>;
   }
 
-  // Don't show tooltip on devices without proper hover support unless forced
-  if (!supportsHover && !forceOpen) {
+  // Don't show tooltip on devices without proper hover support unless forced (but allow touch-enabled laptops)
+  if (!supportsHover && !hasTouch && !forceOpen) {
     return <>{children}</>;
   }
+
+  // Add click handler for touch-enabled laptops
+  const handleClick = (e: React.MouseEvent) => {
+    if (hasTouch && !isTouchDevice) {
+      // Touch-enabled laptop: toggle tooltip on click
+      if (effectiveIsVisible) {
+        hideTooltip();
+      } else {
+        showTooltip();
+      }
+    }
+  };
 
   return (
     <>
@@ -289,6 +301,8 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
         onMouseLeave={hideTooltip}
         onFocus={showTooltip}
         onBlur={hideTooltip}
+        onClick={handleClick}
+        style={hasTouch && !isTouchDevice ? { touchAction: 'manipulation' } : undefined}
       >
         {children}
       </div>

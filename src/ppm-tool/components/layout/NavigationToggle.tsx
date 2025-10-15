@@ -83,7 +83,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     const mobileLogoSpacing = isMobile ? 8 : 0; // Extra space below toggles for mobile logo
     
     // Larger spacing between navigation and main content
-    const extraSpacing = isMobile ? 28 : 16; // Keep mobile spacing, increase desktop gap
+    const extraSpacing = isMobile ? 40 : 16; // Increased mobile spacing for logo separation, keep desktop gap
     
     return topPadding + bottomPadding + contentHeight + mobileLogoSpacing + extraSpacing;
   }, [isMobile]);

@@ -22,7 +22,7 @@ const Tooltip = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>
 >(({ children, open, onOpenChange, ...props }, ref) => {
-  const { isTouchDevice } = useUnifiedMobileDetection();
+  const { isTouchDevice, hasTouch } = useUnifiedMobileDetection();
   const [internalOpen, setInternalOpen] = React.useState(false);
 
   // Use controlled state for mobile, uncontrolled for desktop
@@ -30,13 +30,20 @@ const Tooltip = React.forwardRef<
   const tooltipOpen = isControlled ? open : internalOpen;
   const setTooltipOpen = isControlled ? onOpenChange : setInternalOpen;
 
+  // Determine delay based on device type
+  let delayDuration = 700; // Desktop default
+  if (isTouchDevice) {
+    delayDuration = 0; // Mobile: instant
+  } else if (hasTouch) {
+    delayDuration = 200; // Touch-enabled laptops: faster but not instant
+  }
+
   return (
     <TooltipPrimitive.Root 
       {...props}
       open={tooltipOpen}
       onOpenChange={setTooltipOpen}
-      // On mobile, use faster timing for better responsiveness
-      delayDuration={isTouchDevice ? 0 : 700}
+      delayDuration={delayDuration}
     >
       {children}
     </TooltipPrimitive.Root>
@@ -49,10 +56,10 @@ const TooltipTrigger = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
 >(({ onClick, asChild, children, className, ...props }, ref) => {
-  const { isTouchDevice } = useUnifiedMobileDetection();
+  const { isTouchDevice, hasTouch } = useUnifiedMobileDetection();
 
   const handleClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    // On touch devices, let Radix handle the tooltip toggle naturally
+    // On touch devices or touch-enabled laptops, let Radix handle the tooltip toggle naturally
     onClick?.(event);
   }, [onClick]);
 
@@ -66,7 +73,7 @@ const TooltipTrigger = React.forwardRef<
         isTouchDevice && !asChild && "min-h-[44px] min-w-[44px] flex items-center justify-center",
         className
       )}
-      style={isTouchDevice ? { 
+      style={(isTouchDevice || hasTouch) ? { 
         touchAction: 'manipulation',
         WebkitTapHighlightColor: 'rgba(59, 130, 246, 0.1)',
       } : undefined}
@@ -82,14 +89,14 @@ const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 4, children, ...props }, ref) => {
-  const { isTouchDevice } = useUnifiedMobileDetection();
+  const { isTouchDevice, hasTouch } = useUnifiedMobileDetection();
 
   // Auto-close tooltip on mobile after 4 seconds (but only when tooltip is visible)
   const [isContentVisible, setIsContentVisible] = React.useState(false);
   
   React.useEffect(() => {
     setIsContentVisible(true);
-    if (!isTouchDevice) return;
+    if (!isTouchDevice) return; // Only auto-close on true mobile devices
 
     const timer = setTimeout(() => {
       // Close any open tooltips by triggering a tap outside
@@ -109,7 +116,7 @@ const TooltipContent = React.forwardRef<
           "z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           // Mobile optimizations
           "origin-[--radix-tooltip-content-transform-origin]",
-          // Ensure proper touch interaction on mobile
+          // Ensure proper touch interaction on mobile and touch-enabled laptops
           "will-change-transform",
           // Better mobile positioning and overflow handling
           isTouchDevice ? "max-w-[90vw] break-words pointer-events-auto" : "max-w-[85vw] break-words pointer-events-auto",

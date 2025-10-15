@@ -1,62 +1,38 @@
 {
-    "mcpServers": {
-      "n8n-workflows": {
-        "command": "npx",
-        "args": [
-          "mcp-remote",
-          "https://gitmcp.io/Zie619/n8n-workflows"
-        ]
-      },
-      "docs-mcp-server": {
-        "command": "npx",
-        "args": [
-          "mcp-remote",
-          "https://gitmcp.io/arabold/docs-mcp-server"
-        ]
-      },
-      "n8n-mcp": {
-        "command": "docker",
-        "args": [
-          "run",
-          "-i",
-          "--rm",
-          "--init",
-          "-e",
-          "MCP_MODE=stdio",
-          "-e",
-          "LOG_LEVEL=error",
-          "-e",
-          "DISABLE_CONSOLE_OUTPUT=true",
-          "-e",
-          "N8N_API_URL=https://n8n-ptb2.onrender.com",
-          "-e",
-          "N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMjRiMTZkZS0yZWY5LTQ0ZDYtODhhMy1mM2Q2MWZkZTM1MjkiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU1NTU3MzY4LCJleHAiOjE3NTgwODE2MDB9.WB9gPmy2czwJ4Uu0R-MuWHETzUag0WUD3JZNWDH1Ctk",
-          "ghcr.io/czlonkowski/n8n-mcp:latest"
-        ]
-      },
-      "supabase": {
-        "command": "cmd",
-        "args": [
-          "/c",
-          "npx",
-          "-y",
-          "@supabase/mcp-server-supabase@latest",
-          "--access-token",
-          "sbp_6434975a40fdad8ccff1a7155398b1b49b2ad7b4"
-        ]
-      },
-      "lighthouse": {
-        "command": "npx",
-        "args": [
-          "-y",
-          "@danielsogl/lighthouse-mcp@latest"
-        ]
-      },
-      "playwright": {
-        "command": "npx",
-        "args": [
-          "@playwright/mcp@latest"
-        ]
-      }
+  "mcpServers": {
+    "n8n-workflows": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/Zie619/n8n-workflows"
+      ]
+    },
+    "docs-mcp-server": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/arabold/docs-mcp-server"
+      ]
+    },
+    "n8n-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--init",
+        "-e",
+        "MCP_MODE=stdio",
+        "-e",
+        "LOG_LEVEL=error",
+        "-e",
+        "DISABLE_CONSOLE_OUTPUT=true",
+        "-e",
+        "N8N_API_URL=https://n8n-ptb2.onrender.com",
+        "-e",
+        "N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyMjRiMTZkZS0yZWY5LTQ0ZDYtODhhMy1mM2Q2MWZkZTM1MjkiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzU1NTU3MzY4LCJleHAiOjE3NTgwODE2MDB9.WB9gPmy2czwJ4Uu0R-MuWHETzUag0WUD3JZNWDH1Ctk",
+        "ghcr.io/czlonkowski/n8n-mcp:latest"
+      ]
     }
   }
+}

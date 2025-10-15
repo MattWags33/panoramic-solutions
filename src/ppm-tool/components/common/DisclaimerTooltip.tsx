@@ -4,7 +4,7 @@ import { useUnifiedMobileDetection } from '../../shared/hooks/useUnifiedMobileDe
 
 export const DisclaimerTooltip: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const { isTouchDevice } = useUnifiedMobileDetection();
+  const { isTouchDevice, hasTouch } = useUnifiedMobileDetection();
 
   const disclaimerContent = (
     <div className="space-y-2">
@@ -30,18 +30,18 @@ export const DisclaimerTooltip: React.FC = () => {
   );
 
   const handleInteraction = () => {
-    if (isTouchDevice) {
+    if (isTouchDevice || hasTouch) {
       setIsVisible(!isVisible);
       
-      // Auto-hide after 4 seconds on mobile
-      if (!isVisible) {
+      // Auto-hide after 4 seconds on mobile (but not touch-enabled laptops)
+      if (!isVisible && isTouchDevice) {
         setTimeout(() => setIsVisible(false), 4000);
       }
     }
   };
 
   React.useEffect(() => {
-    if (!isTouchDevice) return;
+    if (!isTouchDevice && !hasTouch) return;
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Element;
@@ -59,7 +59,7 @@ export const DisclaimerTooltip: React.FC = () => {
       document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isVisible, isTouchDevice]);
+  }, [isVisible, isTouchDevice, hasTouch]);
 
   return (
     <div 
@@ -67,8 +67,8 @@ export const DisclaimerTooltip: React.FC = () => {
       data-disclaimer-tooltip
       onMouseEnter={() => !isTouchDevice && setIsVisible(true)}
       onMouseLeave={() => !isTouchDevice && setIsVisible(false)}
-      onClick={isTouchDevice ? handleInteraction : undefined}
-      style={{ touchAction: isTouchDevice ? 'manipulation' : undefined }}
+      onClick={(isTouchDevice || hasTouch) ? handleInteraction : undefined}
+      style={{ touchAction: (isTouchDevice || hasTouch) ? 'manipulation' : undefined }}
     >
       {/* Invisible trigger area for better touch targets */}
       <div className={`absolute inset-0 ${isTouchDevice ? 'min-h-[44px] min-w-[44px]' : ''}`} />
@@ -78,7 +78,7 @@ export const DisclaimerTooltip: React.FC = () => {
         bg-gray-800 text-white text-xs rounded-lg shadow-xl z-50
         transition-all duration-200 ease-in-out
         ${isVisible ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}
-        ${isTouchDevice ? 'pointer-events-auto' : 'pointer-events-none'}
+        ${(isTouchDevice || hasTouch) ? 'pointer-events-auto' : 'pointer-events-none'}
       `}>
         {disclaimerContent}
         <div className="absolute w-3 h-3 bg-gray-800 transform rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2"></div>

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 interface MobileDetectionState {
   isMobile: boolean;
   isTouchDevice: boolean;
+  hasTouch: boolean;
   isHydrated: boolean;
 }
 
@@ -20,14 +21,15 @@ export function useUnifiedMobileDetection(breakpoint: number = 1023): MobileDete
   const [state, setState] = useState<MobileDetectionState>(() => ({
     isMobile: false, // Always false during SSR
     isTouchDevice: false, // Always false during SSR
+    hasTouch: false, // Always false during SSR
     isHydrated: false
   }));
 
   useEffect(() => {
     // Single function to detect all mobile/touch characteristics
-    const detectMobileAndTouch = (): { isMobile: boolean; isTouchDevice: boolean } => {
+    const detectMobileAndTouch = (): { isMobile: boolean; isTouchDevice: boolean; hasTouch: boolean } => {
       if (typeof window === 'undefined') {
-        return { isMobile: false, isTouchDevice: false };
+        return { isMobile: false, isTouchDevice: false, hasTouch: false };
       }
 
       try {
@@ -77,18 +79,19 @@ export function useUnifiedMobileDetection(breakpoint: number = 1023): MobileDete
         const isClearlyTablet = (isTabletUserAgent || isAndroidTablet) && !hasHoverCapability;
         const isTouchDevice = (isClearlyMobile || isClearlyTablet) && hasTouch;
 
-        return { isMobile, isTouchDevice };
+        return { isMobile, isTouchDevice, hasTouch };
       } catch (error) {
         console.warn('Mobile detection failed, using safe defaults:', error);
-        return { isMobile: false, isTouchDevice: false };
+        return { isMobile: false, isTouchDevice: false, hasTouch: false };
       }
     };
 
     // Update state immediately after mount
-    const { isMobile, isTouchDevice } = detectMobileAndTouch();
+    const { isMobile, isTouchDevice, hasTouch } = detectMobileAndTouch();
     setState({
       isMobile,
       isTouchDevice,
+      hasTouch,
       isHydrated: true
     });
 
@@ -97,11 +100,12 @@ export function useUnifiedMobileDetection(breakpoint: number = 1023): MobileDete
     const handleResize = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        const { isMobile, isTouchDevice } = detectMobileAndTouch();
+        const { isMobile, isTouchDevice, hasTouch } = detectMobileAndTouch();
         setState(prev => ({
           ...prev,
           isMobile,
-          isTouchDevice
+          isTouchDevice,
+          hasTouch
         }));
       }, 150);
     };
