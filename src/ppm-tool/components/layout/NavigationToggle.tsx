@@ -83,7 +83,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     const mobileLogoSpacing = isMobile ? 8 : 0; // Extra space below toggles for mobile logo
     
     // Larger spacing between navigation and main content
-    const extraSpacing = isMobile ? 40 : 16; // Increased mobile spacing for logo separation, keep desktop gap
+    const extraSpacing = isMobile ? 48 : 16; // Increased mobile spacing for logo separation, keep desktop gap
     
     return topPadding + bottomPadding + contentHeight + mobileLogoSpacing + extraSpacing;
   }, [isMobile]);
@@ -177,7 +177,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
 
   const steps: NavigationStep[] = isMobile 
     ? [
-        { id: 'criteria', label: 'Rank Your Criteria', description: 'Set importance levels' },
+        { id: 'criteria', label: 'Rank Your\nCriteria', description: 'Set importance levels' },
         { id: 'tools', label: 'Tools & Recommendations', description: 'Choose PPM solutions' },
         { id: 'chart', label: 'Tools - Criteria Comparison', description: 'Visual comparison' },
       ]
@@ -242,7 +242,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                       shouldGlow && 'chart-toggle-glow'
                     )}
                   >
-                    <span className="text-sm md:text-base">
+                    <span className="text-sm md:text-base whitespace-pre-line">
                       {step.label}
                     </span>
                     {isChartStep && compareCount > 0 && (
