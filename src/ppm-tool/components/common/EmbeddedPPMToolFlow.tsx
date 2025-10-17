@@ -28,6 +28,7 @@ import { useUnifiedExitIntent } from '@/ppm-tool/shared/hooks/useUnifiedExitInte
 import { useUnifiedMouseTracking } from '@/ppm-tool/shared/hooks/useUnifiedMouseTracking';
 import { useDevelopmentKeyboards } from '@/ppm-tool/shared/hooks/useDevelopmentKeyboards';
 import { resetUnifiedBumperState } from '@/ppm-tool/shared/utils/unifiedBumperState';
+import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import '@/ppm-tool/shared/utils/bumperDebugger'; // Import debugger for global functions
 // REMOVED: import { MobileDiagnostics } from './MobileDiagnostics'; - Causes browser compatibility issues
 import { MobileRecoverySystem } from './MobileRecoverySystem';
@@ -568,6 +569,9 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   }, [triggerExitIntentBumper]);
 
   const filteredTools = filterTools(selectedTools, filterConditions, filterMode);
+  
+  // Check if criteria have been adjusted from defaults (isolated from bumper logic)
+  const criteriaAdjusted = hasCriteriaBeenAdjusted(criteria);
 
   // Handlers for criteria
   const handleCriteriaChange = (newCriteria: Criterion[]) => {
@@ -950,11 +954,11 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           />
           <main 
             className={cn(
-              "container mx-auto px-4 py-6",
-              isMobile && "pb-28" // Increased padding to accommodate the action buttons
+              'container mx-auto px-4 pb-8',
+              isMobile && "pb-32" // Increased padding to accommodate the action buttons
             )}
             style={{
-              paddingTop: "var(--total-fixed-height, 12rem)" // Use the calculated total height from NavigationToggle
+              paddingTop: "calc(var(--total-fixed-height, 12rem) + 1rem)" // Add extra 1rem (16px) spacing above content
             }}
           >
             {/* Mobile Logo - Scrollable, appears above content */}
@@ -1024,6 +1028,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           toolCount={filteredTools.length}
           hasFilters={filterConditions.length > 0}
           emailButtonRef={getReportButtonRef}
+          criteriaAdjusted={criteriaAdjusted}
         />
 
         {/* REMOVED: Mobile Diagnostics - Causes browser compatibility issues with Edge/Safari

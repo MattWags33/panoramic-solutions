@@ -109,7 +109,7 @@ export function TestimonialCarousel({
 
   return (
     <div className={`relative ${className}`}>
-      <div className="relative h-auto min-h-[320px] sm:min-h-[400px] overflow-hidden">
+      <div className="relative h-auto min-h-[400px] sm:min-h-[480px] overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}

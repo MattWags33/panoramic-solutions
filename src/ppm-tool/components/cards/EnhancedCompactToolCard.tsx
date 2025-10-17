@@ -7,6 +7,7 @@ import { Progress } from '@/ppm-tool/components/ui/progress';
 import { cn } from '@/ppm-tool/shared/lib/utils';
 import { roundMatchScore } from '@/ppm-tool/shared/utils/toolRating';
 import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
+import { MatchScoreTooltip } from '@/ppm-tool/components/ui/MatchScoreTooltip';
 
 interface EnhancedCompactToolCardProps {
   tool: Tool;
@@ -16,6 +17,7 @@ interface EnhancedCompactToolCardProps {
   onToggleExpand: () => void;
   onCompare?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   isCompared?: boolean;
+  criteriaAdjusted?: boolean;
 }
 
 // Helper function to get tool rating for a criterion
@@ -116,7 +118,8 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
   isExpanded,
   onToggleExpand,
   onCompare,
-  isCompared = false
+  isCompared = false,
+  criteriaAdjusted = true
 }) => {
   const matchDisplay = getMatchScoreDisplay(matchScore);
 
@@ -125,15 +128,22 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
       className="border border-gray-200 hover:border-alpine-blue-300 cursor-pointer !bg-white shadow-none rounded-xl overflow-hidden transition-colors duration-200"
       onClick={onToggleExpand}
     >
-      <CardHeader className="pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
+      <CardHeader className="pb-2 md:pb-3 px-4 md:px-6 pt-2 md:pt-3">
         <div className="flex items-start justify-between gap-2 md:gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 md:mb-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 mb-1">
               <CardTitle className="text-base md:text-lg text-gray-900 break-words">{tool.name}</CardTitle>
-              <div className={`inline-flex items-center px-2 py-1 rounded-lg ${matchDisplay.bgColor} flex-shrink-0`}>
-                <span className={`text-xs md:text-sm font-bold ${matchDisplay.color}`}>{matchDisplay.value}</span>
-                <span className="text-xs ml-1 text-gray-600">Match Score</span>
-              </div>
+              {criteriaAdjusted ? (
+                <div className={`inline-flex items-center px-2 py-1 rounded-lg ${matchDisplay.bgColor} flex-shrink-0`}>
+                  <span className={`text-xs md:text-sm font-bold ${matchDisplay.color}`}>{matchDisplay.value}</span>
+                  <span className="text-xs ml-1 text-gray-600">Match Score</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 border-gray-200 flex-shrink-0">
+                  <MatchScoreTooltip className="text-xs md:text-sm" />
+                  <span className="text-xs ml-1 text-gray-600">Match Score</span>
+                </div>
+              )}
             </div>
             <MethodologyTags tool={tool} />
           </div>
@@ -173,8 +183,8 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2 md:space-y-3 px-4 md:px-6 pb-4 md:pb-6">
-        <div className="cursor-pointer -mx-4 md:-mx-6 px-4 md:px-6 py-2 md:py-3 bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-200 flex items-center justify-center gap-2 text-xs md:text-sm font-medium text-alpine-blue-500 rounded-b-xl">
+      <CardContent className="space-y-2 md:space-y-3 px-4 md:px-6 pb-0">
+        <div className="cursor-pointer -mx-4 md:-mx-6 px-4 md:px-6 py-1 md:py-2 bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-200 flex items-center justify-center gap-2 text-xs md:text-sm font-medium text-alpine-blue-500 rounded-b-xl -mb-0">
           {isExpanded ? (
             <>
               <ChevronUp className="w-3 h-3 md:w-4 md:h-4" />

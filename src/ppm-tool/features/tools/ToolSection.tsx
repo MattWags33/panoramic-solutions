@@ -17,6 +17,7 @@ import { useShuffleAnimation, useToolOrderShuffle } from '@/ppm-tool/hooks/useSh
 import { ShuffleContainer } from '@/ppm-tool/components/animations/ShuffleContainer';
 import { AnimatedToolCard } from '@/ppm-tool/components/animations/AnimatedToolCard';
 import { checkAndTrackNewActive } from '@/lib/posthog';
+import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 
 
 
@@ -98,6 +99,9 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
     }
   }, [filterConditions, filterMode, selectedTools, filteredTools, selectedCriteria]);
 
+  // Check if criteria have been adjusted from defaults (isolated from bumper logic)
+  const criteriaAdjusted = hasCriteriaBeenAdjusted(selectedCriteria);
+
   // Memoize match scores for performance
   const toolMatchScores = React.useMemo(() => {
     const scores = new Map<string, number>();
@@ -107,14 +111,20 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
     return scores;
   }, [filteredTools, selectedCriteria]);
 
-  // Sort tools by match score (highest first)
+  // Sort tools: alphabetically when criteria not adjusted, by match score when adjusted
   const sortedTools = React.useMemo(() => {
+    if (!criteriaAdjusted) {
+      // Sort alphabetically when criteria haven't been adjusted
+      return [...filteredTools].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    
+    // Sort by match score (highest first) when criteria have been adjusted
     return [...filteredTools].sort((a, b) => {
       const scoreA = toolMatchScores.get(a.id) || 0;
       const scoreB = toolMatchScores.get(b.id) || 0;
       return scoreB - scoreA;
     });
-  }, [filteredTools, toolMatchScores]);
+  }, [filteredTools, toolMatchScores, criteriaAdjusted]);
 
   // Set up tool order shuffle animation - triggers when sortedTools order changes
   useToolOrderShuffle(sortedTools, shuffleAnimation, {
@@ -217,6 +227,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
         onToggleExpand={() => handleToggleExpand(tool.id)}
         onCompare={(e) => handleCompare(tool, e)}
         isCompared={comparedTools.has(tool.id)}
+        criteriaAdjusted={criteriaAdjusted}
       />
     </AnimatedToolCard>
   );
@@ -422,7 +433,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
             <ShuffleContainer
               tools={sortedTools}
               shuffleAnimation={shuffleAnimation}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-1"
               isMobile={isMobile}
               enableParticles={true}
             >

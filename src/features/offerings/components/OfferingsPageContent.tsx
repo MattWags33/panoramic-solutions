@@ -49,13 +49,13 @@ const offeringCategories: OfferingCategory[] = [
   {
     id: 'project-portfolio',
     title: 'Project & Portfolio Consulting',
-    subtitle: 'Project portfolio management offerings with certified expertise',
+    subtitle: 'Project Portfolio Management offerings with certified expertise',
     icon: Briefcase,
     iconColor: 'bg-alpine',
     offerings: [
       {
         title: 'PPM Tool Finder - FREE Interactive Assessment',
-        description: 'Use our comprehensive, research-backed tool to find the perfect project portfolio management software for your organization. Get personalized recommendations in minutes.',
+        description: 'Use our comprehensive, research-backed tool to find the perfect Project Portfolio Management software for your organization. Get personalized recommendations in minutes.',
         icon: FileCheck,
         isHighlighted: true,
         ctaText: 'Try PPM Tool Finder',
@@ -208,19 +208,6 @@ export function OfferingsPageContent() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {category.logos && (
-                          <div className="hidden sm:flex items-center space-x-2">
-                            <div className="w-8 h-8 bg-alpine/10 rounded flex items-center justify-center">
-                              <Database className="h-4 w-4 text-alpine" />
-                            </div>
-                            <div className="w-8 h-8 bg-summit/10 rounded flex items-center justify-center">
-                              <Grid3X3 className="h-4 w-4 text-summit" />
-                            </div>
-                            <div className="w-8 h-8 bg-alpine/10 rounded flex items-center justify-center">
-                              <Layers className="h-4 w-4 text-alpine" />
-                            </div>
-                          </div>
-                        )}
                         <div className="text-alpine">
                           {expandedService === category.id ? (
                             <ChevronUp className="h-5 w-5 sm:h-6 sm:w-6" />

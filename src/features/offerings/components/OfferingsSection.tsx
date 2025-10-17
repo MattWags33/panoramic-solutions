@@ -96,19 +96,6 @@ export function OfferingsSection() {
             />
           </motion.div>
         </div>
-
-        <div className="text-center">
-          <Button
-            asChild
-            size="lg"
-            className="btn-hover-lift bg-alpine hover:bg-summit text-white px-6 sm:px-8 py-3 sm:py-4"
-            style={{ minHeight: '48px' }}
-          >
-            <Link href="/offerings">
-              View All Offerings <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-            </Link>
-          </Button>
-        </div>
       </div>
     </section>
   )

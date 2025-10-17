@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ErrorBoundary } from '@/ppm-tool/components/common/ErrorBoundary';
 import { EmbeddedPPMToolFlow } from '@/ppm-tool/components/common/EmbeddedPPMToolFlow';
 import { GuidanceProvider } from '@/ppm-tool/shared/contexts/GuidanceContext';
@@ -11,6 +12,8 @@ import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES, addDevelopmentKeyboard
 import { LegalDisclaimer } from '@/ppm-tool/components/common/LegalDisclaimer';
 
 export default function PPMToolPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showGuidedRanking, setShowGuidedRanking] = useState(false);
   const guidedButtonRef = useRef<HTMLButtonElement>(null);
@@ -18,6 +21,15 @@ export default function PPMToolPage() {
   
   // Note: Bumper management is handled internally by EmbeddedPPMToolFlow
   // No need for duplicate state management at this level
+
+  // Check URL parameters on mount and when they change
+  useEffect(() => {
+    const overlay = searchParams?.get('overlay');
+    if (overlay === 'how-it-works') {
+      setShowHowItWorks(true);
+      setOverlayOpen(OVERLAY_TYPES.HOW_IT_WORKS);
+    }
+  }, [searchParams]);
 
   // Track new visitor and active user on page load
   useEffect(() => {
@@ -86,6 +98,21 @@ export default function PPMToolPage() {
     trackTool('ppm_tool', 'viewed_how_it_works', { source: 'main_page' });
     setShowHowItWorks(true);
     setOverlayOpen(OVERLAY_TYPES.HOW_IT_WORKS);
+    
+    // Update URL without navigation
+    const url = new URL(window.location.href);
+    url.searchParams.set('overlay', 'how-it-works');
+    window.history.pushState({}, '', url.toString());
+  };
+
+  const handleCloseHowItWorks = () => {
+    setShowHowItWorks(false);
+    setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
+    
+    // Remove overlay parameter from URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete('overlay');
+    window.history.pushState({}, '', url.toString());
   };
 
   return (
@@ -101,13 +128,10 @@ export default function PPMToolPage() {
                 guidedButtonRef={guidedButtonRef}
               />
               
-              {/* How It Works Overlay - triggered manually via button */}
+              {/* How It Works Overlay - triggered manually via button or URL parameter */}
               <HowItWorksOverlay
                 isVisible={showHowItWorks}
-                onClose={() => {
-                  setShowHowItWorks(false);
-                  setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
-                }}
+                onClose={handleCloseHowItWorks}
                 onGetStarted={handleGetStarted}
                 onManualRanking={handleManualRanking}
               />

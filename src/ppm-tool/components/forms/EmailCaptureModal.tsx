@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEmailReport } from '@/ppm-tool/shared/hooks/useEmailReport';
 import type { Tool, Criterion } from '@/ppm-tool/shared/types';
 import { useToast } from '@/hooks/use-toast';
+import { hasCriteriaBeenAdjusted, getCriteriaAdjustmentMessage, getCriteriaAdjustmentMessageStyles } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 
 interface EmailCaptureModalProps {
   isOpen: boolean;
@@ -345,6 +346,11 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
   const formRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
+  // Check if criteria have been adjusted from defaults (completely isolated from bumper logic)
+  const criteriaAdjusted = hasCriteriaBeenAdjusted(selectedCriteria);
+  const reportMessage = getCriteriaAdjustmentMessage(selectedTools.length, criteriaAdjusted);
+  const messageStyles = getCriteriaAdjustmentMessageStyles(criteriaAdjusted);
+  
   useClickOutside(formRef, onClose);
 
   const { sendEmailReport, isLoading: isSendingEmail, error: emailError } = useEmailReport({
@@ -478,13 +484,27 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
             
             {/* Content */}
             <div className="p-4 md:p-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 md:mb-6">
+              <div className={`${criteriaAdjusted ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'} border rounded-lg p-3 mb-4 md:mb-6`}>
                 <p className="text-sm md:text-base text-gray-600 mb-2">
                   We&apos;ll send a clean, easy-to-read version of your results, rankings, and recommendations to your inbox.
                 </p>
-                <p className="text-xs md:text-sm text-blue-700 font-medium">
-                  📊 Your report will include analysis of <strong>{selectedTools.length} {selectedTools.length === 1 ? 'tool' : 'tools'}</strong> based on your current rankings and filters.
+                <p className={messageStyles}>
+                  {reportMessage}
                 </p>
+                {!criteriaAdjusted && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Close modal and trigger guided rankings
+                      onClose();
+                      // Note: This will be handled by the parent component's guided rankings logic
+                      // We don't directly trigger it to avoid interfering with bumper state
+                    }}
+                    className="mt-2 text-xs text-red-600 hover:text-red-700 underline font-medium"
+                  >
+                    Complete Guided Rankings →
+                  </button>
+                )}
               </div>
               
               <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">

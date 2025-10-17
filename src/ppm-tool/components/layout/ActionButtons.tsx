@@ -280,6 +280,16 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { onComparisonReportClick, onComparisonReportOpen, onComparisonReportClose } = useGuidance();
+
+  const handleHowItWorksClick = () => {
+    // Update URL to show overlay
+    const url = new URL(window.location.href);
+    url.searchParams.set('overlay', 'how-it-works');
+    window.history.pushState({}, '', url.toString());
+    
+    // Trigger the overlay (this will be handled by the useEffect in the main page)
+    onShowHowItWorks?.();
+  };
   
   const handleGetReport = () => {
     // Record that user clicked into Comparison Report
@@ -324,7 +334,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
               {/* How It Works Button - Blue (Mobile) */}
               {onShowHowItWorks && (
                 <button
-                  onClick={onShowHowItWorks}
+                  onClick={handleHowItWorksClick}
                   className={cn(
                     "flex-1 bg-blue-400 text-white px-3 py-3 rounded-xl font-medium text-sm",
                     "flex items-center justify-center gap-2",
@@ -376,7 +386,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         {/* How It Works - Plain Text */}
         {onShowHowItWorks && (
           <button
-            onClick={onShowHowItWorks}
+            onClick={handleHowItWorksClick}
             className="text-alpine-blue-400 text-xs md:text-sm font-medium flex items-center gap-2 hover:text-alpine-blue-500 transition-colors mr-2"
           >
             <HelpCircle className="w-3 h-3 md:w-4 md:h-4" />

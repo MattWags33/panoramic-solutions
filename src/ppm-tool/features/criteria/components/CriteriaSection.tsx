@@ -182,9 +182,9 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                 onReorder={onCriteriaChange}
                 getItemId={(criterion) => criterion.id}
                 renderItem={(criterion) => (
-                  <div key={criterion.id} className="pl-8">
-                    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-                      <div className="flex items-center justify-between mb-3">
+                  <div key={criterion.id} className="pl-4 md:pl-6">
+                    <div className="bg-white rounded-lg border border-gray-200 px-4 md:px-6 pt-4 md:pt-5 pb-2 mb-4">
+                      <div className="flex items-start justify-between gap-2 md:gap-3 mb-3">
                         <div className="flex items-center gap-2">
                           <h3 className="text-lg font-semibold text-gray-900">
                             {criterion.name}
@@ -235,7 +235,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                         </div>
                       </div>
                       <div data-lenis-prevent>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
                           <div className="flex-1">
                             <Slider
                               value={[criterion.userRating]}
@@ -251,7 +251,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                             <span className="text-alpine-blue-600 font-semibold text-lg">{criterion.userRating}</span>
                           </div>
                         </div>
-                        <div className="flex justify-between mt-2 text-xs text-gray-500">
+                        <div className="flex justify-between mt-1 text-xs text-gray-500">
                           <span>Importance level</span>
                           <span></span>
                         </div>

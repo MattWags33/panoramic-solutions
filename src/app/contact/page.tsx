@@ -274,7 +274,7 @@ export default function ContactPage() {
                       <Textarea
                         value={formData.message}
                         onChange={(e) => handleInputChange('message', e.target.value)}
-                        placeholder="Tell us about your goals, challenges, or what you'd like to achieve..."
+                        placeholder="Please describe your project needs and how we can assist you"
                         required
                         disabled={isSubmitting}
                         rows={6}

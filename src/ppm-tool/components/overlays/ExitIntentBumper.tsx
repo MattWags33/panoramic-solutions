@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail } from 'lucide-react';
+import { getCriteriaAdjustmentMessage } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 
 interface ExitIntentBumperProps {
   isVisible: boolean;
@@ -12,6 +13,7 @@ interface ExitIntentBumperProps {
   toolCount?: number;
   hasFilters?: boolean;
   emailButtonRef?: React.RefObject<HTMLButtonElement>;
+  criteriaAdjusted?: boolean;
 }
 
 export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
@@ -21,7 +23,8 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
   triggerType = 'mouse-leave',
   toolCount = 0,
   hasFilters = false,
-  emailButtonRef
+  emailButtonRef,
+  criteriaAdjusted = true
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -239,10 +242,8 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
   }, [isVisible]);
 
   const getMessage = () => {
-    const toolText = toolCount > 0 ? `${toolCount} tools` : 'tools';
-    const filterText = hasFilters ? 'rankings and filters' : 'current rankings';
-    
-    return `Your report will include analysis of ${toolText} based on your ${filterText}.`;
+    // Use the same message logic as EmailCaptureModal for consistency
+    return getCriteriaAdjustmentMessage(toolCount, criteriaAdjusted);
   };
 
   const getSubMessage = () => {
