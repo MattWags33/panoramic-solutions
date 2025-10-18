@@ -18,6 +18,7 @@ interface EnhancedCompactToolCardProps {
   onCompare?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   isCompared?: boolean;
   criteriaAdjusted?: boolean;
+  onOpenGuidedRanking?: () => void;
 }
 
 // Helper function to get tool rating for a criterion
@@ -119,7 +120,8 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
   onToggleExpand,
   onCompare,
   isCompared = false,
-  criteriaAdjusted = true
+  criteriaAdjusted = true,
+  onOpenGuidedRanking
 }) => {
   const matchDisplay = getMatchScoreDisplay(matchScore);
 
@@ -128,7 +130,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
       className="border border-gray-200 hover:border-alpine-blue-300 cursor-pointer !bg-white shadow-none rounded-xl overflow-hidden transition-colors duration-200"
       onClick={onToggleExpand}
     >
-      <CardHeader className="pb-2 md:pb-3 px-4 md:px-6 pt-2 md:pt-3">
+      <CardHeader className="pb-2 md:pb-3.5 px-4 md:px-6 pt-2 md:pt-2">
         <div className="flex items-start justify-between gap-2 md:gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 mb-1">
@@ -140,7 +142,10 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                 </div>
               ) : (
                 <div className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 border-gray-200 flex-shrink-0">
-                  <MatchScoreTooltip className="text-xs md:text-sm" />
+                  <MatchScoreTooltip 
+                    className="text-xs md:text-sm" 
+                    onGuidedRankingClick={onOpenGuidedRanking}
+                  />
                   <span className="text-xs ml-1 text-gray-600">Match Score</span>
                 </div>
               )}

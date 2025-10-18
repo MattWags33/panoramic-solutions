@@ -82,6 +82,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
           onCompare={onCompare}
           comparedTools={comparedTools}
           chartButtonPosition={chartButtonPosition}
+          onOpenGuidedRanking={onOpenGuidedRanking}
         />
       </div>
     </div>

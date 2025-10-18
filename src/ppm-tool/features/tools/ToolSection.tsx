@@ -40,6 +40,7 @@ interface ToolSectionProps {
   onCompare?: (tool: Tool) => void;
   comparedTools?: Set<string>;
   chartButtonPosition?: { x: number; y: number };
+  onOpenGuidedRanking?: () => void;
 }
 
 // Use the unified calculateScore function
@@ -63,7 +64,8 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
   isSubmitting,
   onCompare,
   comparedTools = new Set(),
-  chartButtonPosition
+  chartButtonPosition,
+  onOpenGuidedRanking
 }) => {
   const isMobile = useMobileDetection();
 
@@ -228,6 +230,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
         onCompare={(e) => handleCompare(tool, e)}
         isCompared={comparedTools.has(tool.id)}
         criteriaAdjusted={criteriaAdjusted}
+        onOpenGuidedRanking={onOpenGuidedRanking}
       />
     </AnimatedToolCard>
   );
@@ -273,7 +276,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
                       }}
                       className="px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium text-white bg-alpine-blue-400 hover:bg-alpine-blue-500 rounded-lg transition-colors whitespace-nowrap shadow-sm"
                     >
-                      Reset All
+                      Reset Filters
                     </button>
                     <button
                       onClick={handleSettingsClose}

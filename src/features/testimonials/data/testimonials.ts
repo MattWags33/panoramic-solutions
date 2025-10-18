@@ -2,13 +2,6 @@ import { TestimonialData } from '@/shared/types'
 
 export const testimonials: TestimonialData[] = [
   {
-    quote: "I've had the pleasure of working with Panoramic across multiple organizations, and their professionalism and technical expertise are consistently outstanding. What sets this team apart is their ability to quickly understand complex operational challenges and design practical, scalable data ecosystems that bridge gaps between teams. Every engagement with Panoramic has been both productive and enjoyable - they're collaborative, thoughtful, and genuinely invested in the clients' success.",
-    author: "Greg Katz",
-    title: "Chief Engineer & Program Leader",
-    company: "By Light Professional IT Services",
-    rating: 5,
-  },
-  {
     quote: "We needed a real solution, not more overhead. Panoramic came in, listened to the people doing the work, and delivered a lean, mobile-first system that fits the way we operate. Our clients love it, and it's given us a clear edge in how we execute our services.",
     author: "Ben Breedlove",
     title: "General Manager",
@@ -20,6 +13,13 @@ export const testimonials: TestimonialData[] = [
     author: "Ryan Gleason",
     title: "Senior Vice President of Project Management",
     company: "General Electric Credit Union",
+    rating: 5,
+  },
+  {
+    quote: "I've had the pleasure of working with Panoramic across multiple organizations, and their professionalism and technical expertise are consistently outstanding. What sets this team apart is their ability to quickly understand complex operational challenges and design practical, scalable data ecosystems that bridge gaps between teams. Every engagement with Panoramic has been both productive and enjoyable - they're collaborative, thoughtful, and genuinely invested in the clients' success.",
+    author: "Greg Katz",
+    title: "Chief Engineer & Program Leader",
+    company: "By Light Professional IT Services",
     rating: 5,
   },
 ]

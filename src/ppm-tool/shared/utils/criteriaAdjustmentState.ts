@@ -37,7 +37,7 @@ export function getCriteriaAdjustmentMessageStyles(hasAdjusted: boolean): string
   if (hasAdjusted) {
     return "text-xs md:text-sm text-blue-700 font-medium";
   }
-  return "text-xs md:text-sm text-red-700 font-medium";
+  return "text-xs md:text-sm text-yellow-700 font-medium";
 }
 
 /**
@@ -46,4 +46,12 @@ export function getCriteriaAdjustmentMessageStyles(hasAdjusted: boolean): string
  */
 export function getMatchScoreTooltipContent(): string {
   return "How to get your match score 👉 complete the guided rankings or adjust the Criteria sliders to match your priorities.";
+}
+
+/**
+ * Get the tooltip content for "Not Yet Ranked" explanation
+ * @returns Tooltip content string
+ */
+export function getNotYetRankedTooltipContent(): string {
+  return "How to get your tool's rankings 👉 complete the guided rankings or adjust the Criteria sliders to match your priorities.";
 }

@@ -66,7 +66,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     // Logo height: h-8 (32px) on mobile, h-10 (40px) on desktop
     const topPadding = 12; // From style override: max(12px, env(safe-area-inset-top, 12px))
     const bottomPadding = isMobile ? 4 : 8; // Reduced bottom padding on mobile
-    const logoHeight = isMobile ? 32 : 40; // h-8 = 32px, h-10 = 40px
+    const logoHeight = isMobile ? 40 : 52; // h-8 = 32px, h-10 = 40px
     
     // Total header height: top padding + bottom padding + logo height
     return topPadding + bottomPadding + logoHeight;

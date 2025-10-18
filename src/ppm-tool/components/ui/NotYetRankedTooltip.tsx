@@ -3,25 +3,25 @@
 import React from 'react';
 import { HelpCircle } from 'lucide-react';
 import { MobileTooltip } from './MobileTooltip';
-import { getMatchScoreTooltipContent } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { getNotYetRankedTooltipContent } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 
-interface MatchScoreTooltipProps {
+interface NotYetRankedTooltipProps {
   className?: string;
   onGuidedRankingClick?: () => void;
 }
 
 /**
- * Isolated tooltip component for match score explanation
+ * Tooltip component for "Not Yet Ranked" state explanation
  * Uses existing tooltip infrastructure without modification
  * Completely separate from bumper and other tooltip systems
  */
-export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
+export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
   className = '',
   onGuidedRankingClick
 }) => {
   const tooltipContent = (
     <div>
-      <p className="mb-2">{getMatchScoreTooltipContent()}</p>
+      <p className="mb-2">{getNotYetRankedTooltipContent()}</p>
       {onGuidedRankingClick && (
         <button
           onClick={(e) => {
@@ -44,7 +44,7 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
       className="max-w-xs"
     >
       <div className={`inline-flex items-center cursor-help ${className}`}>
-        <span className="text-gray-500">N/A</span>
+        <span className="text-gray-500">Not Yet Ranked</span>
         <HelpCircle className="w-3 h-3 ml-1 text-gray-400" />
       </div>
     </MobileTooltip>

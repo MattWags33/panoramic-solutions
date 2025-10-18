@@ -23,12 +23,14 @@ import { getToolColor } from '@/ppm-tool/shared/utils/chartColors';
 import { useMobileDetection } from '@/ppm-tool/shared/hooks/useMobileDetection';
 import { checkAndTrackNewActive } from '@/lib/posthog';
 import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { NotYetRankedTooltip } from '@/ppm-tool/components/ui/NotYetRankedTooltip';
 
 
 interface ComparisonChartProps {
   tools: Tool[];
   criteria: Criterion[];
   comparedTools?: Set<string>;
+  onOpenGuidedRanking?: () => void;
 }
 
 ChartJS.register(
@@ -43,7 +45,8 @@ ChartJS.register(
 export const ComparisonChart: React.FC<ComparisonChartProps> = ({
   tools: selectedTools,
   criteria: selectedCriteria,
-  comparedTools = new Set()
+  comparedTools = new Set(),
+  onOpenGuidedRanking
 }) => {
   const isMobile = useMobileDetection();
   
@@ -430,7 +433,9 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
               <span className={`text-sm font-semibold ${
                 visibleTools.has('requirements') ? 'text-green-800' : 'text-gray-600'
               }`}>
-                Your Tool
+                {criteriaAdjusted ? 'Your Tool' : (
+                  <NotYetRankedTooltip onGuidedRankingClick={onOpenGuidedRanking} />
+                )}
               </span>
             </button>
             {selectedTools.map((tool, index) => {
@@ -460,24 +465,7 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
             })}
           </div>
         )}
-        <div className={`w-full ${isMobile ? 'h-[360px]' : 'h-[450px]'} ${isMobile ? 'pt-2 px-3' : 'pt-4 px-4'} relative`}>
-          {!criteriaAdjusted && (
-            <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10 rounded-lg">
-              <div className="text-center p-4">
-                <p className="text-gray-600 mb-3">Complete the guided rankings to see your comparison chart</p>
-                <button
-                  className="px-4 py-2 bg-alpine-blue-400 text-white rounded-lg hover:bg-alpine-blue-500 transition-colors text-sm font-medium"
-                  onClick={() => {
-                    // This will be handled by parent component's guided rankings logic
-                    // We don't directly trigger it to avoid interfering with bumper state
-                    console.log('Guided rankings button clicked from comparison chart');
-                  }}
-                >
-                  Complete Guided Rankings →
-                </button>
-              </div>
-            </div>
-          )}
+        <div className={`w-full ${isMobile ? 'h-[360px]' : 'h-[450px]'} ${isMobile ? 'pt-2 px-3' : 'pt-4 px-4'}`}>
           <Radar data={data} options={options} />
         </div>
       </div>

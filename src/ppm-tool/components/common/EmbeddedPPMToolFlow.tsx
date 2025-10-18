@@ -768,6 +768,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
                 tools={filteredTools}
                 criteria={criteria}
                 comparedTools={comparedTools}
+                onOpenGuidedRanking={onOpenGuidedRanking}
               />
             </div>
           );
@@ -808,6 +809,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
               tools={filteredTools}
               criteria={criteria}
               comparedTools={comparedTools}
+              onOpenGuidedRanking={onOpenGuidedRanking}
             />
           </div>
         );

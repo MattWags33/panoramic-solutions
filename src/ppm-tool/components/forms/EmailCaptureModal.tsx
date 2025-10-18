@@ -484,7 +484,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
             
             {/* Content */}
             <div className="p-4 md:p-6">
-              <div className={`${criteriaAdjusted ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'} border rounded-lg p-3 mb-4 md:mb-6`}>
+              <div className={`${criteriaAdjusted ? 'bg-blue-50 border-blue-200' : 'bg-yellow-50 border-yellow-200'} border rounded-lg p-3 mb-4 md:mb-6`}>
                 <p className="text-sm md:text-base text-gray-600 mb-2">
                   We&apos;ll send a clean, easy-to-read version of your results, rankings, and recommendations to your inbox.
                 </p>
@@ -500,7 +500,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                       // Note: This will be handled by the parent component's guided rankings logic
                       // We don't directly trigger it to avoid interfering with bumper state
                     }}
-                    className="mt-2 text-xs text-red-600 hover:text-red-700 underline font-medium"
+                    className="mt-2 text-xs text-yellow-600 hover:text-yellow-700 underline font-medium"
                   >
                     Complete Guided Rankings →
                   </button>

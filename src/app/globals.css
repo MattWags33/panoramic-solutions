@@ -1614,7 +1614,44 @@ input[type="reset"] {
   }
 }
 
-/* ======================================== 
-   END PPM TOOL SPECIFIC STYLES
-   ======================================== */
+/* ========================================
+     END PPM TOOL SPECIFIC STYLES
+     ======================================== */
+
+/* Mobile Footer Z-Index Fix */
+@media (max-width: 768px) {
+  /* Ensure footer stays below all interactive elements */
+  footer {
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
+  }
+  
+  /* Establish consistent z-index hierarchy for mobile tooltips */
+  .mobile-tooltip,
+  [data-radix-tooltip-content],
+  .disclaimer-tooltip,
+  [data-disclaimer-tooltip] .absolute {
+    z-index: 100 !important;
+  }
+  
+  /* Ensure comparison chart containers stay above footer */
+  .comparison-chart,
+  #chart-section,
+  .bg-white.rounded-lg.shadow-lg {
+    position: relative;
+    z-index: 10;
+  }
+  
+  /* Mobile fixed elements hierarchy */
+  .fixed {
+    z-index: 50 !important;
+  }
+  
+  /* Prevent footer transform contexts from interfering */
+  footer * {
+    transform: none !important;
+    will-change: auto !important;
+  }
+}
 }
