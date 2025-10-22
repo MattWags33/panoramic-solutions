@@ -1643,10 +1643,10 @@ input[type="reset"] {
     z-index: 10;
   }
   
-  /* Mobile fixed elements hierarchy */
-  .fixed {
+  /* Mobile fixed elements hierarchy - REMOVED: was causing z-index conflicts with header and navigation */
+  /* .fixed {
     z-index: 50 !important;
-  }
+  } */
   
   /* Prevent footer transform contexts from interfering */
   footer * {

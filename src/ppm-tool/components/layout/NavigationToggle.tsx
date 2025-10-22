@@ -43,9 +43,14 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
   onCloseExitIntentBumper
 }) => {
   const isMobile = useMobileDetection();
+  const [isHydrated, setIsHydrated] = useState(false);
   const [isChartGlowing, setIsChartGlowing] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const chartButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   // Update chart button position when component mounts or layout changes
   const updateChartButtonPosition = useCallback(() => {
@@ -60,13 +65,13 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
 
   // Calculate header height (fixed - no scroll changes)
   const getHeaderHeight = useCallback(() => {
-    // Header uses py-2 but paddingTop style overrides the top portion
-    // paddingTop: 'max(12px, env(safe-area-inset-top, 12px))' = 12px top
-    // py-2 = 8px bottom (top portion is overridden by style)
-    // Logo height: h-8 (32px) on mobile, h-10 (40px) on desktop
-    const topPadding = 12; // From style override: max(12px, env(safe-area-inset-top, 12px))
-    const bottomPadding = isMobile ? 4 : 8; // Reduced bottom padding on mobile
-    const logoHeight = isMobile ? 40 : 52; // h-8 = 32px, h-10 = 40px
+    // Header.tsx uses:
+    // - py-0.5 = 2px top + 2px bottom
+    // - paddingTop style overrides: max(4px, env(safe-area-inset-top)) on mobile, max(8px, env) on desktop
+    // - Logo: h-8 (32px) on mobile, h-10 (40px) on desktop
+    const topPadding = isMobile ? 4 : 8; // From paddingTop style override
+    const bottomPadding = 2; // py-0.5 = 2px bottom (consistent)
+    const logoHeight = isMobile ? 32 : 40; // h-8 = 32px mobile, h-10 = 40px desktop
     
     // Total header height: top padding + bottom padding + logo height
     return topPadding + bottomPadding + logoHeight;
@@ -80,10 +85,10 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     const contentHeight = 40; // Approximate content height
     
     // Add extra spacing below toggles on mobile for logo (original desktop logic)
-    const mobileLogoSpacing = isMobile ? 8 : 0; // Extra space below toggles for mobile logo
+    const mobileLogoSpacing = isMobile ? 4 : 0; // Reduced from 8px to 4px for tighter mobile spacing
     
     // Larger spacing between navigation and main content
-    const extraSpacing = isMobile ? 28 : 8; // Increased mobile spacing for logo separation, keep desktop gap
+    const extraSpacing = isMobile ? 24 : 16; // Mobile: 24px, Desktop: 16px (increased from 8px to match header gap increase)
     
     return topPadding + bottomPadding + contentHeight + mobileLogoSpacing + extraSpacing;
   }, [isMobile]);
@@ -175,7 +180,8 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     };
   }, []);
 
-  const steps: NavigationStep[] = isMobile 
+  // Use mobile layout as default for SSR, then update after hydration
+  const steps: NavigationStep[] = !isHydrated || isMobile 
     ? [
         { id: 'criteria', label: 'Rank Your Criteria', description: 'Set importance levels' },
         { id: 'tools', label: 'Tools & Recommendations', description: 'Choose PPM solutions' },
@@ -189,38 +195,44 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
   return (
     <nav 
       className={cn(
-        "fixed w-full z-50 transition-all duration-300",
+        "fixed w-full transition-all duration-300",
+        // Default to mobile z-index for SSR, update after hydration
+        !isHydrated ? "z-[55]" : (isMobile ? "z-[55]" : "z-50"), // z-55 on mobile (below header's z-60), z-50 on desktop
         isProductBumperVisible && "blur-sm opacity-75",
         isScrolled && "shadow-md shadow-gray-300/70"
       )}
         style={{ 
           backgroundColor: '#F0F4FE',
-          top: `${getHeaderHeight() + (isMobile ? 0 : 8)}px`, // Flush on mobile, more space on desktop
-          '--total-fixed-height': `${getTotalFixedHeight() + (isMobile ? 0 : 8)}px` // Expose total height for content padding
+          // Mobile: Position directly below header (flush)
+          // Desktop: Add 16px gap below header (increased from 8px)
+          // Default to mobile for SSR
+          top: `${getHeaderHeight() + (!isHydrated || isMobile ? 0 : 16)}px`,
+          '--total-fixed-height': `${getTotalFixedHeight() + (!isHydrated || isMobile ? 0 : 16)}px` // Expose total height for content padding
         } as React.CSSProperties}
       aria-label="PPM Tool Navigation"
       role="navigation"
     >
       <div className={cn(
         "container mx-auto pb-2",
-        isMobile ? "px-4 pt-4" : "px-4 pt-4" // Reduce from pt-8 to pt-4 on mobile for less spacing
+        // Same padding for mobile and desktop for consistency during hydration
+        "px-4 pt-4"
       )}>
         <div className={cn(
           "flex items-center",
-          isMobile ? "justify-center" : "justify-between"
+          !isHydrated ? "justify-center" : (isMobile ? "justify-center" : "justify-between")
         )}>
           {/* Navigation Steps - Left Side */}
           <div className={cn(
             "flex items-center",
-            isMobile ? "w-full justify-center" : ""
+            !isHydrated ? "w-full justify-center" : (isMobile ? "w-full justify-center" : "")
           )}>
             {/* Simple Tab Navigation */}
             <div className={cn(
               "flex items-center relative",
-              isMobile ? "space-x-0.5" : "space-x-6" // Reduced from space-x-2 to space-x-1 for mobile
+              !isHydrated ? "space-x-0.5" : (isMobile ? "space-x-0.5" : "space-x-6") // Reduced from space-x-2 to space-x-1 for mobile
             )}>
               {/* Continuous base line - mobile only */}
-              {isMobile && (
+              {(!isHydrated || isMobile) && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-300"></div>
               )}
               
@@ -235,7 +247,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                     onClick={() => onStepChange(step.id)}
                     className={cn(
                       'relative py-2 font-bold transition-all duration-300 flex flex-col items-center justify-end',
-                      isMobile ? 'px-1 text-center h-14 flex-1' : 'px-1',
+                      !isHydrated ? 'px-1 text-center h-14 flex-1' : (isMobile ? 'px-1 text-center h-14 flex-1' : 'px-1'),
                       isActive
                         ? 'text-blue-600'
                         : 'text-gray-700',
@@ -244,7 +256,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                   >
                     <span className={cn(
                       "text-center leading-tight",
-                      isMobile ? "text-xs pb-1" : "text-sm md:text-base"
+                      !isHydrated ? "text-xs pb-1" : (isMobile ? "text-xs pb-1" : "text-sm md:text-base")
                     )}>
                       {step.id === 'criteria' ? (
                         <>
@@ -267,7 +279,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                       "absolute bottom-0 left-0 right-0 h-0.5 transition-all duration-300",
                       isActive 
                         ? "bg-blue-600" 
-                        : isMobile 
+                        : (!isHydrated || isMobile)
                           ? "bg-transparent" 
                           : "bg-gray-300"
                     )} />
@@ -278,7 +290,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
           </div>
 
           {/* PPM Tool Logo - Center (Desktop only) */}
-          {!isMobile && (
+          {isHydrated && !isMobile && (
             <div className="absolute left-1/2 transform -translate-x-1/2 text-center max-w-lg lg:max-w-xl">
               <div className="flex justify-center">
                 <Image
@@ -294,7 +306,7 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
           )}
           
           {/* Action Buttons - Right Side (Desktop only) */}
-          {!isMobile && (
+          {isHydrated && !isMobile && (
             <ActionButtons 
               selectedTools={selectedTools} 
               selectedCriteria={selectedCriteria}

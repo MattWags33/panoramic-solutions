@@ -327,7 +327,10 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   if (isMobile) {
     return (
       <>
-        <div className="fixed bottom-0 left-0 right-0 z-50">
+        <div className={cn(
+          "fixed bottom-0 left-0 right-0",
+          isMobile ? "z-[65]" : "z-50" // Same z-index as navigation on mobile
+        )}>
           {/* Safe area padding for modern mobile devices */}
           <div className="bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg p-3 pb-safe">
             <div className="flex gap-2 justify-center max-w-lg mx-auto">

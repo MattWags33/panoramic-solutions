@@ -99,7 +99,7 @@ export default function RootLayout({
         <ClientProviders>
           <div className="min-h-screen flex flex-col">
             <Header />
-            <main className="flex-1 isolate">
+            <main className="flex-1">
               {children}
             </main>
             <Footer />

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Menu, X, ChevronDown, Calendar } from 'lucide-react'
 
 import { cn } from '@/shared/utils/cn'
+import { useMobileDetection } from '@/ppm-tool/shared/hooks/useMobileDetection'
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -29,6 +30,12 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const pathname = usePathname()
+  const isMobile = useMobileDetection()
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,21 +62,32 @@ export function Header() {
 
   return (
     <header
-      className="fixed top-0 w-full z-[60] bg-white shadow-lg py-2 md:py-2"
+      className={cn(
+        "fixed top-0 w-full bg-white shadow-lg z-[60]",
+        // Use py-0.5 as default for SSR, will be overridden by style for mobile/desktop after hydration
+        !isHydrated ? "py-0.5" : (isMobile ? "py-0.5" : "py-1")
+      )}
       style={{
-        paddingTop: 'max(12px, env(safe-area-inset-top, 12px))' // Increased minimum padding from 8px to 12px
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 60,
+        paddingTop: !isHydrated 
+          ? 'max(4px, env(safe-area-inset-top, 4px))' 
+          : (isMobile ? 'max(4px, env(safe-area-inset-top, 4px))' : 'max(8px, env(safe-area-inset-top, 8px))')
       }}
     >
       <nav className="container px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
-          <div className="relative h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16">
+        <Link href="/" className="flex items-center space-x-4 sm:space-x-5 group">
+          <div className="relative h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 scale-110">
             <Image
-              src="/images/Logo_Panoramic_Solutions.webp"
+              src="/images/PanoramicLogoGreyCloud.webp"
               alt="Panoramic Solutions Logo"
               fill
-              sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, (max-width: 1024px) 56px, 64px"
-              className="object-contain group-hover:opacity-80 transition-opacity"
+              sizes="(max-width: 640px) 56px, (max-width: 768px) 64px, (max-width: 1024px) 72px, 80px"
+              className="object-contain group-hover:opacity-80 transition-opacity scale-125"
               priority
             />
           </div>

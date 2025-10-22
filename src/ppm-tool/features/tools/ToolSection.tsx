@@ -254,10 +254,25 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
           <div className="relative" ref={settingsRef}>
             <button
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="p-1 md:p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              className="relative p-1 md:p-3 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
               aria-label="Filter settings"
             >
               <Settings className="w-4 h-4 md:w-5 md:h-5" />
+              {(() => {
+                const activeFilters = filterConditions.filter(c => {
+                  if (!c.type || !c.value) return false;
+                  if (c.type === 'Criteria') {
+                    return c.operator && c.rating !== undefined && c.rating !== null;
+                  }
+                  return true;
+                }).length;
+                
+                return activeFilters > 0 ? (
+                  <span className="absolute top-0 right-0 flex h-4 w-4 md:h-5 md:w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] md:text-xs font-medium text-white shadow-sm">
+                    {activeFilters}
+                  </span>
+                ) : null;
+              })()}
             </button>
             {isSettingsOpen && (
               <div className="absolute right-0 top-full mt-2 w-[calc(100vw-1rem)] max-w-xs sm:max-w-md md:w-80 lg:w-[36rem] bg-white rounded-lg shadow-xl border border-gray-200 z-50 mx-2 md:mx-0 max-h-[80vh]">
