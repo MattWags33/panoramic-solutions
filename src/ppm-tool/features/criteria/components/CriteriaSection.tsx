@@ -176,16 +176,16 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
 
           {/* Criteria List */}
           <div className="section-scroll flex-1 min-h-0 overflow-y-auto" data-lenis-prevent style={{ overflowX: 'visible' }}>
-            <div className="p-6 pb-24">
+            <div className="p-4 md:p-6 pb-12">
               <DraggableList
                 items={criteria}
                 onReorder={onCriteriaChange}
                 getItemId={(criterion) => criterion.id}
                 renderItem={(criterion) => (
-                  <div key={criterion.id} className="pl-4 md:pl-6">
-                    <div className="bg-white rounded-lg border border-gray-200 px-4 md:px-6 pt-4 md:pt-5 pb-2 mb-4">
-                      <div className="flex items-start justify-between gap-2 md:gap-3 mb-3">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div key={criterion.id}>
+                    <div className="bg-white rounded-xl border border-gray-200 px-3 md:px-6 py-2.5 md:py-2.5 mb-4">
+                      <div className="flex items-start justify-between gap-2 md:gap-2 mb-1">
+                        <div className="flex items-center gap-1 flex-1 min-w-0">
                           <h3 className="text-lg font-semibold text-gray-900">
                             {criterion.name}
                           </h3>
