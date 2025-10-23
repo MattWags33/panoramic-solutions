@@ -16,6 +16,11 @@ interface ActionButtonsProps {
   onShowHowItWorks?: () => void;
   getReportButtonRef?: React.RefObject<HTMLButtonElement>;
   onCloseExitIntentBumper?: () => void;
+  // External control for email modal (optional - for animation integration)
+  showEmailModal?: boolean;
+  onOpenEmailModal?: () => void;
+  onCloseEmailModal?: () => void;
+  onOpenGuidedRanking?: () => void;
 }
 
 // 3D Tower Loader Component (smaller version for buttons) - Mobile Safari compatible
@@ -274,12 +279,22 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   filteredTools = [],
   onShowHowItWorks,
   getReportButtonRef,
-  onCloseExitIntentBumper
+  onCloseExitIntentBumper,
+  showEmailModal: externalShowEmailModal,
+  onOpenEmailModal,
+  onCloseEmailModal,
+  onOpenGuidedRanking
 }) => {
   const isMobile = useMobileDetection();
-  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [internalShowEmailModal, setInternalShowEmailModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { onComparisonReportClick, onComparisonReportOpen, onComparisonReportClose } = useGuidance();
+
+  // Use external state if provided, otherwise use internal state
+  const showEmailModal = externalShowEmailModal !== undefined ? externalShowEmailModal : internalShowEmailModal;
+  const setShowEmailModal = onOpenEmailModal !== undefined 
+    ? (value: boolean) => value ? onOpenEmailModal() : onCloseEmailModal?.()
+    : setInternalShowEmailModal;
 
   const handleHowItWorksClick = () => {
     // Update URL to show overlay
@@ -377,6 +392,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           isLoading={isProcessing}
           selectedTools={filteredTools.length > 0 ? filteredTools : selectedTools}
           selectedCriteria={selectedCriteria}
+          onOpenGuidedRanking={onOpenGuidedRanking}
         />
       </>
     );
@@ -419,6 +435,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         isLoading={isProcessing}
         selectedTools={filteredTools.length > 0 ? filteredTools : selectedTools}
         selectedCriteria={selectedCriteria}
+        onOpenGuidedRanking={onOpenGuidedRanking}
       />
     </>
   );

@@ -93,7 +93,7 @@ export function Header() {
           </div>
           <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-midnight">
             <span className="hidden sm:inline">Panoramic Solutions</span>
-            <span className="sm:hidden">Panoramic</span>
+            <span className="sm:hidden">Panoramic Solutions</span>
           </span>
         </Link>
 

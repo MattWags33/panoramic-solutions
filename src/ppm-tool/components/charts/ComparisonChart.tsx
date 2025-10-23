@@ -63,22 +63,30 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
     setVisibleCriteria(new Set(selectedCriteria.map((c) => c.id)));
   }, [selectedCriteria]);
 
-  // Initialize with requirements visible and compared tools visible by default
+  // Initialize with requirements visible only if ranked, and compared tools visible by default
   const [visibleTools, setVisibleTools] = useState<Set<string>>(() => {
-    const tools = new Set(['requirements']);
+    const tools = new Set<string>();
+    // Only add requirements if criteria have been adjusted
+    if (criteriaAdjusted) {
+      tools.add('requirements');
+    }
     // Add compared tools to visible set
     comparedTools.forEach(toolId => tools.add(toolId));
     return tools;
   });
 
-  // Update visible tools when compared tools change
+  // Update visible tools when compared tools change or criteria adjustment status changes
   React.useEffect(() => {
     setVisibleTools(() => {
-      const newVisible = new Set(['requirements']);
+      const newVisible = new Set<string>();
+      // Only add requirements if criteria have been adjusted
+      if (criteriaAdjusted) {
+        newVisible.add('requirements');
+      }
       comparedTools.forEach(toolId => newVisible.add(toolId));
       return newVisible;
     });
-  }, [comparedTools]);
+  }, [comparedTools, criteriaAdjusted]);
 
   const handleToggleTool = (toolId: string) => {
     const newVisible = new Set(visibleTools);
@@ -134,8 +142,11 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
   };
 
   const handleToggleAllTools = (visible: boolean) => {
-    // Always keep 'requirements' (Your Tool) visible
-    const tools = new Set(['requirements']);
+    const tools = new Set<string>();
+    // Only add 'requirements' (Your Tool) if criteria have been adjusted
+    if (criteriaAdjusted) {
+      tools.add('requirements');
+    }
     // Add or remove other tools based on the visible parameter
     if (visible) {
       selectedTools.forEach((tool) => tools.add(tool.id));
@@ -411,6 +422,7 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
               tools={selectedTools}
               visibleTools={visibleTools}
               onToggleTool={handleToggleTool}
+              criteria={selectedCriteria}
             />
           </div>
         ) : (
@@ -430,11 +442,15 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
               ) : (
                 <EyeOff className="w-5 h-5 text-gray-400" />
               )}
-              <span className={`text-sm font-semibold ${
+              <span className={`inline-flex items-center text-sm font-semibold ${
                 visibleTools.has('requirements') ? 'text-green-800' : 'text-gray-600'
               }`}>
-                {criteriaAdjusted ? 'Your Tool' : (
-                  <NotYetRankedTooltip onGuidedRankingClick={onOpenGuidedRanking} />
+                <span>Your Tool</span>
+                {!criteriaAdjusted && (
+                  <NotYetRankedTooltip 
+                    onGuidedRankingClick={onOpenGuidedRanking}
+                    inline={true}
+                  />
                 )}
               </span>
             </button>

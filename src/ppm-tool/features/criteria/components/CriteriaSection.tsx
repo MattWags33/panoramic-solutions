@@ -20,7 +20,7 @@ interface CriteriaSectionProps {
   onCriteriaChange: (criteria: Criterion[]) => void;
   startWithGuidedQuestions?: boolean;
   guidedButtonRef?: React.RefObject<HTMLButtonElement>;
-  onOpenGuidedRanking?: () => void;
+  onOpenGuidedRanking?: (criterionId?: string) => void;
 }
 
 export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
@@ -185,7 +185,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                   <div key={criterion.id} className="pl-4 md:pl-6">
                     <div className="bg-white rounded-lg border border-gray-200 px-4 md:px-6 pt-4 md:pt-5 pb-2 mb-4">
                       <div className="flex items-start justify-between gap-2 md:gap-3 mb-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
                           <h3 className="text-lg font-semibold text-gray-900">
                             {criterion.name}
                           </h3>
@@ -229,6 +229,53 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                                 tabIndex={0}
                               >
                                 <HelpCircle className="w-4 h-4" />
+                              </button>
+                            </EnhancedDesktopTooltip>
+                          )}
+                          {isTouchDevice ? (
+                            <MobileTooltip 
+                              content={
+                                <div className="break-words">
+                                  Select for guided ranking
+                                </div>
+                              }
+                              side="top"
+                              align="center"
+                              className="max-w-xs text-sm"
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenGuidedRanking?.(criterion.id);
+                                }}
+                                className="text-alpine-blue-400 hover:text-alpine-blue-500 active:text-alpine-blue-600 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                aria-label={`Open guided ranking for ${criterion.name}`}
+                              >
+                                <Sparkles className="w-4 h-4" />
+                              </button>
+                            </MobileTooltip>
+                          ) : (
+                            <EnhancedDesktopTooltip
+                              content={
+                                <div className="break-words">
+                                  Select for guided ranking
+                                </div>
+                              }
+                              side="top"
+                              align="center"
+                              className="max-w-xs text-sm"
+                              delay={300}
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenGuidedRanking?.(criterion.id);
+                                }}
+                                className="text-alpine-blue-400 hover:text-alpine-blue-500 focus:text-alpine-blue-600 transition-colors flex items-center justify-center focus:outline-none"
+                                aria-label={`Open guided ranking for ${criterion.name}`}
+                                tabIndex={0}
+                              >
+                                <Sparkles className="w-4 h-4" />
                               </button>
                             </EnhancedDesktopTooltip>
                           )}

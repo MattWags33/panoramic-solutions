@@ -23,9 +23,9 @@ export function hasCriteriaBeenAdjusted(criteria: Criterion[]): boolean {
  */
 export function getCriteriaAdjustmentMessage(toolCount: number, hasAdjusted: boolean): string {
   if (hasAdjusted) {
-    return `📊 Your report will include analysis of ${toolCount} ${toolCount === 1 ? 'tool' : 'tools'} based on your current rankings and filters.`;
+    return `Your report will include analysis of ${toolCount} ${toolCount === 1 ? 'tool' : 'tools'} based on your current rankings and filters.`;
   }
-  return "⚠️ For best results, complete the guided rankings or adjust the Criteria sliders to match your priorities.";
+  return "For best results, complete the guided rankings or adjust the Criteria sliders to match your priorities.";
 }
 
 /**
@@ -45,7 +45,7 @@ export function getCriteriaAdjustmentMessageStyles(hasAdjusted: boolean): string
  * @returns Tooltip content string
  */
 export function getMatchScoreTooltipContent(): string {
-  return "How to get your match score 👉 complete the guided rankings or adjust the Criteria sliders to match your priorities.";
+  return "How to get your match score: complete the guided rankings or adjust the Criteria sliders to match your priorities.";
 }
 
 /**
@@ -53,5 +53,5 @@ export function getMatchScoreTooltipContent(): string {
  * @returns Tooltip content string
  */
 export function getNotYetRankedTooltipContent(): string {
-  return "How to get your tool's rankings 👉 complete the guided rankings or adjust the Criteria sliders to match your priorities.";
+  return "How to get your tool's rankings: complete the guided rankings or adjust the Criteria sliders to match your priorities.";
 }

@@ -2,21 +2,28 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, Check, Eye, EyeOff } from 'lucide-react';
-import { Tool } from '@/ppm-tool/shared/types';
+import { Tool, Criterion } from '@/ppm-tool/shared/types';
 import { getToolColor } from '@/ppm-tool/shared/utils/chartColors';
+import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { NotYetRankedTooltip } from '@/ppm-tool/components/ui/NotYetRankedTooltip';
 
 interface MobileToolSelectorProps {
   tools: Tool[];
   visibleTools: Set<string>;
   onToggleTool: (toolId: string) => void;
+  criteria?: Criterion[];
 }
 
 export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
   tools,
   visibleTools,
-  onToggleTool
+  onToggleTool,
+  criteria
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Check if criteria have been adjusted from defaults
+  const criteriaAdjusted = criteria ? hasCriteriaBeenAdjusted(criteria) : true;
 
   const totalVisibleCount = visibleTools.size;
   const toolsVisibleCount = tools.filter(tool => visibleTools.has(tool.id)).length;
@@ -87,7 +94,12 @@ export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="w-5 h-5 border-3 border-dashed border-green-600 bg-green-200 rounded-sm mr-3" />
-                <span className="text-sm font-medium text-gray-900">Your Tool</span>
+                <span className="inline-flex items-center text-sm font-medium text-gray-900">
+                  <span>Your Tool</span>
+                  {!criteriaAdjusted && (
+                    <NotYetRankedTooltip inline={true} />
+                  )}
+                </span>
               </div>
               <div className="flex items-center">
                 {visibleTools.has('requirements') ? (

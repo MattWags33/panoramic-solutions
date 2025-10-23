@@ -167,7 +167,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
         {effectiveIsOpen && (
           <div
             ref={tooltipRef}
-            className={`fixed z-[100] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}
+            className={`fixed z-[9999] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}
             style={{
               top: `${position.top}px`,
               left: `${position.left}px`,
@@ -202,7 +202,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
         {effectiveIsOpen && (
           <div
             ref={tooltipRef}
-            className={`fixed z-[100] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}
+            className={`fixed z-[9999] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}
             style={{
               top: `${position.top}px`,
               left: `${position.left}px`,

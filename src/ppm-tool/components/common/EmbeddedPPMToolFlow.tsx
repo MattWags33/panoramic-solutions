@@ -32,11 +32,14 @@ import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustm
 import '@/ppm-tool/shared/utils/bumperDebugger'; // Import debugger for global functions
 // REMOVED: import { MobileDiagnostics } from './MobileDiagnostics'; - Causes browser compatibility issues
 import { MobileRecoverySystem } from './MobileRecoverySystem';
+import { useGuidedSubmitAnimation } from '@/ppm-tool/shared/hooks/useGuidedSubmitAnimation';
+import { GuidedSubmitAnimation } from '@/ppm-tool/components/overlays/GuidedSubmitAnimation';
 
 interface EmbeddedPPMToolFlowProps {
   showGuidedRanking?: boolean;
+  guidedRankingCriterionId?: string;
   onGuidedRankingComplete?: () => void;
-  onOpenGuidedRanking?: () => void;
+  onOpenGuidedRanking?: (criterionId?: string) => void;
   onShowHowItWorks?: () => void;
   guidedButtonRef?: React.RefObject<HTMLButtonElement>;
 }
@@ -80,6 +83,7 @@ interface PersonalizationData {
 
 export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   showGuidedRanking = false,
+  guidedRankingCriterionId,
   onGuidedRankingComplete: onGuidedRankingCompleteFromParent,
   onOpenGuidedRanking,
   onShowHowItWorks,
@@ -209,6 +213,11 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   const [personalizationData, setPersonalizationData] = useState<PersonalizationData>({
     timestamp: new Date().toISOString()
   });
+
+  // Animation state for guided submit
+  const guidedAnimation = useGuidedSubmitAnimation();
+  const [pendingRankings, setPendingRankings] = useState<{ [key: string]: number } | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   // Enhanced localStorage handling with cross-browser compatibility
   useEffect(() => {
@@ -655,24 +664,80 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   };
 
   // Update criteria rankings from guided form
-  const handleUpdateRankings = (rankings: { [key: string]: number }) => {
-    // Only update rankings that were actually set by the guided form
-    setCriteria(prevCriteria => 
-      prevCriteria.map(criterion => ({
-        ...criterion,
-        userRating: rankings[criterion.id] !== undefined ? rankings[criterion.id] : criterion.userRating
-      }))
-    );
+  const handleUpdateRankings = async (rankings: { [key: string]: number }) => {
+    // Desktop: Run animation sequence
+    if (!isMobile) {
+      console.log('🎬 Starting guided submit animation on desktop');
+      
+      // Phase 1: Wave animation (4 seconds) - NO criteria changes yet
+      await guidedAnimation.startAnimation();
+      console.log('✅ Wave animation complete');
+      
+      // Reset animation state
+      guidedAnimation.reset();
+      
+      // Phase 2: 1 second pause after wave
+      console.log('⏸️ Pausing 1 second after wave');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Phase 3: Apply rankings to trigger BOTH criteria sliders AND tool shuffle (3 seconds - gradual and elegant)
+      console.log('🔄 Applying rankings - criteria sliders + tools shuffle now (gradual 3s animation)');
+      setCriteria(prevCriteria => 
+        prevCriteria.map(criterion => ({
+          ...criterion,
+          userRating: rankings[criterion.id] !== undefined ? rankings[criterion.id] : criterion.userRating
+        }))
+      );
+      
+      // Wait for shuffle animation to complete (3 seconds for elegant, gradual movement)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('✅ Criteria + Tool animations complete');
+      
+      // Only show email modal for full guided rankings (not single-criterion mode)
+      if (!guidedRankingCriterionId) {
+        // Phase 4: 3 second pause after shuffle
+        console.log('⏸️ Pausing 3 seconds before opening email modal');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Phase 5: Open email modal
+        console.log('📧 Opening email modal now');
+        setShowEmailModal(true);
+        
+        // Track that comparison report was opened
+        onComparisonReportClick();
+        onComparisonReportOpen();
+      } else {
+        console.log('✅ Single-criterion mode - skipping email modal');
+      }
+    } else {
+      // Mobile: Apply immediately without animation
+      console.log('📱 Applying rankings immediately on mobile (no animation)');
+      setCriteria(prevCriteria => 
+        prevCriteria.map(criterion => ({
+          ...criterion,
+          userRating: rankings[criterion.id] !== undefined ? rankings[criterion.id] : criterion.userRating
+        }))
+      );
+    }
+    
     onGuidedRankingCompleteFromParent?.();
   };
 
-  // Throttled real-time update for background preview to prevent infinite loops
+  // No effect needed - we apply rankings manually in the sequence
+
+
+  // Throttled real-time update for background preview
+  // DISABLED during guided form to allow animation reveal
   const handleRealTimeUpdate = React.useCallback((rankings: { [key: string]: number }) => {
-    // Clear previous timeout to debounce rapid updates
+    // Skip real-time updates on desktop - we want to reveal during animation
+    if (!isMobile) {
+      console.log('🚫 Skipping real-time update on desktop - will reveal during animation');
+      return;
+    }
+    
+    // Mobile: Apply immediately as before
     const timeoutId = setTimeout(() => {
-      // Only update rankings that were actually set by the guided form
       setCriteria(prevCriteria => {
-        // Check if any changes are actually needed to prevent unnecessary re-renders
         const hasChanges = prevCriteria.some(criterion => 
           rankings[criterion.id] !== undefined && rankings[criterion.id] !== criterion.userRating
         );
@@ -684,10 +749,10 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           userRating: rankings[criterion.id] !== undefined ? rankings[criterion.id] : criterion.userRating
         }));
       });
-    }, 100); // 100ms debounce to prevent rapid fire updates
+    }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [isMobile]);
 
   const handleCompare = (tool: Tool) => {
     setComparedTools(prev => {
@@ -758,6 +823,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
                   onCompare={handleCompare}
                   comparedTools={comparedTools}
                   chartButtonPosition={chartButtonPosition}
+                  onOpenGuidedRanking={onOpenGuidedRanking}
                 />
               </div>
             );
@@ -953,6 +1019,17 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
             getReportButtonRef={getReportButtonRef}
             onChartButtonPosition={setChartButtonPosition}
             onCloseExitIntentBumper={closeExitIntentBumper}
+            showEmailModal={showEmailModal}
+            onOpenEmailModal={() => setShowEmailModal(true)}
+            onCloseEmailModal={() => {
+              setShowEmailModal(false);
+              onComparisonReportClose();
+            }}
+            onOpenGuidedRanking={() => {
+              onGuidedRankingClick();
+              onGuidedRankingStart();
+              onOpenGuidedRanking && onOpenGuidedRanking();
+            }}
           />
           <main 
             className={cn(
@@ -990,6 +1067,17 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
               onShowHowItWorks={onShowHowItWorks}
               getReportButtonRef={getReportButtonRef}
               onCloseExitIntentBumper={closeExitIntentBumper}
+              showEmailModal={showEmailModal}
+              onOpenEmailModal={() => setShowEmailModal(true)}
+              onCloseEmailModal={() => {
+                setShowEmailModal(false);
+                onComparisonReportClose();
+              }}
+              onOpenGuidedRanking={() => {
+                onGuidedRankingClick();
+                onGuidedRankingStart();
+                onOpenGuidedRanking && onOpenGuidedRanking();
+              }}
             />
           )}
         </div>
@@ -1004,6 +1092,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
             onGuidedRankingCompleteFromParent && onGuidedRankingCompleteFromParent();
           }}
           criteria={criteria}
+          criterionId={guidedRankingCriterionId}
           onUpdateRankings={handleUpdateRankings}
           onRealTimeUpdate={handleRealTimeUpdate}
           onSaveAnswers={handleSaveAnswers}
@@ -1032,6 +1121,15 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           emailButtonRef={getReportButtonRef}
           criteriaAdjusted={criteriaAdjusted}
         />
+
+        {/* Guided Submit Animation Overlay (Desktop Only) */}
+        {!isMobile && (
+          <GuidedSubmitAnimation
+            isActive={guidedAnimation.isAnimating}
+            phase={guidedAnimation.phase}
+            message={guidedAnimation.getMessage()}
+          />
+        )}
 
         {/* REMOVED: Mobile Diagnostics - Causes browser compatibility issues with Edge/Safari
             <MobileDiagnostics /> */}

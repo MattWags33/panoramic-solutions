@@ -16,6 +16,7 @@ export default function PPMToolPage() {
   const searchParams = useSearchParams();
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showGuidedRanking, setShowGuidedRanking] = useState(false);
+  const [guidedRankingCriterionId, setGuidedRankingCriterionId] = useState<string | undefined>(undefined);
   const guidedButtonRef = useRef<HTMLButtonElement>(null);
   const { trackClick, trackTool, checkAndTrackVisitor, checkAndTrackActive } = usePostHog();
   
@@ -82,14 +83,25 @@ export default function PPMToolPage() {
   const handleGuidedRankingComplete = () => {
     trackTool('ppm_tool', 'guided_ranking_completed', { 
       source: 'guided_flow',
-      completion_time: Date.now()
+      completion_time: Date.now(),
+      criterion_id: guidedRankingCriterionId
     });
     setShowGuidedRanking(false);
+    setGuidedRankingCriterionId(undefined);
   };
 
-  const handleOpenGuidedRanking = () => {
-    trackClick('open_guided_ranking', { location: 'main_page' });
-    trackTool('ppm_tool', 'opened_guided_ranking', { source: 'main_page' });
+  const handleOpenGuidedRanking = (criterionId?: string) => {
+    trackClick('open_guided_ranking', { 
+      location: 'main_page',
+      criterion_id: criterionId,
+      is_single_criterion: !!criterionId
+    });
+    trackTool('ppm_tool', 'opened_guided_ranking', { 
+      source: 'main_page',
+      criterion_id: criterionId,
+      is_single_criterion: !!criterionId
+    });
+    setGuidedRankingCriterionId(criterionId);
     setShowGuidedRanking(true);
   };
 
@@ -122,6 +134,7 @@ export default function PPMToolPage() {
           <div className="min-h-screen bg-background ppm-tool-container" role="main">
               <EmbeddedPPMToolFlow 
                 showGuidedRanking={showGuidedRanking}
+                guidedRankingCriterionId={guidedRankingCriterionId}
                 onGuidedRankingComplete={handleGuidedRankingComplete}
                 onOpenGuidedRanking={handleOpenGuidedRanking}
                 onShowHowItWorks={handleShowHowItWorks}

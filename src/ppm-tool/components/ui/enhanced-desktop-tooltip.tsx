@@ -311,7 +311,7 @@ export const EnhancedDesktopTooltip: React.FC<EnhancedDesktopTooltipProps> = ({
         <div
           ref={tooltipRef}
           className={cn(
-            "fixed z-[100] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-none max-w-xs break-words",
+            "fixed z-[9999] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words",
             !isPositioned && "opacity-0",
             className
           )}

@@ -75,7 +75,7 @@ export const DisclaimerTooltip: React.FC = () => {
       
       <div className={`
         absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-80 p-3 
-        bg-gray-800 text-white text-xs rounded-lg shadow-xl z-50
+        bg-gray-800 text-white text-xs rounded-lg shadow-xl z-[80]
         transition-all duration-200 ease-in-out
         ${isVisible ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}
         ${(isTouchDevice || hasTouch) ? 'pointer-events-auto' : 'pointer-events-none'}

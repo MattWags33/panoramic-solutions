@@ -19,6 +19,7 @@ interface GuidedRankingFormProps {
   onRealTimeUpdate?: (rankings: { [key: string]: number }) => void;
   onSaveAnswers?: (answers: Record<string, QuestionAnswer>, personalizationData: Record<string, QuestionAnswer>) => void;
   onMethodologyFilter?: (methodologies: string[]) => void;
+  criterionId?: string; // Optional criterion ID for single-criterion guided ranking
 }
 
 interface QuestionOption {
@@ -201,7 +202,8 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   onUpdateRankings,
   onRealTimeUpdate,
   onSaveAnswers,
-  onMethodologyFilter
+  onMethodologyFilter,
+  criterionId
 }) => {
   const [answers, setAnswers] = React.useState<Record<string, QuestionAnswer>>({});
   const [currentStep, setCurrentStep] = React.useState(0);
@@ -213,6 +215,31 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   // Create stable reference for onRealTimeUpdate to prevent unnecessary re-renders
   const onRealTimeUpdateRef = React.useRef(onRealTimeUpdate);
   onRealTimeUpdateRef.current = onRealTimeUpdate;
+  
+  // Filter questions based on criterionId if provided
+  const relevantQuestions = React.useMemo(() => {
+    if (!criterionId) {
+      // Show all questions if no specific criterion is selected (full guided questionnaire)
+      return questions;
+    }
+    
+    // Find the criterion to get its name
+    const targetCriterion = criteria.find(c => c.id === criterionId);
+    if (!targetCriterion) {
+      return questions;
+    }
+    
+    // Filter questions that impact the selected criterion ONLY
+    // Do NOT include personalization questions when filtering by criterion
+    return questions.filter(q => {
+      // Exclude personalization questions for single-criterion mode
+      if (q.isPersonalization) {
+        return false;
+      }
+      // Include ONLY questions that impact this specific criterion
+      return Object.keys(q.criteriaImpact).includes(targetCriterion.name);
+    });
+  }, [criterionId, criteria]);
   
   // Reset form state whenever the form closes
   const resetFormState = React.useCallback(() => {
@@ -267,7 +294,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   }, [isOpen, resetFormState]);
 
   const handleAnswer = (questionId: string, value: number) => {
-    const question = questions.find(q => q.id === questionId);
+    const question = relevantQuestions.find(q => q.id === questionId);
     
     // Track guided ranking interaction for New_Active metric
     try {
@@ -289,11 +316,6 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
           ? currentValues.filter((v: number) => v !== value)
           : [...currentValues, value];
         
-        // Apply methodology filtering for Q12
-        if (questionId === 'q12') {
-          applyMethodologyFilter(newValues);
-        }
-        
         return { ...prev, [questionId]: newValues };
       });
     } else {
@@ -302,8 +324,12 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     }
   };
 
-  const applyMethodologyFilter = (selectedValues: number[]) => {
-    if (!onMethodologyFilter) return;
+  // Effect to apply methodology filtering when Q12 changes (outside of render)
+  React.useEffect(() => {
+    const q12Answer = answers['q12'];
+    if (!q12Answer || !onMethodologyFilter) return;
+    
+    const selectedValues = q12Answer as number[];
     
     // Map values to methodology names
     const valueToMethodology: { [key: number]: string } = {
@@ -324,7 +350,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
       // Apply actual methodology filters (OR logic - show tools that support ANY selected methodology)
       onMethodologyFilter(selectedMethodologies);
     }
-  };
+  }, [answers, onMethodologyFilter]);
 
   const isQuestionAnswered = (question: Question) => {
     // Q11 multi-select needs at least one selection
@@ -341,7 +367,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
 
   const extractPersonalizationData = (answers: Record<string, QuestionAnswer>) => {
     const personalizationData: Record<string, QuestionAnswer> = {};
-    questions.forEach(question => {
+    relevantQuestions.forEach(question => {
       if (question.isPersonalization && answers[question.id]) {
         personalizationData[question.id] = answers[question.id];
         // Include other text answers for Q11
@@ -357,9 +383,16 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     const rankings: { [key: string]: number } = {};
     const weights: { [key: string]: number } = {};
     
-    // Initialize rankings with actual criteria IDs - default to 3 (neutral)
+    // When filtering by criterionId (single-criterion mode), preserve existing values
+    // Otherwise, initialize with default value of 3
     criteria.forEach(criterion => {
-      rankings[criterion.id] = 3;
+      if (criterionId) {
+        // Single-criterion mode: Use current userRating value to preserve other criteria
+        rankings[criterion.id] = criterion.userRating;
+      } else {
+        // Full guided mode: Initialize to default 3 (neutral)
+        rankings[criterion.id] = 3;
+      }
       weights[criterion.id] = 0;
     });
 
@@ -439,7 +472,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     // If Q6 or Q7 not answered, flexibility remains at default value of 3
 
     return rankings;
-  }, [criteria, answers]);
+  }, [criteria, answers, criterionId]);
 
   // Debounced real-time update effect to prevent infinite loops
   React.useEffect(() => {
@@ -489,8 +522,8 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
 
   if (!isOpen) return null;
 
-  const currentQuestion = questions[currentStep];
-  const progress = (currentStep + 1) / questions.length * 100;
+  const currentQuestion = relevantQuestions[currentStep];
+  const progress = (currentStep + 1) / relevantQuestions.length * 100;
 
   // Animation variants
   const overlayVariants = {
@@ -544,7 +577,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
               ref={formRef} 
               className={`bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden pointer-events-auto flex flex-col ${
                 isTouchDevice 
-                  ? 'h-[90vh] max-h-[45rem] sm:h-[85vh] sm:max-h-[50rem] md:h-[90vh] md:max-h-[60rem]' 
+                  ? 'h-[85vh] max-h-[42rem] sm:h-[80vh] sm:max-h-[48rem] md:h-[85vh] md:max-h-[55rem]' 
                   : 'h-[88vh] max-h-[50rem] sm:h-[85vh] sm:max-h-[60rem] md:h-[92vh] md:max-h-[70rem] lg:h-[90vh] lg:max-h-[70rem]'
               }`}
               style={{
@@ -568,7 +601,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
                 </div>
                 <div className="text-xs md:text-sm text-gray-600 flex-shrink-0 text-center leading-tight">
                   <div>Question</div>
-                  <div>{currentStep + 1} of {questions.length}</div>
+                  <div>{currentStep + 1} of {relevantQuestions.length}</div>
                 </div>
               </div>
               <motion.button
@@ -704,7 +737,12 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
             </div>
 
             {/* Footer - Always visible */}
-            <div className={`px-4 md:px-6 py-3 md:py-4 border-t bg-gray-50 flex justify-between flex-shrink-0 sticky bottom-0 ${isTouchDevice ? 'py-4' : ''}`}>
+            <div 
+              className={`px-4 md:px-6 py-3 md:py-4 border-t bg-gray-50 flex justify-between flex-shrink-0 sticky bottom-0 ${isTouchDevice ? 'py-4' : ''}`}
+              style={{
+                paddingBottom: isTouchDevice ? 'max(16px, env(safe-area-inset-bottom, 16px))' : undefined
+              }}
+            >
               <button
                 onClick={() => {
                   // Track navigation for New_Active metric
@@ -728,7 +766,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
               </button>
               <button
                 onClick={() => {
-                  if (currentStep < questions.length - 1) {
+                  if (currentStep < relevantQuestions.length - 1) {
                     // Track navigation for New_Active metric
                     try {
                       checkAndTrackNewActive('Active-guided', {
@@ -753,7 +791,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
                     : 'bg-gray-400 hover:bg-gray-400'
                 } ${isTouchDevice ? 'py-3 touch-manipulation' : ''}`}
               >
-                {currentStep < questions.length - 1 ? 'Next' : 'Generate Your Rankings'}
+                {currentStep < relevantQuestions.length - 1 ? 'Next' : 'Apply Guided Rankings'}
               </button>
             </div>
             </motion.div>

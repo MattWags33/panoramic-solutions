@@ -20,18 +20,21 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
   onGuidedRankingClick
 }) => {
   const tooltipContent = (
-    <div>
-      <p className="mb-2">{getMatchScoreTooltipContent()}</p>
+    <div className="break-words">
+      <p>{getMatchScoreTooltipContent()}</p>
       {onGuidedRankingClick && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onGuidedRankingClick();
-          }}
-          className="text-blue-300 hover:text-blue-200 underline text-xs"
-        >
-          Open Guided Rankings →
-        </button>
+        <>
+          <div className="mt-2 pt-2 border-t border-gray-700" />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onGuidedRankingClick();
+            }}
+            className="mt-2 text-blue-300 hover:text-blue-200 underline text-xs block"
+          >
+            Open Guided Rankings →
+          </button>
+        </>
       )}
     </div>
   );
@@ -41,9 +44,9 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
       content={tooltipContent}
       side="top"
       align="center"
-      className="max-w-xs"
+      className="max-w-xs text-sm"
     >
-      <div className={`inline-flex items-center cursor-help ${className}`}>
+      <div className={`inline-flex items-center cursor-pointer px-2 py-1 -mx-2 -my-1 rounded hover:bg-gray-100 transition-colors ${className}`}>
         <span className="text-gray-500">N/A</span>
         <HelpCircle className="w-3 h-3 ml-1 text-gray-400" />
       </div>

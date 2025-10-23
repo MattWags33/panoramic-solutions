@@ -78,8 +78,8 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
   
   // Initialize shuffle animation
   const shuffleAnimation = useShuffleAnimation({
-    delayMs: 500,
-    shuffleDurationMs: isMobile ? 800 : 1200,
+    delayMs: 0, // No delay - start immediately when triggered
+    shuffleDurationMs: isMobile ? 800 : 3000, // Desktop: 3 seconds for gradual, elegant animation
     disabled: false
   });
   

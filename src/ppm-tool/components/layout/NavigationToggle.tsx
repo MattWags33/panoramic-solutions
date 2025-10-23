@@ -26,12 +26,20 @@ interface NavigationToggleProps {
   getReportButtonRef?: React.RefObject<HTMLButtonElement>;
   onChartButtonPosition?: (position: { x: number; y: number }) => void;
   onCloseExitIntentBumper?: () => void;
+  // Email modal control (for animation integration)
+  showEmailModal?: boolean;
+  onOpenEmailModal?: () => void;
+  onCloseEmailModal?: () => void;
+  onOpenGuidedRanking?: () => void;
 }
 
 export const NavigationToggle: React.FC<NavigationToggleProps> = ({
   currentStep,
   onStepChange,
   compareCount = 0,
+  showEmailModal,
+  onOpenEmailModal,
+  onCloseEmailModal,
   selectedTools = [],
   selectedCriteria = [],
   filteredTools = [],
@@ -40,7 +48,8 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
   isProductBumperVisible = false,
   getReportButtonRef,
   onChartButtonPosition,
-  onCloseExitIntentBumper
+  onCloseExitIntentBumper,
+  onOpenGuidedRanking
 }) => {
   const isMobile = useMobileDetection();
   const [isHydrated, setIsHydrated] = useState(false);
@@ -314,6 +323,10 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
               onShowHowItWorks={onShowHowItWorks}
               getReportButtonRef={getReportButtonRef}
               onCloseExitIntentBumper={onCloseExitIntentBumper}
+              showEmailModal={showEmailModal}
+              onOpenEmailModal={onOpenEmailModal}
+              onCloseEmailModal={onCloseEmailModal}
+              onOpenGuidedRanking={onOpenGuidedRanking}
             />
           )}
                  </div>

@@ -17,6 +17,7 @@ interface EmailCaptureModalProps {
   isLoading: boolean;
   selectedTools?: Tool[];
   selectedCriteria?: Criterion[];
+  onOpenGuidedRanking?: () => void;
 }
 
 // 3D Tower Loader Component - Mobile Safari compatible
@@ -337,7 +338,8 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
   onSubmit,
   isLoading,
   selectedTools = [],
-  selectedCriteria = []
+  selectedCriteria = [],
+  onOpenGuidedRanking
 }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -444,7 +446,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 min-h-screen"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4 min-h-screen"
           variants={overlayVariants}
           initial="hidden"
           animate="visible"
@@ -495,10 +497,12 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      // Close modal and trigger guided rankings
+                      // Close modal first
                       onClose();
-                      // Note: This will be handled by the parent component's guided rankings logic
-                      // We don't directly trigger it to avoid interfering with bumper state
+                      // Then trigger guided rankings if callback is provided
+                      if (onOpenGuidedRanking) {
+                        onOpenGuidedRanking();
+                      }
                     }}
                     className="mt-2 text-xs text-yellow-600 hover:text-yellow-700 underline font-medium"
                   >
