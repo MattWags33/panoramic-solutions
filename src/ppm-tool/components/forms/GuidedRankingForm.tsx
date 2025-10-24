@@ -267,59 +267,9 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   }, [isOpen, onMethodologyFilter]);
 
   const handleClose = () => {
-    // Check if ALL required questions are answered before applying
-    const allQuestionsAnswered = relevantQuestions.every(q => {
-      if (q.isMultiSelect) {
-        const selectedValues = (answers[q.id] as number[]) || [];
-        // For Q11 with "Other", check if text is provided
-        if (q.id === 'q11' && selectedValues.includes(9)) {
-          return selectedValues.length > 0 && otherAnswers[q.id]?.trim();
-        }
-        return selectedValues.length > 0;
-      }
-      return !!answers[q.id];
-    });
-
-    // In single-criterion mode, only apply if ALL questions are answered
-    // In full guided mode, allow partial answers
-    if (criterionId) {
-      // Single-criterion mode: Require ALL questions to be answered
-      if (allQuestionsAnswered && Object.keys(answers).length > 0) {
-        const rankings = calculateRankings();
-        const personalizationData = extractPersonalizationData(answers);
-        
-        // Apply rankings to criteria but keep sliders unlocked
-        onUpdateRankings(rankings);
-        
-        // Save answers and personalization data if available
-        onSaveAnswers?.(answers, personalizationData);
-        
-        // Mark that user has interacted with guided ranking
-        markGuidedRankingComplete();
-        markGuidedRankingAsCompleted(); // Track for match score display
-        console.log('✅ Single-criterion guided ranking completed - all questions answered');
-      } else {
-        console.log('❌ Single-criterion mode - not all questions answered, discarding changes');
-      }
-    } else {
-      // Full guided mode: Apply partial rankings (existing behavior)
-      if (Object.keys(answers).length > 0) {
-        const rankings = calculateRankings();
-        const personalizationData = extractPersonalizationData(answers);
-        
-        // Apply rankings to criteria but keep sliders unlocked
-        onUpdateRankings(rankings);
-        
-        // Save answers and personalization data if available
-        onSaveAnswers?.(answers, personalizationData);
-        
-        // Mark that user has interacted with guided ranking
-        markGuidedRankingComplete();
-        markGuidedRankingAsCompleted(); // Track for match score display
-        console.log('✅ Full guided ranking interaction detected - partial answers applied');
-      }
-    }
-    
+    // IMPORTANT: Do NOT call onUpdateRankings here - only handleSubmit (Apply button) should trigger animation
+    // Just close the modal without applying rankings
+    console.log('🚪 Modal closed without clicking Apply - no rankings applied, no animation triggered');
     resetFormState();
     onClose();
   };

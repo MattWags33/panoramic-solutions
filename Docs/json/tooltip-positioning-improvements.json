@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-01-24T01:00:00Z",
+  "type": "FEATURE_IMPROVEMENT",
+  "metadata": {
+    "project": "Panoramic Solutions",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true
+  },
+  "feature": {
+    "name": "Consistent Tooltip Positioning in CriteriaSection",
+    "description": "Fixed tooltip positioning in the criteria list to ensure tooltips always appear in a consistent, visible location regardless of scroll position or item location in the list",
+    "issue": "Tooltips in the criteria list would appear in different positions (top, middle, bottom, left, right) and often get cut off depending on where the criterion was in the scrollable list",
+    "solution": "Changed tooltip positioning from 'top' to 'bottom' and enhanced viewport boundary checking with aggressive horizontal centering"
+  },
+  "changes": [
+    {
+      "file": "src/ppm-tool/features/criteria/components/CriteriaSection.tsx",
+      "type": "ENHANCEMENT",
+      "description": "Changed tooltip positioning from 'top' to 'bottom' for both help and guided ranking tooltips",
+      "changes_detail": [
+        "Line 199: Changed side='top' to side='bottom' for criterion help tooltip",
+        "Line 242: Changed side='top' to side='bottom' for guided ranking tooltip",
+        "This ensures tooltips appear below the trigger buttons, which is more predictable on mobile"
+      ],
+      "affected_tooltips": [
+        "Criterion help icon tooltips (HelpCircle)",
+        "Guided ranking selection tooltips (Sparkles)"
+      ]
+    },
+    {
+      "file": "src/ppm-tool/components/ui/MobileTooltip.tsx",
+      "type": "ENHANCEMENT",
+      "description": "Enhanced viewport boundary checking with aggressive horizontal centering and intelligent vertical positioning",
+      "changes_detail": [
+        "Added aggressive horizontal centering for align='center' tooltips",
+        "Calculates centered position: (viewportWidth - tooltipWidth) / 2",
+        "Only uses centered position if tooltip fits within viewport boundaries",
+        "Falls back to calculated position with standard boundary checks if centering doesn't fit",
+        "Enhanced vertical positioning to flip tooltip to opposite side if it doesn't fit",
+        "If 'top' tooltip doesn't fit above, automatically positions below trigger",
+        "If 'bottom' tooltip doesn't fit below, automatically positions above trigger",
+        "Maintains 8px padding from all viewport edges"
+      ]
+    }
+  ],
+  "benefits": [
+    {
+      "benefit": "Consistent horizontal positioning",
+      "description": "Tooltips are now centered horizontally on screen when align='center', providing a predictable location regardless of scroll or item position"
+    },
+    {
+      "benefit": "No more cutoff tooltips",
+      "description": "Intelligent vertical positioning ensures tooltips flip to the opposite side if they would be cut off at viewport edges"
+    },
+    {
+      "benefit": "Better mobile UX",
+      "description": "Users no longer have to chase tooltips around the screen or deal with partially visible tooltip content"
+    },
+    {
+      "benefit": "Maintains readability",
+      "description": "Tooltips always appear in full view with proper padding from screen edges"
+    },
+    {
+      "benefit": "Backwards compatible",
+      "description": "Non-centered tooltips still use standard boundary checking, so existing behavior is preserved"
+    }
+  ],
+  "technical_details": {
+    "positioning_algorithm": {
+      "horizontal": {
+        "for_centered_tooltips": [
+          "1. Calculate centered position: (viewportWidth - tooltipWidth) / 2",
+          "2. Check if centered position fits within padding boundaries",
+          "3. If fits: use centered position",
+          "4. If doesn't fit: fallback to calculated position with standard boundary checks"
+        ],
+        "for_non_centered_tooltips": [
+          "1. Use calculated position based on align (start/end)",
+          "2. Apply standard boundary checks with padding"
+        ]
+      },
+      "vertical": {
+        "smart_flipping": [
+          "1. Calculate initial position based on side (top/bottom)",
+          "2. If top < padding: tooltip would be cut off at top",
+          "3. If side='top': flip to bottom (triggerRect.bottom + 8)",
+          "4. If top + height > viewport - padding: tooltip would be cut off at bottom",
+          "5. If side='bottom': flip to top (triggerRect.top - height - 8)",
+          "6. Ensures tooltip is always within visible viewport"
+        ]
+      }
+    },
+    "why_bottom_positioning": {
+      "reason": "Using 'bottom' as default ensures tooltips appear below criteria items",
+      "benefits": [
+        "More screen space available below items in scrollable list",
+        "Easier to read content below instead of above on mobile",
+        "Reduces chance of tooltip covering the trigger button",
+        "More intuitive - users expect contextual info to appear below on mobile"
+      ]
+    },
+    "centering_logic": {
+      "condition": "align === 'center'",
+      "calculation": "centeredLeft = (viewportWidth - tooltipRect.width) / 2",
+      "validation": "centeredLeft >= padding && centeredLeft + tooltipRect.width <= viewportWidth - padding",
+      "purpose": "Provides consistent, predictable tooltip location regardless of trigger button position in DOM"
+    }
+  },
+  "testing_scenarios": {
+    "scenario_1": {
+      "name": "First criterion in list",
+      "before": "Tooltip appeared at top, partially cut off by header",
+      "after": "Tooltip appears below button, fully visible and horizontally centered"
+    },
+    "scenario_2": {
+      "name": "Last criterion in list",
+      "before": "Tooltip appeared at bottom, cut off by bottom of screen",
+      "after": "Tooltip intelligently flips to appear above button, horizontally centered"
+    },
+    "scenario_3": {
+      "name": "Middle criterion in list",
+      "before": "Tooltip appeared above button but shifted left/right unpredictably",
+      "after": "Tooltip appears below button, always centered on screen"
+    },
+    "scenario_4": {
+      "name": "While scrolling",
+      "before": "Tooltip position would jump around as user scrolled",
+      "after": "Tooltip maintains centered position and flips intelligently based on viewport space"
+    },
+    "scenario_5": {
+      "name": "Very long tooltip content",
+      "before": "Could extend off screen edges, making content unreadable",
+      "after": "Centered positioning with padding ensures full content is visible"
+    }
+  },
+  "affected_areas": {
+    "components": [
+      "CriteriaSection - all criterion help tooltips",
+      "CriteriaSection - all guided ranking tooltips"
+    ],
+    "devices": [
+      "Mobile phones (primary benefit)",
+      "Touchscreen laptops",
+      "Tablets"
+    ],
+    "not_affected": [
+      "Desktop hover tooltips (use EnhancedDesktopTooltip)",
+      "Match score tooltips in tools section",
+      "Other MobileTooltip instances with different align values"
+    ]
+  },
+  "user_instructions": {
+    "testing": "Scroll through the criteria list and tap help icons on criteria at different positions - tooltips should always appear centered and fully visible",
+    "expected_behavior": "All tooltips in criteria list should appear below their trigger buttons, centered horizontally on the screen, and never cut off at viewport edges"
+  }
+}
+

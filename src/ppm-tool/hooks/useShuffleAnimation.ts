@@ -192,13 +192,13 @@ export const useShuffleAnimation = (
 export const useToolOrderShuffle = (
   tools: Tool[],
   shuffleHook: UseShuffleAnimationReturn,
-  options: { triggerOnChange?: boolean } = {}
+  options: { triggerOnChange?: boolean; disabled?: boolean } = {}
 ) => {
-  const { triggerOnChange = true } = options;
+  const { triggerOnChange = true, disabled = false } = options;
   const previousOrderRef = useRef<string[]>([]);
 
   useEffect(() => {
-    if (!triggerOnChange) return;
+    if (!triggerOnChange || disabled) return;
 
     const currentOrder = tools.map(tool => tool.id);
     const previousOrder = previousOrderRef.current;
@@ -217,7 +217,7 @@ export const useToolOrderShuffle = (
       // Update ref for first render or when no change
       previousOrderRef.current = currentOrder;
     }
-  }, [tools, shuffleHook, triggerOnChange]);
+  }, [tools, shuffleHook, triggerOnChange, disabled]);
 
   return {
     hasOrderChanged: () => {
@@ -225,6 +225,11 @@ export const useToolOrderShuffle = (
       const previousOrder = previousOrderRef.current;
       return currentOrder.length !== previousOrder.length ||
         currentOrder.some((id, index) => id !== previousOrder[index]);
+    },
+    manualShuffle: () => {
+      if (!disabled) {
+        shuffleHook.triggerShuffle();
+      }
     }
   };
 };

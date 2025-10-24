@@ -196,7 +196,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                                   {getTooltipDescription(criterion)}
                                 </div>
                               }
-                              side="top"
+                              side="bottom"
                               align="center"
                               className="max-w-xs text-sm"
                               forceOpen={dragTooltipCriterionId === criterion.id}
@@ -239,7 +239,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                                   Select for guided ranking
                                 </div>
                               }
-                              side="top"
+                              side="bottom"
                               align="center"
                               className="max-w-xs text-sm"
                             >

@@ -58,15 +58,47 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   useEffect(() => {
     if ((!isTouchDevice && !hasTouch) || !effectiveIsOpen || forceOpen) return;
     
-    document.addEventListener('click', handleClickOutside);
+    // ROBUST SOLUTION: Multi-layered approach to prevent opening click from triggering close
+    // LAYER 1: Track if this is the opening click
+    let isOpeningClick = true;
+    
+    // LAYER 2: Enhanced click handler that respects the opening click
+    const enhancedClickOutside = (e: MouseEvent) => {
+      // Ignore the click that just opened the tooltip
+      if (isOpeningClick) {
+        isOpeningClick = false;
+        return;
+      }
+      
+      // Standard click-outside logic
+      if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node) &&
+          triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    
+    // LAYER 3: Attach listener with double RAF to ensure click has fully propagated
+    // This syncs with browser paint cycle for maximum reliability
+    let rafId1: number;
+    let rafId2: number;
+    
+    rafId1 = requestAnimationFrame(() => {
+      rafId2 = requestAnimationFrame(() => {
+        // Use capture phase to catch events early
+        document.addEventListener('click', enhancedClickOutside, { capture: true });
+      });
+    });
+    
     // Only auto-close on true mobile devices, not touch-enabled laptops
-    const timer = isTouchDevice ? setTimeout(() => setIsOpen(false), 4000) : null;
+    const autoCloseTimer = isTouchDevice ? setTimeout(() => setIsOpen(false), 4000) : null;
     
     return () => {
-      document.removeEventListener('click', handleClickOutside);
-      if (timer) clearTimeout(timer);
+      cancelAnimationFrame(rafId1);
+      cancelAnimationFrame(rafId2);
+      document.removeEventListener('click', enhancedClickOutside, { capture: true });
+      if (autoCloseTimer) clearTimeout(autoCloseTimer);
     };
-  }, [effectiveIsOpen, isTouchDevice, hasTouch, forceOpen, handleClickOutside]);
+  }, [effectiveIsOpen, isTouchDevice, hasTouch, forceOpen]);
 
   useEffect(() => {
     if ((!isTouchDevice && !hasTouch) || !effectiveIsOpen || !triggerRef.current || !tooltipRef.current) return;
@@ -136,18 +168,47 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
         break;
     }
 
-    // Viewport boundary checking
+    // Viewport boundary checking with aggressive centering
     const padding = 8;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    if (left < padding) left = padding;
-    if (left + tooltipRect.width > viewportWidth - padding) {
-      left = viewportWidth - tooltipRect.width - padding;
+    // Horizontal positioning: always try to center if possible
+    if (align === 'center') {
+      // Check if tooltip fits when centered
+      const centeredLeft = (viewportWidth - tooltipRect.width) / 2;
+      if (centeredLeft >= padding && centeredLeft + tooltipRect.width <= viewportWidth - padding) {
+        left = centeredLeft;
+      } else {
+        // Fallback to calculated position with boundary checks
+        if (left < padding) left = padding;
+        if (left + tooltipRect.width > viewportWidth - padding) {
+          left = viewportWidth - tooltipRect.width - padding;
+        }
+      }
+    } else {
+      // Non-centered: standard boundary checks
+      if (left < padding) left = padding;
+      if (left + tooltipRect.width > viewportWidth - padding) {
+        left = viewportWidth - tooltipRect.width - padding;
+      }
     }
-    if (top < padding) top = padding;
-    if (top + tooltipRect.height > viewportHeight - padding) {
-      top = viewportHeight - tooltipRect.height - padding;
+
+    // Vertical positioning: ensure tooltip is always visible
+    if (top < padding) {
+      // If tooltip would go above viewport, position it below trigger instead
+      if (side === 'top') {
+        top = triggerRect.bottom + 8;
+      } else {
+        top = padding;
+      }
+    } else if (top + tooltipRect.height > viewportHeight - padding) {
+      // If tooltip would go below viewport, position it above trigger instead
+      if (side === 'bottom') {
+        top = triggerRect.top - tooltipRect.height - 8;
+      } else {
+        top = viewportHeight - tooltipRect.height - padding;
+      }
     }
 
     setPosition({ top, left });
@@ -162,7 +223,10 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
           ref={triggerRef}
           onClick={handleClick}
           className="inline-block cursor-pointer"
-          style={{ touchAction: 'manipulation' }}
+          style={{ 
+            touchAction: 'manipulation',
+            pointerEvents: disableClickInterception ? 'none' : 'auto'
+          }}
         >
           {children}
         </div>
@@ -189,7 +253,10 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
           ref={triggerRef}
           onClick={handleClick}
           className="inline-block cursor-pointer"
-          style={{ touchAction: 'manipulation' }}
+          style={{ 
+            touchAction: 'manipulation',
+            pointerEvents: disableClickInterception ? 'none' : 'auto'
+          }}
         >
           <BasicHoverTooltip
             content={content}

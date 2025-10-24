@@ -3,7 +3,6 @@
 import React, { useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/ppm-tool/components/ui/button';
-import { useClickOutside } from '@/ppm-tool/shared/hooks/useClickOutside';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEmailReport } from '@/ppm-tool/shared/hooks/useEmailReport';
 import type { Tool, Criterion } from '@/ppm-tool/shared/types';
@@ -353,7 +352,9 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
   const reportMessage = getCriteriaAdjustmentMessage(selectedTools.length, criteriaAdjusted);
   const messageStyles = getCriteriaAdjustmentMessageStyles(criteriaAdjusted);
   
-  useClickOutside(formRef, onClose);
+  // REMOVED: useClickOutside(formRef, onClose);
+  // Not needed - backdrop onClick handles outside clicks, and this was causing 
+  // "second click closes modal" bug due to isOpeningClick flag behavior
 
   const { sendEmailReport, isLoading: isSendingEmail, error: emailError } = useEmailReport({
     onSuccess: (response) => {
@@ -466,6 +467,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
             initial="hidden"
             animate="visible"
             exit="exit"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Header - Centered Modal */}
             <div className="px-4 md:px-6 py-3 md:py-4 border-b flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-50">

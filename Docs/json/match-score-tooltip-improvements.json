@@ -34,6 +34,22 @@
         "Removed duplicate 'Match Score' span that was previously outside the tooltip wrapper",
         "Result: entire 'N/A ? Match Score' badge is now clickable for tooltip interaction"
       ]
+    },
+    {
+      "file": "src/ppm-tool/components/ui/MobileTooltip.tsx",
+      "type": "BUG_FIX",
+      "description": "Fixed critical race condition causing tooltips to close immediately on mobile devices",
+      "issue": "Tooltips would flash open and immediately close on mobile. Second clicks would not work at all.",
+      "root_cause": "The click-outside listener was attached synchronously when tooltip opened, causing the opening click to trigger immediate closure due to DOM event propagation timing",
+      "solution": "Multi-layered robust approach with triple protection",
+      "changes_detail": [
+        "LAYER 1: Added isOpeningClick flag to explicitly ignore the first click after opening",
+        "LAYER 2: Created enhancedClickOutside handler that respects the opening click state",
+        "LAYER 3: Used double requestAnimationFrame to delay listener attachment until click fully propagates",
+        "Added capture: true to event listener for earlier event interception",
+        "Properly cleaned up RAF IDs in useEffect cleanup",
+        "Removed handleClickOutside from dependency array (now created inline for better control)"
+      ]
     }
   ],
   "benefits": [
@@ -56,6 +72,14 @@
     {
       "benefit": "Cross-device support",
       "description": "Works consistently across mobile phones, touchscreen laptops, and desktop computers"
+    },
+    {
+      "benefit": "Tooltips now stay open on mobile",
+      "description": "Fixed critical bug where tooltips would close immediately after opening. Now tooltips stay open for 4 seconds or until user clicks outside"
+    },
+    {
+      "benefit": "Reliable tooltip behavior",
+      "description": "Triple-layered protection ensures tooltips work correctly even with fast clicking, slow devices, or complex event propagation scenarios"
     }
   ],
   "testing_notes": {
@@ -65,9 +89,69 @@
     "keyboard": "Tab to focus on the badge and it should show the tooltip (via MobileTooltip's focus handlers)"
   },
   "tooltip_behavior": {
-    "mobile_phones_tablets": "Click to toggle tooltip, auto-closes after 4 seconds or when clicking outside",
+    "mobile_phones_tablets": "Click to toggle tooltip, stays open for 4 seconds or until clicking outside",
     "touchscreen_laptops": "Hybrid mode - hover shows tooltip, click toggles it for touch interactions",
     "desktop": "Hover shows tooltip automatically with no click required"
+  },
+  "technical_details": {
+    "problem_analysis": {
+      "symptom": "Tooltip would flash open and close in a split second on mobile devices",
+      "timing_issue": "Click-outside listener was attached synchronously in useEffect when tooltip opened",
+      "race_condition": "The opening click event was still propagating when the listener was attached, causing immediate closure",
+      "event_flow": [
+        "1. User clicks tooltip trigger",
+        "2. handleClick sets isOpen=true and calls e.stopPropagation()",
+        "3. React re-renders, effectiveIsOpen becomes true",
+        "4. useEffect runs and attaches document click listener",
+        "5. Original click event still propagating through DOM",
+        "6. Document listener catches the propagating click",
+        "7. handleClickOutside sees click is outside tooltip",
+        "8. setIsOpen(false) called immediately",
+        "9. Tooltip closes before user can see it"
+      ]
+    },
+    "solution_architecture": {
+      "layer_1": {
+        "name": "Opening Click Flag",
+        "implementation": "isOpeningClick boolean variable in useEffect closure",
+        "purpose": "Explicitly tracks and ignores the first click after tooltip opens",
+        "mechanism": "First click sets flag to false and returns early without closing tooltip"
+      },
+      "layer_2": {
+        "name": "Enhanced Click Handler",
+        "implementation": "enhancedClickOutside function created in useEffect",
+        "purpose": "Wraps standard click-outside logic with opening click awareness",
+        "advantage": "No dependency on external handleClickOutside callback"
+      },
+      "layer_3": {
+        "name": "Double RAF Delay",
+        "implementation": "Two nested requestAnimationFrame calls before attaching listener",
+        "purpose": "Ensures click event has fully propagated through DOM before listener is active",
+        "why_double": "Single RAF waits for next paint, double RAF ensures event loop has cycled completely",
+        "performance": "RAF is more efficient than setTimeout for UI-related timing"
+      },
+      "capture_phase": {
+        "name": "Event Capture",
+        "implementation": "{ capture: true } option on addEventListener",
+        "purpose": "Catches events earlier in propagation chain for more reliable detection",
+        "benefit": "Works correctly even with complex nested DOM structures"
+      }
+    },
+    "why_this_works": [
+      "Double RAF ensures opening click has fully propagated before listener is active",
+      "isOpeningClick flag provides explicit protection against race conditions",
+      "Capture phase catches events before they bubble up to problematic areas",
+      "Inline function creation avoids stale closure issues with useCallback",
+      "Proper cleanup with cancelAnimationFrame prevents memory leaks"
+    ],
+    "edge_cases_handled": [
+      "Fast clicking (multiple rapid taps)",
+      "Slow devices (where event propagation takes longer)",
+      "Complex DOM nesting (events bubble through multiple layers)",
+      "Touch vs mouse events (both work correctly)",
+      "Device switching (works across all device types)",
+      "Accessibility (keyboard navigation still works via forceOpen prop)"
+    ]
   },
   "locations_affected": [
     "Tools section - when criteria have not been adjusted (N/A state)",

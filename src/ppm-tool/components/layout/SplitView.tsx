@@ -25,6 +25,10 @@ interface SplitViewProps {
   guidedButtonRef?: React.RefObject<HTMLButtonElement>;
   onOpenGuidedRanking?: () => void;
   chartButtonPosition?: { x: number; y: number };
+  disableAutoShuffle?: boolean;
+  onShuffleReady?: (shuffleFn: () => void) => void;
+  onShuffleControlReady?: (disableFn: () => void, enableFn: () => void) => void;
+  isAnimatingGuidedRankings?: boolean;
 }
 
 export const SplitView: React.FC<SplitViewProps> = ({
@@ -46,7 +50,11 @@ export const SplitView: React.FC<SplitViewProps> = ({
   comparedTools,
   guidedButtonRef,
   onOpenGuidedRanking,
-  chartButtonPosition
+  chartButtonPosition,
+  disableAutoShuffle,
+  onShuffleReady,
+  onShuffleControlReady,
+  isAnimatingGuidedRankings
 }) => {
   const isMobile = useMobileDetection();
 
@@ -83,6 +91,10 @@ export const SplitView: React.FC<SplitViewProps> = ({
           comparedTools={comparedTools}
           chartButtonPosition={chartButtonPosition}
           onOpenGuidedRanking={onOpenGuidedRanking}
+          disableAutoShuffle={disableAutoShuffle}
+          onShuffleReady={onShuffleReady}
+          onShuffleControlReady={onShuffleControlReady}
+          isAnimatingGuidedRankings={isAnimatingGuidedRankings}
         />
       </div>
     </div>

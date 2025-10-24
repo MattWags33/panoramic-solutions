@@ -18,7 +18,7 @@ interface UseGuidedSubmitAnimationReturn {
 }
 
 const TIMINGS = {
-  ANIMATION: 4000,  // Single combined phase: wave + text + animation all together (4 seconds)
+  ANIMATION: 3000,  // Single combined phase: wave + text + animation all together (3 seconds)
 } as const;
 
 export const useGuidedSubmitAnimation = (): UseGuidedSubmitAnimationReturn => {

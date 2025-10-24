@@ -233,6 +233,16 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   const guidedAnimation = useGuidedSubmitAnimation();
   const [pendingRankings, setPendingRankings] = useState<{ [key: string]: number } | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  
+  // Control tool shuffle during guided animation sequence
+  const [disableAutoShuffle, setDisableAutoShuffle] = useState(false);
+  const manualShuffleRef = useRef<(() => void) | null>(null);
+  
+  // Imperative shuffle control (immediate, synchronous)
+  const shuffleControlRef = useRef<{ disable: () => void; enable: () => void } | null>(null);
+  
+  // Flag to keep tools in alphabetical order during guided animation sequence
+  const [isAnimatingGuidedRankings, setIsAnimatingGuidedRankings] = useState(false);
 
   // Track if this is the initial mount to prevent saving default values
   const isInitialMountRef = useRef(true);
@@ -722,6 +732,20 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     if (!isMobile) {
       console.log('🎬 Starting guided submit animation on desktop');
       
+      // SET ANIMATION FLAG to keep tools alphabetical during animation
+      setIsAnimatingGuidedRankings(true);
+      console.log('📋 Animation flag SET - tools will stay alphabetical');
+      
+      // IMMEDIATELY disable auto-shuffle BEFORE any state updates (imperative, synchronous)
+      if (shuffleControlRef.current) {
+        shuffleControlRef.current.disable();
+        console.log('🚫 Imperative shuffle control: DISABLED (immediate)');
+      }
+      
+      // ALSO set state-based disable as backup
+      setDisableAutoShuffle(true);
+      console.log('🚫 State-based auto-shuffle disabled for animation sequence');
+      
       // Phase 1: Wave animation (4 seconds) - NO criteria changes yet
       await guidedAnimation.startAnimation();
       console.log('✅ Wave animation complete');
@@ -733,7 +757,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       console.log('⏸️ Pausing 1 second after wave');
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Phase 3: STAGGERED criteria slider animations (one by one, 3 seconds each)
+      // Phase 3: STAGGERED criteria slider animations (one by one, 0.5s each)
       console.log('🔄 Starting STAGGERED criteria animations - one slider at a time...');
       
       // Prepare items to animate (only criteria that changed)
@@ -748,6 +772,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
         const criterion = criteriaToAnimate[i];
         
         // Update JUST this one criterion (triggers its slider to move)
+        // Auto-shuffle is disabled, so tools won't move yet
         setCriteria(prev => 
           prev.map(c => 
             c.id === criterion.id 
@@ -767,25 +792,74 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       // Phase 4: Small pause before tools shuffle
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Phase 5: Tools will shuffle now (triggered by final criteria change)
-      console.log('🔄 Tool shuffle starting...');
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1s tool shuffle
+      // Phase 5: RE-ENABLE auto-shuffle and trigger manual shuffle
+      console.log('🔄 Re-enabling auto-shuffle and triggering tool shuffle...');
+      
+      // Re-enable imperatively (immediate)
+      if (shuffleControlRef.current) {
+        shuffleControlRef.current.enable();
+        console.log('✅ Imperative shuffle control: ENABLED (immediate)');
+      }
+      
+      // Re-enable via state as backup
+      setDisableAutoShuffle(false);
+      
+      // Trigger manual shuffle if ref is available
+      if (manualShuffleRef.current) {
+        manualShuffleRef.current();
+        console.log('✅ Manual shuffle triggered');
+      }
+      
+      // Wait for shuffle animation to complete
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1s tool shuffle
+      
+      // CLEAR ANIMATION FLAG - allow tools to sort by score now
+      setIsAnimatingGuidedRankings(false);
+      console.log('📋 Animation flag CLEARED - tools can now sort by score');
       
       console.log('✅ All animations complete');
       
       // Only show email modal for full guided rankings (not single-criterion mode)
       if (!guidedRankingCriterionId) {
-        // Phase 4: 3 second pause after shuffle
-        console.log('⏸️ Pausing 3 seconds before opening email modal');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Check if user is on main state (criteria-tools view)
+        const isOnMainState = currentStep === 'criteria-tools';
         
-        // Phase 5: Open email modal
-        console.log('📧 Opening email modal now');
-        setShowEmailModal(true);
-        
-        // Track that comparison report was opened
-        onComparisonReportClick();
-        onComparisonReportOpen();
+        if (isOnMainState) {
+          // On main state: Wait 5 seconds before showing email modal
+          console.log('⏸️ On main state - pausing 5 seconds before opening email modal');
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          console.log('📧 Opening email modal now (main state)');
+          setShowEmailModal(true);
+          
+          // Track that comparison report was opened
+          onComparisonReportClick();
+          onComparisonReportOpen();
+        } else {
+          // On other state: Show modal when user returns to main state (2 second delay)
+          console.log('📍 Not on main state - will show email modal when user returns');
+          
+          // Wait for user to return to main state
+          const checkInterval = setInterval(() => {
+            if (currentStep === 'criteria-tools') {
+              clearInterval(checkInterval);
+              console.log('✅ User returned to main state');
+              
+              // Wait 2 seconds then show modal
+              setTimeout(() => {
+                console.log('📧 Opening email modal now (returned to main state)');
+                setShowEmailModal(true);
+                onComparisonReportClick();
+                onComparisonReportOpen();
+              }, 2000);
+            }
+          }, 500); // Check every 500ms
+          
+          // Clear interval after 30 seconds (timeout)
+          setTimeout(() => {
+            clearInterval(checkInterval);
+          }, 30000);
+        }
       } else {
         console.log('✅ Single-criterion mode - skipping email modal');
       }
@@ -946,6 +1020,16 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
             guidedButtonRef={guidedButtonRef}
             onOpenGuidedRanking={onOpenGuidedRanking}
             chartButtonPosition={chartButtonPosition}
+            disableAutoShuffle={disableAutoShuffle}
+            onShuffleReady={(shuffleFn) => {
+              manualShuffleRef.current = shuffleFn;
+              console.log('🔗 Shuffle function registered');
+            }}
+            onShuffleControlReady={(disableFn, enableFn) => {
+              shuffleControlRef.current = { disable: disableFn, enable: enableFn };
+              console.log('🔗 Imperative shuffle control registered');
+            }}
+            isAnimatingGuidedRankings={isAnimatingGuidedRankings}
           />
         );
       case 'chart':
@@ -1148,7 +1232,8 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
               {renderContent()}
             </div>
           </main>
-          {isHydrated && isMobile && (
+          {/* Render ActionButtons on both mobile and desktop after hydration */}
+          {isHydrated && (
             <ActionButtons 
               selectedTools={selectedTools} 
               selectedCriteria={criteria}

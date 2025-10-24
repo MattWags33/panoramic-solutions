@@ -41,6 +41,10 @@ interface ToolSectionProps {
   comparedTools?: Set<string>;
   chartButtonPosition?: { x: number; y: number };
   onOpenGuidedRanking?: () => void;
+  disableAutoShuffle?: boolean;
+  onShuffleReady?: (shuffleFn: () => void) => void;
+  onShuffleControlReady?: (disableFn: () => void, enableFn: () => void) => void;
+  isAnimatingGuidedRankings?: boolean;
 }
 
 // Use the unified calculateScore function
@@ -65,13 +69,20 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
   onCompare,
   comparedTools = new Set(),
   chartButtonPosition,
-  onOpenGuidedRanking
+  onOpenGuidedRanking,
+  disableAutoShuffle = false,
+  onShuffleReady,
+  onShuffleControlReady,
+  isAnimatingGuidedRankings = false
 }) => {
   const isMobile = useMobileDetection();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [animatingTool, setAnimatingTool] = useState<{ id: string; position: { x: number; y: number } } | null>(null);
+  
+  // Local state for imperative shuffle control (separate from prop-based control)
+  const [localDisableShuffle, setLocalDisableShuffle] = useState(false);
 
   const settingsRef = React.useRef<HTMLDivElement>(null);
   const modalContentRef = React.useRef<HTMLDivElement>(null);
@@ -122,6 +133,12 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
 
   // Stable, deterministic sorting with hydration awareness
   const sortedTools = React.useMemo(() => {
+    // Keep alphabetical during guided animation sequence to prevent premature reordering
+    if (isAnimatingGuidedRankings) {
+      console.log('📋 Keeping tools alphabetical during animation');
+      return [...filteredTools].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    
     // Always alphabetical until hydrated OR criteria not adjusted
     // This ensures server and client render the same initial state
     if (!isHydrated || !criteriaAdjusted) {
@@ -141,12 +158,40 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
       
       return scoreDiff;
     });
-  }, [filteredTools, toolMatchScores, criteriaAdjusted, isHydrated]);
+  }, [filteredTools, toolMatchScores, criteriaAdjusted, isHydrated, isAnimatingGuidedRankings]);
+
+  // Combine both disable sources (prop-based and imperative)
+  const isShuffleDisabled = disableAutoShuffle || localDisableShuffle;
 
   // Set up tool order shuffle animation - triggers when sortedTools order changes
-  useToolOrderShuffle(sortedTools, shuffleAnimation, {
-    triggerOnChange: true
+  const toolOrderShuffle = useToolOrderShuffle(sortedTools, shuffleAnimation, {
+    triggerOnChange: true,
+    disabled: isShuffleDisabled
   });
+
+  // Expose manual shuffle function to parent component
+  React.useEffect(() => {
+    if (onShuffleReady) {
+      onShuffleReady(toolOrderShuffle.manualShuffle);
+      console.log('🔗 Manual shuffle function exposed to parent');
+    }
+  }, [onShuffleReady, toolOrderShuffle]);
+
+  // Expose imperative control functions to parent
+  React.useEffect(() => {
+    if (onShuffleControlReady) {
+      const disableFn = () => {
+        console.log('🚫 Imperative shuffle DISABLE called');
+        setLocalDisableShuffle(true);
+      };
+      const enableFn = () => {
+        console.log('✅ Imperative shuffle ENABLE called');
+        setLocalDisableShuffle(false);
+      };
+      onShuffleControlReady(disableFn, enableFn);
+      console.log('🔗 Imperative shuffle control functions exposed to parent');
+    }
+  }, [onShuffleControlReady]);
 
   const handleToggleExpand = (toolId: string) => {
     const newExpanded = new Set(expandedCards);

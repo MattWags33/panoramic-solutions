@@ -199,8 +199,8 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
   // Use mobile layout as default for SSR, then update after hydration
   const steps: NavigationStep[] = !isHydrated || isMobile 
     ? [
-        { id: 'tools', label: 'Tools & Recommendations', description: 'Choose PPM solutions' },
         { id: 'criteria', label: 'Rank Your Criteria', description: 'Set importance levels' },
+        { id: 'tools', label: 'Tools & Recommendations', description: 'Choose PPM solutions' },
         { id: 'chart', label: 'Tool - Criteria Comparisons', description: 'Visual comparison' },
       ]
     : [
