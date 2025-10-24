@@ -30,7 +30,7 @@ interface NavigationToggleProps {
   showEmailModal?: boolean;
   onOpenEmailModal?: () => void;
   onCloseEmailModal?: () => void;
-  onOpenGuidedRanking?: () => void;
+  onOpenGuidedRanking?: (criterionId?: string) => void;
 }
 
 export const NavigationToggle: React.FC<NavigationToggleProps> = ({
@@ -78,29 +78,36 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
     // - py-0.5 = 2px top + 2px bottom
     // - paddingTop style overrides: max(4px, env(safe-area-inset-top)) on mobile, max(8px, env) on desktop
     // - Logo: h-8 (32px) on mobile, h-10 (40px) on desktop
-    const topPadding = isMobile ? 4 : 8; // From paddingTop style override
+    
+    // Use mobile values as default during SSR to prevent hydration mismatch
+    const effectiveIsMobile = !isHydrated || isMobile;
+    
+    const topPadding = effectiveIsMobile ? 4 : 8; // From paddingTop style override
     const bottomPadding = 2; // py-0.5 = 2px bottom (consistent)
-    const logoHeight = isMobile ? 32 : 40; // h-8 = 32px mobile, h-10 = 40px desktop
+    const logoHeight = effectiveIsMobile ? 32 : 40; // h-8 = 32px mobile, h-10 = 40px desktop
     
     // Total header height: top padding + bottom padding + logo height
     return topPadding + bottomPadding + logoHeight;
-  }, [isMobile]);
+  }, [isMobile, isHydrated]);
 
   // Calculate navigation height (fixed - no scroll changes)
   const getNavigationHeight = useCallback(() => {
+    // Use mobile values as default during SSR to prevent hydration mismatch
+    const effectiveIsMobile = !isHydrated || isMobile;
+    
     // Navigation uses different top padding for mobile vs desktop
-    const topPadding = isMobile ? 8 : 8; // 8px on mobile to match bottom padding, keep 16px on desktop
+    const topPadding = effectiveIsMobile ? 8 : 8; // 8px on mobile to match bottom padding, keep 16px on desktop
     const bottomPadding = 8; // pb-2 = 8px (fixed)
     const contentHeight = 40; // Approximate content height
     
     // Add extra spacing below toggles on mobile for logo (original desktop logic)
-    const mobileLogoSpacing = isMobile ? 4 : 0; // Reduced from 8px to 4px for tighter mobile spacing
+    const mobileLogoSpacing = effectiveIsMobile ? 4 : 0; // Reduced from 8px to 4px for tighter mobile spacing
     
     // Larger spacing between navigation and main content
-    const extraSpacing = isMobile ? 24 : 16; // Mobile: 24px, Desktop: 16px (increased from 8px to match header gap increase)
+    const extraSpacing = effectiveIsMobile ? 24 : 16; // Mobile: 24px, Desktop: 16px (increased from 8px to match header gap increase)
     
     return topPadding + bottomPadding + contentHeight + mobileLogoSpacing + extraSpacing;
-  }, [isMobile]);
+  }, [isMobile, isHydrated]);
 
   // Total combined height for content offset
   const getTotalFixedHeight = useCallback(() => {
@@ -192,8 +199,8 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
   // Use mobile layout as default for SSR, then update after hydration
   const steps: NavigationStep[] = !isHydrated || isMobile 
     ? [
-        { id: 'criteria', label: 'Rank Your Criteria', description: 'Set importance levels' },
         { id: 'tools', label: 'Tools & Recommendations', description: 'Choose PPM solutions' },
+        { id: 'criteria', label: 'Rank Your Criteria', description: 'Set importance levels' },
         { id: 'chart', label: 'Tool - Criteria Comparisons', description: 'Visual comparison' },
       ]
     : [

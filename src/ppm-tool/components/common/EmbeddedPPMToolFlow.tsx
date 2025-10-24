@@ -27,13 +27,22 @@ import { useGuidance } from '@/ppm-tool/shared/contexts/GuidanceContext';
 import { useUnifiedExitIntent } from '@/ppm-tool/shared/hooks/useUnifiedExitIntent';
 import { useUnifiedMouseTracking } from '@/ppm-tool/shared/hooks/useUnifiedMouseTracking';
 import { useDevelopmentKeyboards } from '@/ppm-tool/shared/hooks/useDevelopmentKeyboards';
-import { resetUnifiedBumperState } from '@/ppm-tool/shared/utils/unifiedBumperState';
+import { 
+  resetUnifiedBumperState, 
+  recordFullGuidedRankingsClick, 
+  recordCriteriaSpecificGuidedRankingsClick 
+} from '@/ppm-tool/shared/utils/unifiedBumperState';
 import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import '@/ppm-tool/shared/utils/bumperDebugger'; // Import debugger for global functions
 // REMOVED: import { MobileDiagnostics } from './MobileDiagnostics'; - Causes browser compatibility issues
 import { MobileRecoverySystem } from './MobileRecoverySystem';
 import { useGuidedSubmitAnimation } from '@/ppm-tool/shared/hooks/useGuidedSubmitAnimation';
 import { GuidedSubmitAnimation } from '@/ppm-tool/components/overlays/GuidedSubmitAnimation';
+import { 
+  loadSavedCriteriaValues, 
+  saveCriteriaValues, 
+  mergeCriteriaWithSaved 
+} from '@/ppm-tool/shared/utils/criteriaStorage';
 
 interface EmbeddedPPMToolFlowProps {
   showGuidedRanking?: boolean;
@@ -91,7 +100,13 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 }) => {
   const isMobile = useMobileDetection();
   const isTouchDevice = useTouchDevice();
-  const isHydrated = true; // Simple fallback for now
+  
+  // Track hydration to prevent SSR/client mismatches
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
   
   // Disable Lenis smooth scroll on mobile to prevent tooltip interference
   useLenis({
@@ -187,7 +202,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   // Set initial step based on mobile detection - move logic outside hook
   const getInitialStep = () => {
     try {
-      return isMobile ? 'criteria' : 'criteria-tools';
+      return isMobile ? 'tools' : 'criteria-tools';
     } catch (error) {
       console.warn('Error determining mobile state, defaulting to criteria-tools:', error);
       return 'criteria-tools';
@@ -219,7 +234,10 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   const [pendingRankings, setPendingRankings] = useState<{ [key: string]: number } | null>(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
 
-  // Enhanced localStorage handling with cross-browser compatibility
+  // Track if this is the initial mount to prevent saving default values
+  const isInitialMountRef = useRef(true);
+
+  // Enhanced localStorage handling for guided ranking answers and personalization
   useEffect(() => {
     try {
       // Check if localStorage is available and working
@@ -272,6 +290,32 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     }
   }, []);
 
+  // Debounced save for criteria values - only saves after changes settle
+  useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMountRef.current) {
+      return;
+    }
+
+    // Debounce: wait 1 second after last change before saving
+    const saveTimer = setTimeout(() => {
+      saveCriteriaValues(criteria);
+    }, 1000);
+
+    return () => clearTimeout(saveTimer);
+  }, [criteria]);
+
+  // Convert saved answers from storage format (with timestamps) to form format (just values)
+  const convertSavedAnswersToFormFormat = (
+    savedAnswers: Record<string, GuidedRankingAnswer>
+  ): Record<string, number | number[] | string> => {
+    const formattedAnswers: Record<string, number | number[] | string> = {};
+    Object.entries(savedAnswers).forEach(([key, answer]) => {
+      formattedAnswers[key] = answer.value;
+    });
+    return formattedAnswers;
+  };
+
   // Save answers and personalization data to localStorage
   const handleSaveAnswers = (
     answers: Record<string, number | number[] | string>,
@@ -304,8 +348,8 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       localStorage.setItem('personalizationData', JSON.stringify(formattedPersonalization));
 
       // Log the data for analytics (you can integrate with your analytics system here)
-      console.log('Guided Ranking Answers:', formattedAnswers);
-      console.log('Personalization Data:', formattedPersonalization);
+      console.log('💾 Saved Guided Ranking Answers:', Object.keys(formattedAnswers).length, 'questions');
+      console.log('💾 Saved Personalization Data:', formattedPersonalization);
     } catch (error) {
       console.error('Error saving guided ranking data:', error);
     }
@@ -383,97 +427,106 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   };
 
   // Enhanced criteria fetching with mobile-friendly error handling
+  // Combined fetch + load to eliminate race condition
   useEffect(() => {
-    const fetchCriteria = async () => {
+    const fetchAndLoadCriteria = async () => {
       try {
-        // Check if supabase is available
+        let fetchedCriteria: Criterion[];
+
+        // Step 1: Fetch criteria from database or use defaults
         if (!supabase) {
           console.warn('Supabase not available, using default criteria');
-          const transformedDefaultCriteria: Criterion[] = defaultCriteria.map(item => ({
+          fetchedCriteria = defaultCriteria.map(item => ({
             ...item,
             description: item.tooltipDescription || 'No description available'
           }));
-          setCriteria(transformedDefaultCriteria);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('criteria')
-          .select('*');
-
-        if (error) {
-          throw error;
-        }
-
-        if (data && Array.isArray(data) && data.length > 0) {
-          console.log('✅ Fetched criteria from database:', data);
-          // Transform database criteria to match Criterion type, using defaultCriteria for descriptions
-          const transformedCriteria: Criterion[] = data.map((item: any) => {
-            // Find matching default criterion for descriptions
-            const defaultCriterion = defaultCriteria.find(dc => dc.name === item.name);
-            return {
-              id: item.id, // Use the actual UUID from database
-              name: item.name,
-              description: defaultCriterion?.tooltipDescription || 'No description available',
-              tooltipDescription: defaultCriterion?.tooltipDescription,
-              userRating: 3, // Default rating
-              ratingDescriptions: defaultCriterion?.ratingDescriptions || {
-                low: 'Basic functionality',
-                high: 'Advanced features'
-              }
-            };
-          });
-          
-          // Sort criteria in the desired order
-          const desiredOrder = [
-            'Scalability',
-            'Integrations & Extensibility', 
-            'Ease of Use',
-            'Flexibility & Customization',
-            'Portfolio Management',
-            'Reporting & Analytics',
-            'Security & Compliance'
-          ];
-          
-          const sortedCriteria = desiredOrder.map(name => 
-            transformedCriteria.find(criterion => criterion.name === name)
-          ).filter(Boolean) as Criterion[];
-          
-          if (sortedCriteria.length > 0) {
-            console.log('✅ Using database criteria:', sortedCriteria.length, 'items');
-            setCriteria(sortedCriteria);
-          } else {
-            throw new Error('No valid criteria found in database');
-          }
         } else {
-          throw new Error('No criteria data received from database');
-        }
-      } catch (err) {
-        console.error('Error fetching criteria, using defaults:', err);
-        setFetchError(null); // Clear any existing fetch errors for criteria
-        
-        // Fallback to default criteria
-        try {
-          const transformedDefaultCriteria: Criterion[] = defaultCriteria.map(item => ({
-            ...item,
-            description: item.tooltipDescription || 'No description available'
-          }));
-          
-          if (transformedDefaultCriteria.length > 0) {
-            console.log('✅ Using default criteria:', transformedDefaultCriteria.length, 'items');
-            setCriteria(transformedDefaultCriteria);
-          } else {
-            throw new Error('Default criteria is empty');
+          try {
+            const { data, error } = await supabase
+              .from('criteria')
+              .select('*');
+
+            if (error) {
+              throw error;
+            }
+
+            if (data && Array.isArray(data) && data.length > 0) {
+              console.log('✅ Fetched criteria from database:', data);
+              
+              // Transform database criteria to match Criterion type
+              const transformedCriteria: Criterion[] = data.map((item: any) => {
+                const defaultCriterion = defaultCriteria.find(dc => dc.name === item.name);
+                return {
+                  id: item.id,
+                  name: item.name,
+                  description: defaultCriterion?.tooltipDescription || 'No description available',
+                  tooltipDescription: defaultCriterion?.tooltipDescription,
+                  userRating: 3, // Default rating (will be overridden by saved values)
+                  ratingDescriptions: defaultCriterion?.ratingDescriptions || {
+                    low: 'Basic functionality',
+                    high: 'Advanced features'
+                  }
+                };
+              });
+              
+              // Sort criteria in desired order
+              const desiredOrder = [
+                'Scalability',
+                'Integrations & Extensibility', 
+                'Ease of Use',
+                'Flexibility & Customization',
+                'Portfolio Management',
+                'Reporting & Analytics',
+                'Security & Compliance'
+              ];
+              
+              fetchedCriteria = desiredOrder
+                .map(name => transformedCriteria.find(criterion => criterion.name === name))
+                .filter(Boolean) as Criterion[];
+              
+              if (fetchedCriteria.length === 0) {
+                throw new Error('No valid criteria found in database');
+              }
+            } else {
+              throw new Error('No criteria data received from database');
+            }
+          } catch (dbError) {
+            console.error('Error fetching from database, using defaults:', dbError);
+            setFetchError(null);
+            
+            // Fallback to defaults
+            fetchedCriteria = defaultCriteria.map(item => ({
+              ...item,
+              description: item.tooltipDescription || 'No description available'
+            }));
           }
-        } catch (fallbackError) {
-          console.error('Critical error: Cannot load default criteria:', fallbackError);
-          setFetchError('Unable to load tool criteria. Please refresh the page.');
         }
+
+        // Step 2: Load saved criteria values from localStorage
+        const savedValues = loadSavedCriteriaValues();
+
+        // Step 3: Merge fetched criteria with saved values
+        const mergedCriteria = mergeCriteriaWithSaved(fetchedCriteria, savedValues);
+
+        // Step 4: Set criteria state ONCE with merged data
+        console.log('✅ Setting criteria with merged values:', mergedCriteria.length, 'items');
+        setCriteria(mergedCriteria);
+
+        // Step 5: Mark initial mount as complete AFTER criteria are set
+        // This prevents the save effect from triggering on initial load
+        setTimeout(() => {
+          isInitialMountRef.current = false;
+          console.log('✅ Initial mount complete - criteria saves now enabled');
+        }, 500);
+
+      } catch (err) {
+        console.error('Critical error loading criteria:', err);
+        setFetchError('Unable to load tool criteria. Please refresh the page.');
       }
     };
 
     // Delay execution slightly to allow mobile browsers to settle
-    const timeoutId = setTimeout(fetchCriteria, 100);
+    const timeoutId = setTimeout(fetchAndLoadCriteria, 100);
     return () => clearTimeout(timeoutId);
   }, []);
 
@@ -680,18 +733,45 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       console.log('⏸️ Pausing 1 second after wave');
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Phase 3: Apply rankings to trigger BOTH criteria sliders AND tool shuffle (3 seconds - gradual and elegant)
-      console.log('🔄 Applying rankings - criteria sliders + tools shuffle now (gradual 3s animation)');
-      setCriteria(prevCriteria => 
-        prevCriteria.map(criterion => ({
-          ...criterion,
-          userRating: rankings[criterion.id] !== undefined ? rankings[criterion.id] : criterion.userRating
-        }))
+      // Phase 3: STAGGERED criteria slider animations (one by one, 3 seconds each)
+      console.log('🔄 Starting STAGGERED criteria animations - one slider at a time...');
+      
+      // Prepare items to animate (only criteria that changed)
+      const criteriaToAnimate = criteria.filter(c => 
+        rankings[c.id] !== undefined && rankings[c.id] !== c.userRating
       );
       
-      // Wait for shuffle animation to complete (3 seconds for elegant, gradual movement)
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      console.log('✅ Criteria + Tool animations complete');
+      console.log(`📊 Will animate ${criteriaToAnimate.length} criteria sliders sequentially`);
+      
+      // Animate each criterion ONE AT A TIME with visible delay
+      for (let i = 0; i < criteriaToAnimate.length; i++) {
+        const criterion = criteriaToAnimate[i];
+        
+        // Update JUST this one criterion (triggers its slider to move)
+        setCriteria(prev => 
+          prev.map(c => 
+            c.id === criterion.id 
+              ? { ...c, userRating: rankings[criterion.id] }
+              : c
+          )
+        );
+        
+        console.log(`✨ Criterion ${i + 1}/${criteriaToAnimate.length} animating: ${criterion.name}`);
+        
+        // Wait for this slider to finish its 0.5-second animation + tiny delay before next
+        await new Promise(resolve => setTimeout(resolve, 600)); // 0.5s animation + 0.1s pause
+      }
+      
+      console.log('✅ All criteria sliders animated sequentially');
+      
+      // Phase 4: Small pause before tools shuffle
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Phase 5: Tools will shuffle now (triggered by final criteria change)
+      console.log('🔄 Tool shuffle starting...');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1s tool shuffle
+      
+      console.log('✅ All animations complete');
       
       // Only show email modal for full guided rankings (not single-criterion mode)
       if (!guidedRankingCriterionId) {
@@ -1025,23 +1105,32 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
               setShowEmailModal(false);
               onComparisonReportClose();
             }}
-            onOpenGuidedRanking={() => {
-              onGuidedRankingClick();
+            onOpenGuidedRanking={(criterionId) => {
+              // Differentiate between full and criteria-specific guided rankings
+              if (criterionId) {
+                recordCriteriaSpecificGuidedRankingsClick();
+                console.log('🎯 Opening criteria-specific guided ranking for:', criterionId);
+              } else {
+                onGuidedRankingClick(); // Full guided rankings
+                recordFullGuidedRankingsClick();
+                console.log('🎯 Opening full guided rankings');
+              }
               onGuidedRankingStart();
-              onOpenGuidedRanking && onOpenGuidedRanking();
+              onOpenGuidedRanking && onOpenGuidedRanking(criterionId);
             }}
           />
           <main 
             className={cn(
               'container mx-auto px-4 pb-8',
-              isMobile && "pb-32" // Increased padding to accommodate the action buttons
+              isHydrated && isMobile && "pb-32" // Increased padding to accommodate the action buttons
             )}
             style={{
               paddingTop: "calc(var(--total-fixed-height, 12rem) + 1rem)" // Add extra 1rem (16px) spacing above content
             }}
           >
             {/* Mobile Logo - Scrollable, appears above content */}
-            {isMobile && (
+            {/* Only render mobile-specific UI after hydration to prevent SSR mismatch */}
+            {isHydrated && isMobile && (
               <div className="text-center mb-6 pb-4 border-b border-gray-200/50">
                 <div className="flex justify-center px-4">
                   <Image
@@ -1059,7 +1148,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
               {renderContent()}
             </div>
           </main>
-          {isMobile && (
+          {isHydrated && isMobile && (
             <ActionButtons 
               selectedTools={selectedTools} 
               selectedCriteria={criteria}
@@ -1073,10 +1162,18 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
                 setShowEmailModal(false);
                 onComparisonReportClose();
               }}
-              onOpenGuidedRanking={() => {
-                onGuidedRankingClick();
+              onOpenGuidedRanking={(criterionId) => {
+                // Differentiate between full and criteria-specific guided rankings
+                if (criterionId) {
+                  recordCriteriaSpecificGuidedRankingsClick();
+                  console.log('🎯 Opening criteria-specific guided ranking for:', criterionId);
+                } else {
+                  onGuidedRankingClick(); // Full guided rankings
+                  recordFullGuidedRankingsClick();
+                  console.log('🎯 Opening full guided rankings');
+                }
                 onGuidedRankingStart();
-                onOpenGuidedRanking && onOpenGuidedRanking();
+                onOpenGuidedRanking && onOpenGuidedRanking(criterionId);
               }}
             />
           )}
@@ -1097,6 +1194,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           onRealTimeUpdate={handleRealTimeUpdate}
           onSaveAnswers={handleSaveAnswers}
           onMethodologyFilter={handleMethodologyFilter}
+          initialAnswers={convertSavedAnswersToFormFormat(guidedRankingAnswers)}
         />
 
         {/* Product Bumper - guides users to guided ranking */}
@@ -1104,7 +1202,9 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           isVisible={showProductBumper}
           onClose={closeProductBumper}
           onUseGuided={() => {
+            // Product bumper only opens full guided rankings
             onGuidedRankingClick();
+            recordFullGuidedRankingsClick();
             closeProductBumper();
             onOpenGuidedRanking && onOpenGuidedRanking();
           }}

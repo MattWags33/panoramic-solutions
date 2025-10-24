@@ -15,8 +15,10 @@
  */
 
 export interface UnifiedBumperState {
-  // Core state tracking
-  hasClickedIntoGuidedRankings: boolean;
+  // Core state tracking - differentiate full vs criteria-specific guided rankings
+  hasClickedIntoFullGuidedRankings?: boolean; // Full guided rankings (disables Product Bumper)
+  hasClickedIntoCriteriaSpecificGuidedRankings?: boolean; // Criteria-specific (doesn't disable bumper)
+  hasClickedIntoGuidedRankings: boolean; // Legacy field - kept for backwards compatibility
   hasClickedIntoComparisonReport: boolean;
   
   // Product bumper state
@@ -64,7 +66,9 @@ export function getUnifiedBumperState(): UnifiedBumperState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
       return {
-        hasClickedIntoGuidedRankings: false,
+        hasClickedIntoFullGuidedRankings: false,
+        hasClickedIntoCriteriaSpecificGuidedRankings: false,
+        hasClickedIntoGuidedRankings: false, // Legacy field
         hasClickedIntoComparisonReport: false,
         productBumperShown: false,
         productBumperDismissed: false,
@@ -90,7 +94,9 @@ export function getUnifiedBumperState(): UnifiedBumperState {
   } catch (error) {
     console.error('Error reading unified bumper state:', error);
     return {
-      hasClickedIntoGuidedRankings: false,
+      hasClickedIntoFullGuidedRankings: false,
+      hasClickedIntoCriteriaSpecificGuidedRankings: false,
+      hasClickedIntoGuidedRankings: false, // Legacy field
       hasClickedIntoComparisonReport: false,
       productBumperShown: false,
       productBumperDismissed: false,
@@ -126,13 +132,31 @@ export function saveUnifiedBumperState(state: UnifiedBumperState): void {
 }
 
 /**
- * Record that user clicked into Guided Rankings
+ * Record that user clicked into Full Guided Rankings (disables Product Bumper)
+ */
+export function recordFullGuidedRankingsClick(): void {
+  const state = getUnifiedBumperState();
+  state.hasClickedIntoFullGuidedRankings = true;
+  state.hasClickedIntoGuidedRankings = true; // Also set legacy field
+  saveUnifiedBumperState(state);
+  console.log('🎯 Recorded Full Guided Rankings click - Product Bumper disabled');
+}
+
+/**
+ * Record that user clicked into Criteria-Specific Guided Rankings (doesn't disable Product Bumper)
+ */
+export function recordCriteriaSpecificGuidedRankingsClick(): void {
+  const state = getUnifiedBumperState();
+  state.hasClickedIntoCriteriaSpecificGuidedRankings = true;
+  saveUnifiedBumperState(state);
+  console.log('🎯 Recorded Criteria-Specific Guided Rankings click - Product Bumper still active');
+}
+
+/**
+ * @deprecated Use recordFullGuidedRankingsClick or recordCriteriaSpecificGuidedRankingsClick instead
  */
 export function recordGuidedRankingsClick(): void {
-  const state = getUnifiedBumperState();
-  state.hasClickedIntoGuidedRankings = true;
-  saveUnifiedBumperState(state);
-  console.log('🎯 Recorded Guided Rankings click - no more bumpers will show');
+  recordFullGuidedRankingsClick();
 }
 
 /**
@@ -297,8 +321,9 @@ export function shouldShowProductBumper(): boolean {
     return false;
   }
   
-  // Never show if user has clicked into Guided Rankings
-  if (state.hasClickedIntoGuidedRankings) {
+  // Never show if user has clicked into FULL Guided Rankings (criteria-specific is OK)
+  if (state.hasClickedIntoFullGuidedRankings) {
+    console.log('⚠️ Product Bumper blocked: user completed full guided rankings');
     return false;
   }
   

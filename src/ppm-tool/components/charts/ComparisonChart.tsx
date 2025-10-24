@@ -442,17 +442,20 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
               ) : (
                 <EyeOff className="w-5 h-5 text-gray-400" />
               )}
-              <span className={`inline-flex items-center text-sm font-semibold ${
-                visibleTools.has('requirements') ? 'text-green-800' : 'text-gray-600'
-              }`}>
-                <span>Your Tool</span>
-                {!criteriaAdjusted && (
-                  <NotYetRankedTooltip 
-                    onGuidedRankingClick={onOpenGuidedRanking}
-                    inline={true}
-                  />
-                )}
-              </span>
+              {criteriaAdjusted ? (
+                <span className={`inline-flex items-center text-sm font-semibold ${
+                  visibleTools.has('requirements') ? 'text-green-800' : 'text-gray-600'
+                }`}>
+                  Your Tool
+                </span>
+              ) : (
+                <NotYetRankedTooltip 
+                  onGuidedRankingClick={onOpenGuidedRanking}
+                  inline={true}
+                  wrapYourTool={true}
+                  isVisible={visibleTools.has('requirements')}
+                />
+              )}
             </button>
             {selectedTools.map((tool, index) => {
               const [backgroundColor, borderColor] = getToolColor(index);

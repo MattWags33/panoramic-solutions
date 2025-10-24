@@ -1,4 +1,5 @@
 import type { Criterion } from '../types';
+import { hasCompletedAnyGuidedRanking } from './guidedRankingState';
 
 /**
  * Isolated utility for detecting criteria adjustment state
@@ -8,11 +9,29 @@ import type { Criterion } from '../types';
 
 /**
  * Check if any criteria have been adjusted from their default value of 3
+ * OR if user has completed any guided ranking
  * @param criteria - Array of criteria to check
- * @returns true if any criterion has userRating !== 3
+ * @returns true if any criterion has userRating !== 3 OR user completed guided ranking
  */
 export function hasCriteriaBeenAdjusted(criteria: Criterion[]): boolean {
-  return criteria.some(criterion => criterion.userRating !== 3);
+  const hasAdjustedSliders = criteria.some(criterion => criterion.userRating !== 3);
+  const hasCompletedGuidedRanking = hasCompletedAnyGuidedRanking();
+  
+  // Show match scores if EITHER:
+  // 1. User manually adjusted sliders, OR
+  // 2. User completed any guided ranking (even if all criteria are still at 3)
+  return hasAdjustedSliders || hasCompletedGuidedRanking;
+}
+
+/**
+ * Check if at least the specified number of criteria have been adjusted
+ * @param criteria - Array of criteria to check
+ * @param minimum - Minimum number of criteria that must be adjusted (default: 3)
+ * @returns true if at least 'minimum' criteria have userRating !== 3
+ */
+export function hasMinimumCriteriaAdjusted(criteria: Criterion[], minimum: number = 3): boolean {
+  const adjustedCount = criteria.filter(criterion => criterion.userRating !== 3).length;
+  return adjustedCount >= minimum;
 }
 
 /**

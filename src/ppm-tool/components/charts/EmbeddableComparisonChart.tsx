@@ -354,12 +354,15 @@ export const EmbeddableComparisonChart: React.FC<EmbeddableComparisonChartProps>
               ) : (
                 <EyeOff className="w-3 h-3 md:w-4 md:h-4 mr-2 text-gray-400" />
               )}
-              <span className="inline-flex items-center font-medium">
-                <span>Your Tool</span>
-                {!criteriaAdjusted && (
-                  <NotYetRankedTooltip inline={true} />
-                )}
-              </span>
+              {criteriaAdjusted ? (
+                <span className="font-medium">Your Tool</span>
+              ) : (
+                <NotYetRankedTooltip 
+                  inline={true}
+                  wrapYourTool={true}
+                  isVisible={visibleTools.has('requirements')}
+                />
+              )}
             </button>
             {selectedTools.map((tool) => (
               <button
@@ -422,12 +425,16 @@ export const EmbeddableComparisonChart: React.FC<EmbeddableComparisonChartProps>
             ? 'border-green-600 bg-green-200 border-dashed' 
             : 'border-gray-400 border-dashed'
         } rounded-sm`} />
-        <span className="inline-flex items-center text-xs font-semibold">
-          <span>Your Tool</span>
-          {!criteriaAdjusted && (
-            <NotYetRankedTooltip inline={true} />
-          )}
-        </span>
+        {criteriaAdjusted ? (
+          <span className="text-xs font-semibold">Your Tool</span>
+        ) : (
+          <NotYetRankedTooltip 
+            inline={true}
+            wrapYourTool={true}
+            isVisible={visibleTools.has('requirements')}
+            className="text-xs"
+          />
+        )}
       </button>
       
       {selectedTools.slice(0, 4).map((tool, index) => {

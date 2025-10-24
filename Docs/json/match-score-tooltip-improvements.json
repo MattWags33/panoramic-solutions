@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-01-24T00:00:00Z",
+  "type": "FEATURE_IMPROVEMENT",
+  "metadata": {
+    "project": "Panoramic Solutions",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true
+  },
+  "feature": {
+    "name": "Match Score Tooltip Improvements",
+    "description": "Enhanced the match score tooltip in the tools section to make it easier to interact with by expanding the clickable area to include the entire 'N/A ? Match Score' label",
+    "issue": "The tooltip was difficult to select because only the 'N/A ?' part was clickable, not the 'Match Score' text",
+    "solution": "Added an includeLabel prop to MatchScoreTooltip component that wraps the entire area including 'Match Score' text in the tooltip trigger"
+  },
+  "changes": [
+    {
+      "file": "src/ppm-tool/components/ui/MatchScoreTooltip.tsx",
+      "type": "ENHANCEMENT",
+      "description": "Added includeLabel prop to optionally include 'Match Score' text in the clickable tooltip trigger area",
+      "changes_detail": [
+        "Added includeLabel?: boolean prop to interface (defaults to false for backwards compatibility)",
+        "Modified trigger div to conditionally render 'Match Score' text when includeLabel=true",
+        "Added active:bg-gray-200 class for better touch feedback on mobile devices",
+        "Maintained existing hover functionality via MobileTooltip which already supports desktop hover"
+      ]
+    },
+    {
+      "file": "src/ppm-tool/components/cards/EnhancedCompactToolCard.tsx",
+      "type": "ENHANCEMENT",
+      "description": "Updated to use the new includeLabel prop, making entire match score area clickable",
+      "changes_detail": [
+        "Set includeLabel={true} on MatchScoreTooltip component (line 148)",
+        "Removed duplicate 'Match Score' span that was previously outside the tooltip wrapper",
+        "Result: entire 'N/A ? Match Score' badge is now clickable for tooltip interaction"
+      ]
+    }
+  ],
+  "benefits": [
+    {
+      "benefit": "Larger touch target",
+      "description": "Entire 'N/A ? Match Score' area is now clickable, making it easier to tap on mobile and touchscreen devices"
+    },
+    {
+      "benefit": "Desktop hover support",
+      "description": "MobileTooltip component already provides automatic hover functionality on desktop via BasicHoverTooltip, so desktop users can now hover over the entire match score area"
+    },
+    {
+      "benefit": "Better UX consistency",
+      "description": "The clickable area now visually matches what users expect to be interactive (the entire badge)"
+    },
+    {
+      "benefit": "Backwards compatible",
+      "description": "The includeLabel prop defaults to false, so any other uses of MatchScoreTooltip remain unchanged"
+    },
+    {
+      "benefit": "Cross-device support",
+      "description": "Works consistently across mobile phones, touchscreen laptops, and desktop computers"
+    }
+  ],
+  "testing_notes": {
+    "mobile": "Tap anywhere on the 'N/A ? Match Score' badge to see the tooltip",
+    "touchscreen_laptop": "Tap or hover over the 'N/A ? Match Score' badge to see the tooltip",
+    "desktop": "Hover over the 'N/A ? Match Score' badge to see the tooltip appear automatically",
+    "keyboard": "Tab to focus on the badge and it should show the tooltip (via MobileTooltip's focus handlers)"
+  },
+  "tooltip_behavior": {
+    "mobile_phones_tablets": "Click to toggle tooltip, auto-closes after 4 seconds or when clicking outside",
+    "touchscreen_laptops": "Hybrid mode - hover shows tooltip, click toggles it for touch interactions",
+    "desktop": "Hover shows tooltip automatically with no click required"
+  },
+  "locations_affected": [
+    "Tools section - when criteria have not been adjusted (N/A state)",
+    "EnhancedCompactToolCard component - used in ToolSection"
+  ],
+  "locations_not_affected": [
+    "Recommendations section - always shows actual scores (8/10, 6/10, etc.), never N/A"
+  ]
+}
+

@@ -94,12 +94,16 @@ export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="w-5 h-5 border-3 border-dashed border-green-600 bg-green-200 rounded-sm mr-3" />
-                <span className="inline-flex items-center text-sm font-medium text-gray-900">
-                  <span>Your Tool</span>
-                  {!criteriaAdjusted && (
-                    <NotYetRankedTooltip inline={true} />
-                  )}
-                </span>
+                {criteriaAdjusted ? (
+                  <span className="text-sm font-medium text-gray-900">Your Tool</span>
+                ) : (
+                  <NotYetRankedTooltip 
+                    inline={true}
+                    wrapYourTool={true}
+                    isVisible={visibleTools.has('requirements')}
+                    className="text-gray-900"
+                  />
+                )}
               </div>
               <div className="flex items-center">
                 {visibleTools.has('requirements') ? (

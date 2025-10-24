@@ -8,6 +8,7 @@ import { getMatchScoreTooltipContent } from '@/ppm-tool/shared/utils/criteriaAdj
 interface MatchScoreTooltipProps {
   className?: string;
   onGuidedRankingClick?: () => void;
+  includeLabel?: boolean; // When true, includes "Match Score" text in the clickable area
 }
 
 /**
@@ -17,7 +18,8 @@ interface MatchScoreTooltipProps {
  */
 export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
   className = '',
-  onGuidedRankingClick
+  onGuidedRankingClick,
+  includeLabel = false
 }) => {
   const tooltipContent = (
     <div className="break-words">
@@ -46,9 +48,12 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
       align="center"
       className="max-w-xs text-sm"
     >
-      <div className={`inline-flex items-center cursor-pointer px-2 py-1 -mx-2 -my-1 rounded hover:bg-gray-100 transition-colors ${className}`}>
+      <div className={`inline-flex items-center cursor-pointer px-2 py-1 -mx-2 -my-1 rounded hover:bg-gray-100 active:bg-gray-200 transition-colors ${className}`}>
         <span className="text-gray-500">N/A</span>
         <HelpCircle className="w-3 h-3 ml-1 text-gray-400" />
+        {includeLabel && (
+          <span className="text-xs ml-1 text-gray-600">Match Score</span>
+        )}
       </div>
     </MobileTooltip>
   );

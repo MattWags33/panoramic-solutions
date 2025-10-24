@@ -10,6 +10,7 @@ import { Button } from '@/ppm-tool/components/ui/button';
 import { Slider } from '@/ppm-tool/components/ui/slider';
 import { checkAndTrackNewRankingSubmittal, checkAndTrackNewActive } from '@/lib/posthog';
 import { markGuidedRankingComplete } from '@/ppm-tool/shared/utils/productBumperState';
+import { markGuidedRankingAsCompleted } from '@/ppm-tool/shared/utils/guidedRankingState';
 
 interface GuidedRankingFormProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface GuidedRankingFormProps {
   onSaveAnswers?: (answers: Record<string, QuestionAnswer>, personalizationData: Record<string, QuestionAnswer>) => void;
   onMethodologyFilter?: (methodologies: string[]) => void;
   criterionId?: string; // Optional criterion ID for single-criterion guided ranking
+  initialAnswers?: Record<string, QuestionAnswer>; // Saved answers from localStorage
 }
 
 interface QuestionOption {
@@ -203,9 +205,10 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   onRealTimeUpdate,
   onSaveAnswers,
   onMethodologyFilter,
-  criterionId
+  criterionId,
+  initialAnswers
 }) => {
-  const [answers, setAnswers] = React.useState<Record<string, QuestionAnswer>>({});
+  const [answers, setAnswers] = React.useState<Record<string, QuestionAnswer>>(initialAnswers || {});
   const [currentStep, setCurrentStep] = React.useState(0);
   const [otherAnswers, setOtherAnswers] = React.useState<Record<string, string>>({});
 
@@ -264,20 +267,57 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   }, [isOpen, onMethodologyFilter]);
 
   const handleClose = () => {
-    // If user has answered any questions, apply partial rankings with defaults
-    if (Object.keys(answers).length > 0) {
-      const rankings = calculateRankings();
-      const personalizationData = extractPersonalizationData(answers);
-      
-      // Apply rankings to criteria but keep sliders unlocked
-      onUpdateRankings(rankings);
-      
-      // Save answers and personalization data if available
-      onSaveAnswers?.(answers, personalizationData);
-      
-      // Mark that user has interacted with guided ranking (prevents ProductBumper from showing again)
-      markGuidedRankingComplete();
-      console.log('✅ Guided ranking interaction detected - ProductBumper will no longer show');
+    // Check if ALL required questions are answered before applying
+    const allQuestionsAnswered = relevantQuestions.every(q => {
+      if (q.isMultiSelect) {
+        const selectedValues = (answers[q.id] as number[]) || [];
+        // For Q11 with "Other", check if text is provided
+        if (q.id === 'q11' && selectedValues.includes(9)) {
+          return selectedValues.length > 0 && otherAnswers[q.id]?.trim();
+        }
+        return selectedValues.length > 0;
+      }
+      return !!answers[q.id];
+    });
+
+    // In single-criterion mode, only apply if ALL questions are answered
+    // In full guided mode, allow partial answers
+    if (criterionId) {
+      // Single-criterion mode: Require ALL questions to be answered
+      if (allQuestionsAnswered && Object.keys(answers).length > 0) {
+        const rankings = calculateRankings();
+        const personalizationData = extractPersonalizationData(answers);
+        
+        // Apply rankings to criteria but keep sliders unlocked
+        onUpdateRankings(rankings);
+        
+        // Save answers and personalization data if available
+        onSaveAnswers?.(answers, personalizationData);
+        
+        // Mark that user has interacted with guided ranking
+        markGuidedRankingComplete();
+        markGuidedRankingAsCompleted(); // Track for match score display
+        console.log('✅ Single-criterion guided ranking completed - all questions answered');
+      } else {
+        console.log('❌ Single-criterion mode - not all questions answered, discarding changes');
+      }
+    } else {
+      // Full guided mode: Apply partial rankings (existing behavior)
+      if (Object.keys(answers).length > 0) {
+        const rankings = calculateRankings();
+        const personalizationData = extractPersonalizationData(answers);
+        
+        // Apply rankings to criteria but keep sliders unlocked
+        onUpdateRankings(rankings);
+        
+        // Save answers and personalization data if available
+        onSaveAnswers?.(answers, personalizationData);
+        
+        // Mark that user has interacted with guided ranking
+        markGuidedRankingComplete();
+        markGuidedRankingAsCompleted(); // Track for match score display
+        console.log('✅ Full guided ranking interaction detected - partial answers applied');
+      }
     }
     
     resetFormState();
@@ -286,12 +326,25 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
 
   useClickOutside(formRef, handleClose);
 
-  // Reset form state when form opens to ensure it always starts fresh
+  // Load initial answers when form opens (only reset if no initial answers provided)
   React.useEffect(() => {
     if (isOpen) {
-      resetFormState();
+      console.log('🔍 GuidedRankingForm opened:', { 
+        criterionId, 
+        hasInitialAnswers: !!initialAnswers && Object.keys(initialAnswers).length > 0 
+      });
+      
+      // Only reset if we don't have initial answers to load
+      if (!initialAnswers || Object.keys(initialAnswers).length === 0) {
+        console.log('📝 Resetting form state (no saved answers)');
+        resetFormState();
+      } else {
+        console.log('📂 Loading saved answers:', Object.keys(initialAnswers).length, 'questions');
+        setAnswers(initialAnswers);
+      }
     }
-  }, [isOpen, resetFormState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, criterionId]); // initialAnswers and resetFormState intentionally omitted to prevent loops
 
   const handleAnswer = (questionId: string, value: number) => {
     const question = relevantQuestions.find(q => q.id === questionId);
@@ -383,16 +436,11 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     const rankings: { [key: string]: number } = {};
     const weights: { [key: string]: number } = {};
     
-    // When filtering by criterionId (single-criterion mode), preserve existing values
-    // Otherwise, initialize with default value of 3
+    // Preserve existing values for all criteria (both single and full mode)
+    // Only update criteria that have answered questions (weights > 0)
     criteria.forEach(criterion => {
-      if (criterionId) {
-        // Single-criterion mode: Use current userRating value to preserve other criteria
-        rankings[criterion.id] = criterion.userRating;
-      } else {
-        // Full guided mode: Initialize to default 3 (neutral)
-        rankings[criterion.id] = 3;
-      }
+      // Always preserve current userRating value
+      rankings[criterion.id] = criterion.userRating;
       weights[criterion.id] = 0;
     });
 
@@ -472,7 +520,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     // If Q6 or Q7 not answered, flexibility remains at default value of 3
 
     return rankings;
-  }, [criteria, answers, criterionId]);
+  }, [criteria, answers]); // criterionId not needed in calculation
 
   // Debounced real-time update effect to prevent infinite loops
   React.useEffect(() => {
@@ -499,6 +547,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     
     // Mark that user has completed guided ranking (prevents ProductBumper from showing again)
     markGuidedRankingComplete();
+    markGuidedRankingAsCompleted(); // Track for match score display
     console.log('✅ Guided ranking completed - ProductBumper will no longer show');
     
     // Track PostHog New_Ranking_Submittal event (once per session)

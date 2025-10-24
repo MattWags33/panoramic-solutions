@@ -79,7 +79,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
   // Initialize shuffle animation
   const shuffleAnimation = useShuffleAnimation({
     delayMs: 0, // No delay - start immediately when triggered
-    shuffleDurationMs: isMobile ? 800 : 3000, // Desktop: 3 seconds for gradual, elegant animation
+    shuffleDurationMs: isMobile ? 800 : 1000, // Desktop: 1 second for snappy tool shuffle (staggered with criteria)
     disabled: false
   });
   
@@ -113,20 +113,35 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
     return scores;
   }, [filteredTools, selectedCriteria]);
 
-  // Sort tools: alphabetically when criteria not adjusted, by match score when adjusted
+  // Add hydration tracking to prevent SSR/client mismatch
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  React.useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // Stable, deterministic sorting with hydration awareness
   const sortedTools = React.useMemo(() => {
-    if (!criteriaAdjusted) {
-      // Sort alphabetically when criteria haven't been adjusted
+    // Always alphabetical until hydrated OR criteria not adjusted
+    // This ensures server and client render the same initial state
+    if (!isHydrated || !criteriaAdjusted) {
       return [...filteredTools].sort((a, b) => a.name.localeCompare(b.name));
     }
     
-    // Sort by match score (highest first) when criteria have been adjusted
+    // Score-based with alphabetical tie-breaker (after hydration)
     return [...filteredTools].sort((a, b) => {
       const scoreA = toolMatchScores.get(a.id) || 0;
       const scoreB = toolMatchScores.get(b.id) || 0;
-      return scoreB - scoreA;
+      const scoreDiff = scoreB - scoreA;
+      
+      // Tie-breaker for very close scores (ensures stable sorting)
+      if (Math.abs(scoreDiff) < 0.01) {
+        return a.name.localeCompare(b.name);
+      }
+      
+      return scoreDiff;
     });
-  }, [filteredTools, toolMatchScores, criteriaAdjusted]);
+  }, [filteredTools, toolMatchScores, criteriaAdjusted, isHydrated]);
 
   // Set up tool order shuffle animation - triggers when sortedTools order changes
   useToolOrderShuffle(sortedTools, shuffleAnimation, {

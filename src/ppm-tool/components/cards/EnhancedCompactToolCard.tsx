@@ -145,8 +145,8 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                   <MatchScoreTooltip 
                     className="text-xs md:text-sm" 
                     onGuidedRankingClick={onOpenGuidedRanking}
+                    includeLabel={true}
                   />
-                  <span className="text-xs ml-1 text-gray-600">Match Score</span>
                 </div>
               )}
             </div>

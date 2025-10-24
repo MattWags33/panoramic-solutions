@@ -9,6 +9,8 @@ interface NotYetRankedTooltipProps {
   className?: string;
   onGuidedRankingClick?: () => void;
   inline?: boolean;
+  wrapYourTool?: boolean; // When true, includes "Your Tool" text in the tooltip trigger area
+  isVisible?: boolean; // Whether the tool is currently visible (for styling)
 }
 
 /**
@@ -21,7 +23,9 @@ interface NotYetRankedTooltipProps {
 export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
   className = '',
   onGuidedRankingClick,
-  inline = false
+  inline = false,
+  wrapYourTool = false,
+  isVisible = false
 }) => {
   const tooltipContent = (
     <div className="break-words">
@@ -51,11 +55,14 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
         side="top"
         align="center"
         className="max-w-xs text-sm"
+        disableClickInterception={true}
       >
-        <span className={`inline-flex items-center cursor-pointer ml-1 ${className}`}>
-          <span className="text-gray-500 text-xs">(Not Yet Ranked</span>
-          <HelpCircle className="w-3 h-3 ml-0.5 text-gray-400" />
-          <span className="text-gray-500 text-xs">)</span>
+        <span className={`inline-flex items-center gap-1 cursor-pointer ${wrapYourTool ? 'text-sm font-semibold' : 'ml-2'} ${
+          wrapYourTool ? (isVisible ? 'text-green-800' : 'text-gray-600') : ''
+        } ${className}`}>
+          {wrapYourTool && <span>Your Tool</span>}
+          <span className="text-gray-500 text-xs">Not Yet Ranked</span>
+          <HelpCircle className="w-3 h-3 text-gray-400" />
         </span>
       </MobileTooltip>
     );

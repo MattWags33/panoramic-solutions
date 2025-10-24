@@ -9,6 +9,7 @@ interface MobileTooltipProps {
   align?: 'start' | 'center' | 'end';
   className?: string;
   forceOpen?: boolean; // New prop for external control
+  disableClickInterception?: boolean; // Disable click event interception for nested interactive elements
 }
 
 /**
@@ -23,7 +24,8 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   side = 'top',
   align = 'center',
   className = '',
-  forceOpen = false
+  forceOpen = false,
+  disableClickInterception = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -35,6 +37,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
   const effectiveIsOpen = forceOpen || isOpen;
 
   const handleClick = (e: React.MouseEvent) => {
+    if (disableClickInterception) return; // Don't intercept clicks when disabled (for nested interactive elements)
     if (forceOpen) return; // Don't handle clicks when externally controlled
     // Handle clicks for mobile devices and touch-enabled laptops
     if (isTouchDevice || hasTouch) {
