@@ -42,7 +42,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     // Handle clicks for mobile devices and touch-enabled laptops
     if (isTouchDevice || hasTouch) {
       e.preventDefault();
-      e.stopPropagation();
+      e.nativeEvent.stopImmediatePropagation(); // Prevents event from reaching card click handlers
       setIsOpen(!isOpen);
     }
   };
@@ -62,10 +62,10 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     // Delay attaching the listener to skip the click that just opened the tooltip
     const timeoutId = setTimeout(() => {
       document.addEventListener('click', handleClickOutside, { capture: true });
-    }, 100);  // 100ms is sufficient to skip the opening click
+    }, 300);  // 300ms to avoid card layout changes and prevent premature closure
     
-    // Remove auto-close timer to prevent premature tooltip vanishing
-    const autoCloseTimer = null;
+    // Only auto-close on true mobile devices, not touch-enabled laptops
+    const autoCloseTimer = isTouchDevice ? setTimeout(() => setIsOpen(false), 4000) : null;
     
     return () => {
       clearTimeout(timeoutId);

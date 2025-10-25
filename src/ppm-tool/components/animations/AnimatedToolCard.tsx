@@ -39,7 +39,7 @@ export const AnimatedToolCard: React.FC<AnimatedToolCardProps> = ({
     <motion.div
       // Use tool ID for consistent layoutId across re-renders
       layoutId={`tool-card-${tool.id}`}
-      layout="position" // Only animate position changes, not size changes
+      layout={isExpanded ? false : "position"} // Disable layout animations when expanded to prevent bobbling
       
       // Initial state
       initial={{
