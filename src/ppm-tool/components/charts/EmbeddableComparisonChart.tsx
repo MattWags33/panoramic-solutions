@@ -15,7 +15,6 @@ import { useMobileDetection } from '@/ppm-tool/shared/hooks/useMobileDetection';
 import { useClickOutside } from '@/ppm-tool/shared/hooks/useClickOutside';
 import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import { NotYetRankedTooltip } from '@/ppm-tool/components/ui/NotYetRankedTooltip';
-import { TouchDetectionDebug } from '@/ppm-tool/components/debug/TouchDetectionDebug';
 
 interface EmbeddableComparisonChartProps {
   selectedTools: Tool[];
@@ -541,12 +540,7 @@ export const EmbeddableComparisonChart: React.FC<EmbeddableComparisonChartProps>
   );
 
   // SIMPLIFIED: Always use standard layout (removed fullscreen complexity)
-  return (
-    <>
-      {chartContent}
-      <TouchDetectionDebug />
-    </>
-  );
+  return chartContent;
 };
 
 export default EmbeddableComparisonChart; 

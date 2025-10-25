@@ -64,8 +64,8 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
       document.addEventListener('click', handleClickOutside, { capture: true });
     }, 100);  // 100ms is sufficient to skip the opening click
     
-    // Only auto-close on true mobile devices, not touch-enabled laptops
-    const autoCloseTimer = isTouchDevice ? setTimeout(() => setIsOpen(false), 4000) : null;
+    // Remove auto-close timer to prevent premature tooltip vanishing
+    const autoCloseTimer = null;
     
     return () => {
       clearTimeout(timeoutId);
