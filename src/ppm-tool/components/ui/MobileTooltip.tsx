@@ -47,55 +47,29 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     }
   };
 
-  const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (forceOpen) return; // Don't handle outside clicks when externally controlled
-    if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node) &&
-        triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
-      setIsOpen(false);
-    }
-  }, [forceOpen]);
-
   useEffect(() => {
     if ((!isTouchDevice && !hasTouch) || !effectiveIsOpen || forceOpen) return;
     
-    // ROBUST SOLUTION: Multi-layered approach to prevent opening click from triggering close
-    // LAYER 1: Track if this is the opening click
-    let isOpeningClick = true;
-    
-    // LAYER 2: Enhanced click handler that respects the opening click
-    const enhancedClickOutside = (e: MouseEvent) => {
-      // Ignore the click that just opened the tooltip
-      if (isOpeningClick) {
-        isOpeningClick = false;
-        return;
-      }
-      
-      // Standard click-outside logic
+    // SIMPLIFIED SOLUTION: Use timeout to skip the opening click
+    // This avoids the isOpeningClick flag bug that caused double-tap requirement
+    const handleClickOutside = (e: MouseEvent) => {
       if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node) &&
           triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
     
-    // LAYER 3: Attach listener with double RAF to ensure click has fully propagated
-    // This syncs with browser paint cycle for maximum reliability
-    let rafId1: number;
-    let rafId2: number;
-    
-    rafId1 = requestAnimationFrame(() => {
-      rafId2 = requestAnimationFrame(() => {
-        // Use capture phase to catch events early
-        document.addEventListener('click', enhancedClickOutside, { capture: true });
-      });
-    });
+    // Delay attaching the listener to skip the click that just opened the tooltip
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside, { capture: true });
+    }, 100);  // 100ms is sufficient to skip the opening click
     
     // Only auto-close on true mobile devices, not touch-enabled laptops
     const autoCloseTimer = isTouchDevice ? setTimeout(() => setIsOpen(false), 4000) : null;
     
     return () => {
-      cancelAnimationFrame(rafId1);
-      cancelAnimationFrame(rafId2);
-      document.removeEventListener('click', enhancedClickOutside, { capture: true });
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClickOutside, { capture: true });
       if (autoCloseTimer) clearTimeout(autoCloseTimer);
     };
   }, [effectiveIsOpen, isTouchDevice, hasTouch, forceOpen]);

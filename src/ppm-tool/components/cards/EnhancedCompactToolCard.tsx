@@ -188,53 +188,56 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2 md:space-y-3 px-4 md:px-6 pb-0">
-        <div className="cursor-pointer -mx-4 md:-mx-6 px-4 md:px-6 py-1 md:py-2 bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-200 flex items-center justify-center gap-2 text-xs md:text-sm font-medium text-alpine-blue-500 rounded-b-xl -mb-0">
-          {isExpanded ? (
-            <>
-              <ChevronUp className="w-3 h-3 md:w-4 md:h-4" />
-              Hide Details
-            </>
-          ) : (
-            <>
-              <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
-              View Details
-            </>
-          )}
-        </div>
-          
-        {isExpanded && (
-          <div className="mt-2 md:mt-3 space-y-2 md:space-y-3" onClick={(e) => e.stopPropagation()}>
-            {selectedCriteria.map((criterion) => {
-              const toolRating = getToolRating(tool, criterion);
-              const userRating = criterion.userRating;
-              const explanation = getToolExplanation(tool, criterion);
-              const meetsRequirement = toolRating >= userRating;
+      {/* Expanded content - only rendered when expanded */}
+      {isExpanded && (
+        <CardContent className="space-y-2 md:space-y-3 px-4 md:px-6 pt-0 pb-3" onClick={(e) => e.stopPropagation()}>
+          {selectedCriteria.map((criterion) => {
+            const toolRating = getToolRating(tool, criterion);
+            const userRating = criterion.userRating;
+            const explanation = getToolExplanation(tool, criterion);
+            const meetsRequirement = toolRating >= userRating;
 
-              return (
-                <div key={criterion.id} className={`p-2 md:p-3 rounded-lg border ${meetsRequirement ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className="space-y-1 md:space-y-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                      <span className="font-medium text-xs md:text-sm text-gray-900">{criterion.name}</span>
-                      <div className="text-xs text-gray-600 flex-shrink-0">
-                        My Rankings: <span className="font-medium">{userRating}/5</span>
-                        <span className="mx-1">•</span>
-                        <span className="font-bold text-gray-900">Tool Rankings:</span> <span className={meetsRequirement ? "text-green-600 font-medium" : "text-gray-600 font-medium"}>{toolRating}/5</span>
-                      </div>
+            return (
+              <div key={criterion.id} className={`p-2 md:p-3 rounded-lg border ${meetsRequirement ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="space-y-1 md:space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                    <span className="font-medium text-xs md:text-sm text-gray-900">{criterion.name}</span>
+                    <div className="text-xs text-gray-600 flex-shrink-0">
+                      My Rankings: <span className="font-medium">{userRating}/5</span>
+                      <span className="mx-1">•</span>
+                      <span className="font-bold text-gray-900">Tool Rankings:</span> <span className={meetsRequirement ? "text-green-600 font-medium" : "text-gray-600 font-medium"}>{toolRating}/5</span>
                     </div>
-                    <Progress value={(toolRating / 5) * 100} className={`h-1.5 ${meetsRequirement ? 'bg-green-100' : 'bg-gray-100'}`} />
-                    {explanation && (
-                      <div className="text-xs text-gray-700 bg-white/60 p-2 rounded">
-                        {explanation}
-                      </div>
-                    )}
                   </div>
+                  <Progress value={(toolRating / 5) * 100} className={`h-1.5 ${meetsRequirement ? 'bg-green-100' : 'bg-gray-100'}`} />
+                  {explanation && (
+                    <div className="text-xs text-gray-700 bg-white/60 p-2 rounded">
+                      {explanation}
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      )}
+
+      {/* Toggle button - ALWAYS rendered, positioned outside collapsing content to prevent bobbling */}
+      <div 
+        className="cursor-pointer px-4 md:px-6 py-2 md:py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-200 flex items-center justify-center gap-2 text-xs md:text-sm font-medium text-alpine-blue-500 rounded-b-xl"
+        onClick={onToggleExpand}
+      >
+        {isExpanded ? (
+          <>
+            <ChevronUp className="w-3 h-3 md:w-4 md:h-4" />
+            Hide Details
+          </>
+        ) : (
+          <>
+            <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
+            View Details
+          </>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }; 

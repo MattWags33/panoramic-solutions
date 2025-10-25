@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChevronDown, Check, Eye, EyeOff } from 'lucide-react';
 import { Tool, Criterion } from '@/ppm-tool/shared/types';
 import { getToolColor } from '@/ppm-tool/shared/utils/chartColors';
 import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import { NotYetRankedTooltip } from '@/ppm-tool/components/ui/NotYetRankedTooltip';
+import { useClickOutside } from '@/ppm-tool/shared/hooks/useClickOutside';
 
 interface MobileToolSelectorProps {
   tools: Tool[];
@@ -21,6 +22,7 @@ export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
   criteria
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Check if criteria have been adjusted from defaults
   const criteriaAdjusted = criteria ? hasCriteriaBeenAdjusted(criteria) : true;
@@ -28,6 +30,13 @@ export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
   const totalVisibleCount = visibleTools.size;
   const toolsVisibleCount = tools.filter(tool => visibleTools.has(tool.id)).length;
   const yourToolVisible = visibleTools.has('requirements');
+
+  // Use click outside detection instead of overlay
+  useClickOutside(dropdownRef, () => {
+    if (isOpen) {
+      setIsOpen(false);
+    }
+  });
 
   const getDisplayText = () => {
     if (totalVisibleCount === 0) return 'Select tools to compare';
@@ -44,11 +53,11 @@ export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       {/* Dropdown Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-3 py-3 text-left bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-alpine-blue-500 focus:border-alpine-blue-500 transition-colors touch-manipulation"
+        className="relative z-10 flex items-center justify-between w-full px-3 py-3 text-left bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-alpine-blue-500 focus:border-alpine-blue-500 transition-colors touch-manipulation"
       >
         <div className="flex items-center">
           <div className="flex -space-x-1 mr-2">
@@ -81,7 +90,7 @@ export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu - NO OVERLAY BLOCKING IT */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
           {/* Your Tool Option */}
@@ -151,14 +160,6 @@ export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
             );
           })}
         </div>
-      )}
-
-      {/* Overlay to close dropdown when clicking outside */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
       )}
     </div>
   );

@@ -13,7 +13,8 @@ interface MatchScoreTooltipProps {
 
 /**
  * Isolated tooltip component for match score explanation
- * Uses existing tooltip infrastructure without modification
+ * Uses EXACT pattern from criteria page tooltips (CriteriaSection.tsx lines 193-211)
+ * This ensures consistent behavior and accessibility across mobile/desktop
  * Completely separate from bumper and other tooltip systems
  */
 export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
@@ -44,17 +45,22 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
   return (
     <MobileTooltip 
       content={tooltipContent}
-      side="top"
+      side="bottom"
       align="center"
       className="max-w-xs text-sm"
     >
-      <div className={`inline-flex items-center cursor-pointer px-2 py-1 -mx-2 -my-1 rounded hover:bg-gray-100 active:bg-gray-200 transition-colors ${className}`}>
+      <button 
+        type="button"
+        className={`text-gray-400 hover:text-gray-600 active:text-gray-700 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 ${className}`}
+        aria-label="Match Score Information"
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className="text-gray-500">N/A</span>
         <HelpCircle className="w-3 h-3 ml-1 text-gray-400" />
         {includeLabel && (
           <span className="text-xs ml-1 text-gray-600">Match Score</span>
         )}
-      </div>
+      </button>
     </MobileTooltip>
   );
 };
