@@ -53,10 +53,9 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
         type="button"
         className={`text-gray-400 hover:text-gray-600 active:text-gray-700 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 ${className}`}
         aria-label="Match Score Information"
-        onClick={(e) => e.stopPropagation()}
       >
         <span className="text-gray-500">N/A</span>
-        <HelpCircle className="w-3 h-3 ml-1 text-gray-400" />
+        <HelpCircle className="w-4 h-4 ml-1 text-gray-400" />
         {includeLabel && (
           <span className="text-xs ml-1 text-gray-600">Match Score</span>
         )}

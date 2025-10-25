@@ -52,17 +52,22 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
     return (
       <MobileTooltip 
         content={tooltipContent}
-        side="top"
+        side="bottom"
         align="center"
         className="max-w-xs text-sm"
-        disableClickInterception={true}
       >
-        <span className={`inline-flex items-center gap-1 cursor-pointer ${wrapYourTool ? 'text-sm font-semibold' : 'ml-2'} ${
+        <span className={`inline-flex items-center gap-1 ${wrapYourTool ? 'text-sm font-semibold' : 'ml-2'} ${
           wrapYourTool ? (isVisible ? 'text-green-800' : 'text-gray-600') : ''
         } ${className}`}>
           {wrapYourTool && <span>Your Tool</span>}
           <span className="text-gray-500 text-xs">Not Yet Ranked</span>
-          <HelpCircle className="w-3 h-3 text-gray-400" />
+          <button 
+            type="button"
+            className="text-gray-400 hover:text-gray-600 active:text-gray-700 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 cursor-pointer"
+            aria-label="Not Yet Ranked Information"
+          >
+            <HelpCircle className="w-4 h-4 text-gray-400" />
+          </button>
         </span>
       </MobileTooltip>
     );
@@ -72,14 +77,18 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
   return (
     <MobileTooltip 
       content={tooltipContent}
-      side="top"
+      side="bottom"
       align="center"
       className="max-w-xs text-sm"
     >
-      <div className={`inline-flex items-center cursor-pointer px-2 py-1 -mx-2 -my-1 rounded hover:bg-gray-100 transition-colors ${className}`}>
+      <button 
+        type="button"
+        className={`inline-flex items-center cursor-pointer px-2 py-1 -mx-2 -my-1 rounded hover:bg-gray-100 active:bg-gray-200 transition-colors touch-manipulation min-h-[44px] ${className}`}
+        aria-label="Not Yet Ranked Information"
+      >
         <span className="text-gray-500">Not Yet Ranked</span>
-        <HelpCircle className="w-3 h-3 ml-1 text-gray-400" />
-      </div>
+        <HelpCircle className="w-4 h-4 ml-1 text-gray-400" />
+      </button>
     </MobileTooltip>
   );
 };
