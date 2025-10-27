@@ -267,9 +267,28 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   }, [isOpen, onMethodologyFilter]);
 
   const handleClose = () => {
-    // IMPORTANT: Do NOT call onUpdateRankings here - only handleSubmit (Apply button) should trigger animation
-    // Just close the modal without applying rankings
-    console.log('🚪 Modal closed without clicking Apply - no rankings applied, no animation triggered');
+    // FULL GUIDED MODE: Apply partial rankings even on close
+    if (!criterionId && Object.keys(answers).length > 0) {
+      console.log('📊 Full guided mode with partial answers - applying on close');
+      const rankings = calculateRankings();
+      const personalizationData = extractPersonalizationData(answers);
+      
+      // Apply rankings to criteria
+      onUpdateRankings(rankings);
+      
+      // Save answers and personalization data
+      onSaveAnswers?.(answers, personalizationData);
+      
+      // Mark as completed
+      markGuidedRankingComplete();
+      markGuidedRankingAsCompleted();
+      console.log('✅ Full guided mode - partial answers applied on close');
+    } 
+    // CRITERIA-SPECIFIC MODE: Do NOT apply on close (only on Apply button)
+    else {
+      console.log('🚪 Individual criteria mode - modal closed without Apply, no rankings applied');
+    }
+    
     resetFormState();
     onClose();
   };

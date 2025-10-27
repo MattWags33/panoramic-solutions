@@ -46,7 +46,7 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
     <MobileTooltip 
       content={tooltipContent}
       side="bottom"
-      align="center"
+      align="start"
       className="max-w-xs text-sm"
     >
       <button 

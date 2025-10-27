@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Criterion } from '@/ppm-tool/shared/types';
-import { Sliders, Sparkles, HelpCircle } from 'lucide-react';
+import { Sliders, Sparkles, HelpCircle, Settings, X, RotateCcw } from 'lucide-react';
 import { DraggableList } from '@/ppm-tool/components/interactive/DraggableList';
 import { defaultCriteria } from '@/ppm-tool/data/criteria';
 
@@ -11,6 +11,7 @@ import { Slider } from '@/ppm-tool/components/ui/slider';
 import { MobileTooltip } from '@/ppm-tool/components/ui/MobileTooltip';
 import { EnhancedDesktopTooltip } from '@/ppm-tool/components/ui/enhanced-desktop-tooltip';
 import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
+import { useClickOutside } from '@/ppm-tool/shared/hooks/useClickOutside';
 
 import { useGuidance } from '@/ppm-tool/shared/contexts/GuidanceContext';
 import { checkAndTrackNewActive } from '@/lib/posthog';
@@ -31,6 +32,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
   onOpenGuidedRanking
 }) => {
   const [dragTooltipCriterionId, setDragTooltipCriterionId] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Helper function to get tooltip description
   const getTooltipDescription = (criterion: Criterion) => {
@@ -43,6 +45,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
   };
 
   const sectionRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const { isTouchDevice } = useUnifiedMobileDetection();
   const { 
     showManualGuidance, 
@@ -65,6 +68,39 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
   const handleGuidanceClose = () => {
     closeManualGuidance();
   };
+
+  const handleSettingsClose = () => {
+    setIsSettingsOpen(false);
+  };
+
+  const handleResetCriteria = () => {
+    // Reset all criteria to default values
+    const resetCriteria = defaultCriteria.map(dc => {
+      const existingCriterion = criteria.find(c => c.id === dc.id);
+      return {
+        ...dc,
+        userRating: 3 // Reset to default middle value
+      };
+    });
+    
+    onCriteriaChange(resetCriteria);
+    setIsSettingsOpen(false);
+    
+    // Track analytics
+    try {
+      checkAndTrackNewActive('Active-reset-criteria', {
+        component: 'criteria_section',
+        interaction_type: 'reset_criteria'
+      });
+    } catch (error) {
+      console.warn('Failed to track criteria reset:', error);
+    }
+  };
+
+  // Click outside handler for settings modal
+  useClickOutside(settingsRef, () => {
+    handleSettingsClose();
+  });
 
   // Create a stable reference for onCriteriaChange to avoid infinite loops  
   const onCriteriaChangeRef = React.useRef(onCriteriaChange);
@@ -162,6 +198,52 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                 <span className="sm:hidden">Guided Rankings</span>
               </button>
 
+              <div className="relative" ref={settingsRef}>
+                <button
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                  className="relative p-1 md:p-3 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label="Criteria settings"
+                >
+                  <Settings className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+                {isSettingsOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-[calc(100vw-1rem)] max-w-xs sm:max-w-md bg-white rounded-lg shadow-xl border border-gray-200 z-50 mx-2 md:mx-0">
+                    <div className="flex items-center justify-between p-3 md:p-4 border-b">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm md:text-base font-medium text-gray-900 truncate">Criteria Settings</h3>
+                        <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+                          {criteria.length} {criteria.length === 1 ? 'criterion' : 'criteria'}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0">
+                        <button
+                          onClick={handleResetCriteria}
+                          className="px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium text-white bg-alpine-blue-400 hover:bg-alpine-blue-500 rounded-lg transition-colors whitespace-nowrap shadow-sm flex items-center gap-1"
+                        >
+                          <RotateCcw className="w-3 h-3 md:w-4 md:h-4" />
+                          Reset Criteria
+                        </button>
+                        <button
+                          onClick={handleSettingsClose}
+                          className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+                        >
+                          <X className="w-3 h-3 md:w-4 md:h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-3 md:p-4 space-y-3 md:space-y-4">
+                      <div className="text-sm text-gray-600">
+                        <p className="mb-2">Resetting will:</p>
+                        <ul className="list-disc list-inside space-y-1 text-xs md:text-sm">
+                          <li>Set all criteria ratings to 3 (default)</li>
+                          <li>Restore original criteria order</li>
+                          <li>Clear your custom preferences</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

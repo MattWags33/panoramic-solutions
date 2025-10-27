@@ -82,9 +82,9 @@ const Slider = React.forwardRef<
       <SliderPrimitive.Track className="relative h-3 w-full grow overflow-hidden rounded-full bg-gray-200 hover:bg-gray-250 transition-colors duration-150">
         <SliderPrimitive.Range 
           className="absolute h-full bg-alpine-blue-400"
-          style={{
-            transition: isDragging ? 'none' : 'width 500ms cubic-bezier(0.25, 0.1, 0.25, 1)'
-          }}
+        style={{
+          transition: isDragging ? 'none' : 'width 3000ms cubic-bezier(0.25, 0.1, 0.25, 1)'
+        }}
         />
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb 
@@ -98,8 +98,8 @@ const Slider = React.forwardRef<
           MozUserSelect: 'none',
           msUserSelect: 'none',
           userSelect: 'none',
-          // Fast 0.5-second transition when value changes programmatically, instant when dragging
-          transition: isDragging ? 'none' : 'left 500ms cubic-bezier(0.25, 0.1, 0.25, 1)',
+          // Smooth 3-second transition when value changes programmatically, instant when dragging
+          transition: isDragging ? 'none' : 'left 3000ms cubic-bezier(0.25, 0.1, 0.25, 1)',
         } as React.CSSProperties}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}

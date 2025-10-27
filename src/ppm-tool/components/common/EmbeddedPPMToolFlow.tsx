@@ -753,41 +753,33 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       // Reset animation state
       guidedAnimation.reset();
       
-      // Phase 2: 1 second pause after wave
-      console.log('⏸️ Pausing 1 second after wave');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Phase 2: Quick pause after wave (0.3 seconds)
+      console.log('⏸️ Quick pause after wave (0.3s)');
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Phase 3: STAGGERED criteria slider animations (one by one, 0.5s each)
-      console.log('🔄 Starting STAGGERED criteria animations - one slider at a time...');
+      // Phase 3: Update ALL criteria SIMULTANEOUSLY (sliders move together)
+      console.log('🔄 Updating ALL criteria at once - simultaneous slider movement...');
       
-      // Prepare items to animate (only criteria that changed)
       const criteriaToAnimate = criteria.filter(c => 
         rankings[c.id] !== undefined && rankings[c.id] !== c.userRating
       );
       
-      console.log(`📊 Will animate ${criteriaToAnimate.length} criteria sliders sequentially`);
+      console.log(`📊 Will animate ${criteriaToAnimate.length} criteria sliders simultaneously`);
       
-      // Animate each criterion ONE AT A TIME with visible delay
-      for (let i = 0; i < criteriaToAnimate.length; i++) {
-        const criterion = criteriaToAnimate[i];
-        
-        // Update JUST this one criterion (triggers its slider to move)
-        // Auto-shuffle is disabled, so tools won't move yet
-        setCriteria(prev => 
-          prev.map(c => 
-            c.id === criterion.id 
-              ? { ...c, userRating: rankings[criterion.id] }
-              : c
-          )
-        );
-        
-        console.log(`✨ Criterion ${i + 1}/${criteriaToAnimate.length} animating: ${criterion.name}`);
-        
-        // Wait for this slider to finish its 0.5-second animation + tiny delay before next
-        await new Promise(resolve => setTimeout(resolve, 600)); // 0.5s animation + 0.1s pause
-      }
+      // Update ALL criteria in a single setState call
+      setCriteria(prev => 
+        prev.map(c => ({
+          ...c,
+          userRating: rankings[c.id] !== undefined ? rankings[c.id] : c.userRating
+        }))
+      );
       
-      console.log('✅ All criteria sliders animated sequentially');
+      console.log('✨ All criteria updated - sliders moving simultaneously');
+      
+      // Wait for slider animations to complete (3 seconds for smooth movement)
+      await new Promise(resolve => setTimeout(resolve, 3000)); // All sliders animate for 3s together
+      
+      console.log('✅ All criteria sliders animated simultaneously');
       
       // Phase 4: Small pause before tools shuffle
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -1232,36 +1224,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
               {renderContent()}
             </div>
           </main>
-          {/* Render ActionButtons on both mobile and desktop after hydration */}
-          {isHydrated && (
-            <ActionButtons 
-              selectedTools={selectedTools} 
-              selectedCriteria={criteria}
-              filteredTools={filteredTools}
-              onShowHowItWorks={onShowHowItWorks}
-              getReportButtonRef={getReportButtonRef}
-              onCloseExitIntentBumper={closeExitIntentBumper}
-              showEmailModal={showEmailModal}
-              onOpenEmailModal={() => setShowEmailModal(true)}
-              onCloseEmailModal={() => {
-                setShowEmailModal(false);
-                onComparisonReportClose();
-              }}
-              onOpenGuidedRanking={(criterionId) => {
-                // Differentiate between full and criteria-specific guided rankings
-                if (criterionId) {
-                  recordCriteriaSpecificGuidedRankingsClick();
-                  console.log('🎯 Opening criteria-specific guided ranking for:', criterionId);
-                } else {
-                  onGuidedRankingClick(); // Full guided rankings
-                  recordFullGuidedRankingsClick();
-                  console.log('🎯 Opening full guided rankings');
-                }
-                onGuidedRankingStart();
-                onOpenGuidedRanking && onOpenGuidedRanking(criterionId);
-              }}
-            />
-          )}
+          {/* ActionButtons are rendered in NavigationToggle component - no duplicate needed here */}
         </div>
 
         {/* Guided Ranking Form */}

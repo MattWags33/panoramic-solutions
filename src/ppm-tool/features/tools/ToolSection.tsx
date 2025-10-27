@@ -133,10 +133,11 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
 
   // Stable, deterministic sorting with hydration awareness
   const sortedTools = React.useMemo(() => {
-    // Keep alphabetical during guided animation sequence to prevent premature reordering
+    // FREEZE tools in current order during guided animation sequence
+    // Don't re-sort at all - just return current order to prevent visual jump
     if (isAnimatingGuidedRankings) {
-      console.log('📋 Keeping tools alphabetical during animation');
-      return [...filteredTools].sort((a, b) => a.name.localeCompare(b.name));
+      console.log('📋 Freezing tools in current order during animation (no re-sorting)');
+      return [...filteredTools]; // Keep exact current order, no sorting
     }
     
     // Always alphabetical until hydrated OR criteria not adjusted
@@ -492,7 +493,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
 
       {/* Results Section */}
       <div className="section-scroll flex-1 min-h-0" data-lenis-prevent>
-        <div className="p-6 pb-24">
+        <div className="p-6 pb-10">
           {sortedTools.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
@@ -511,7 +512,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
             <ShuffleContainer
               tools={sortedTools}
               shuffleAnimation={shuffleAnimation}
-              className="flex flex-col gap-1"
+              className="flex flex-col gap-4"
               isMobile={isMobile}
               enableParticles={true}
             >

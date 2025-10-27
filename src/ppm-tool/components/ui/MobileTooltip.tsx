@@ -42,7 +42,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     // Handle clicks for mobile devices and touch-enabled laptops
     if (isTouchDevice || hasTouch) {
       e.preventDefault();
-      e.nativeEvent.stopImmediatePropagation(); // Prevents event from reaching card click handlers
+      e.stopPropagation();
       setIsOpen(!isOpen);
     }
   };
@@ -62,7 +62,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     // Delay attaching the listener to skip the click that just opened the tooltip
     const timeoutId = setTimeout(() => {
       document.addEventListener('click', handleClickOutside, { capture: true });
-    }, 300);  // 300ms to avoid card layout changes and prevent premature closure
+    }, 100);  // 100ms is sufficient to skip the opening click
     
     // Only auto-close on true mobile devices, not touch-enabled laptops
     const autoCloseTimer = isTouchDevice ? setTimeout(() => setIsOpen(false), 4000) : null;
@@ -142,29 +142,43 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
         break;
     }
 
-    // Viewport boundary checking with aggressive centering
+    // Viewport boundary checking
     const padding = 8;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // Horizontal positioning: always try to center if possible
-    if (align === 'center') {
-      // Check if tooltip fits when centered
-      const centeredLeft = (viewportWidth - tooltipRect.width) / 2;
-      if (centeredLeft >= padding && centeredLeft + tooltipRect.width <= viewportWidth - padding) {
-        left = centeredLeft;
+    // Different behavior for mobile vs desktop
+    // Mobile: Keep tooltip near trigger (no aggressive centering)
+    // Desktop/Touch Laptops: Allow centering for better UX
+    const isTrueMobile = isTouchDevice && window.innerWidth < 768;
+    
+    if (isTrueMobile) {
+      // TRUE MOBILE: Simple boundary checks, keep tooltip near trigger
+      if (left < padding) {
+        left = padding;
+      } else if (left + tooltipRect.width > viewportWidth - padding) {
+        left = viewportWidth - tooltipRect.width - padding;
+      }
+    } else {
+      // DESKTOP & TABLETS: Use centering when align="center"
+      if (align === 'center') {
+        // Check if tooltip fits when centered
+        const centeredLeft = (viewportWidth - tooltipRect.width) / 2;
+        if (centeredLeft >= padding && centeredLeft + tooltipRect.width <= viewportWidth - padding) {
+          left = centeredLeft;
+        } else {
+          // Fallback to calculated position with boundary checks
+          if (left < padding) left = padding;
+          if (left + tooltipRect.width > viewportWidth - padding) {
+            left = viewportWidth - tooltipRect.width - padding;
+          }
+        }
       } else {
-        // Fallback to calculated position with boundary checks
+        // Non-centered: standard boundary checks
         if (left < padding) left = padding;
         if (left + tooltipRect.width > viewportWidth - padding) {
           left = viewportWidth - tooltipRect.width - padding;
         }
-      }
-    } else {
-      // Non-centered: standard boundary checks
-      if (left < padding) left = padding;
-      if (left + tooltipRect.width > viewportWidth - padding) {
-        left = viewportWidth - tooltipRect.width - padding;
       }
     }
 
