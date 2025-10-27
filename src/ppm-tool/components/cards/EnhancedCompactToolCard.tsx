@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ChevronUp, ExternalLink, Star } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Star, HelpCircle } from 'lucide-react';
 import { Tool, Criterion } from '@/ppm-tool/shared/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ppm-tool/components/ui/card';
 import { Button } from '@/ppm-tool/components/ui/button';
@@ -7,7 +7,8 @@ import { Progress } from '@/ppm-tool/components/ui/progress';
 import { cn } from '@/ppm-tool/shared/lib/utils';
 import { roundMatchScore } from '@/ppm-tool/shared/utils/toolRating';
 import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
-import { MatchScoreTooltip } from '@/ppm-tool/components/ui/MatchScoreTooltip';
+import { MobileTooltip } from '@/ppm-tool/components/ui/MobileTooltip';
+import { getMatchScoreTooltipContent } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 
 interface EnhancedCompactToolCardProps {
   tool: Tool;
@@ -124,6 +125,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
   onOpenGuidedRanking
 }) => {
   const matchDisplay = getMatchScoreDisplay(matchScore);
+  
   return (
     <Card 
       className="border border-gray-200 hover:border-alpine-blue-300 cursor-pointer !bg-white shadow-none rounded-xl overflow-hidden transition-colors duration-200"
@@ -144,11 +146,40 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                   className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 border-gray-200 flex-shrink-0"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <MatchScoreTooltip 
-                    className="text-xs md:text-sm" 
-                    onGuidedRankingClick={onOpenGuidedRanking}
-                    includeLabel={true}
-                  />
+                  <MobileTooltip 
+                    content={
+                      <div className="break-words">
+                        <p>{getMatchScoreTooltipContent()}</p>
+                        {onOpenGuidedRanking && (
+                          <>
+                            <div className="mt-2 pt-2 border-t border-gray-700" />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenGuidedRanking();
+                              }}
+                              className="mt-2 text-blue-300 hover:text-blue-200 underline text-xs block"
+                            >
+                              Open Guided Rankings →
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    }
+                    side="bottom"
+                    align="start"
+                    className="max-w-xs text-sm"
+                  >
+                    <button 
+                      type="button"
+                      className="text-gray-400 hover:text-gray-600 active:text-gray-700 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200"
+                      aria-label="Match Score Information"
+                    >
+                      <span className="text-gray-500 text-xs">N/A</span>
+                      <HelpCircle className="w-4 h-4 ml-1 text-gray-400" />
+                      <span className="text-xs ml-1 text-gray-600">Match Score</span>
+                    </button>
+                  </MobileTooltip>
                 </div>
               )}
             </div>
