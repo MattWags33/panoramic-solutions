@@ -144,10 +144,10 @@ export const ShuffleContainer: React.FC<ShuffleContainerProps> = ({
       {/* Animated Children */}
       <motion.div
         className="flex flex-col gap-4"
-        layout
+        layout={!isMobile} // Disable layout animation on true mobile to prevent bobbling
         transition={{
           type: 'tween',
-          duration: 0.4,
+          duration: isMobile ? 0 : 0.4,
           ease: 'easeInOut'
         }}
       >
@@ -162,7 +162,8 @@ export const ShuffleContainer: React.FC<ShuffleContainerProps> = ({
             return (
               <motion.div
                 key={toolId}
-                layoutId={`tool-${toolId}-${animationId || 'default'}`}
+                // Disable layoutId on true mobile to prevent bobbling during expand/collapse
+                layoutId={isMobile ? undefined : `tool-${toolId}-${animationId || 'default'}`}
                 variants={itemVariants}
                 initial="idle"
                 animate={currentVariant}

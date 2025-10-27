@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { Tool } from '@/ppm-tool/shared/types';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 
 interface AnimatedToolCardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
   children: React.ReactNode;
@@ -17,7 +18,7 @@ interface AnimatedToolCardProps extends Omit<HTMLMotionProps<'div'>, 'children'>
  * Designed to work seamlessly with ShuffleContainer for position-based animations.
  * 
  * Features:
- * - Layout animations for position changes
+ * - Layout animations for position changes (disabled on true mobile for performance)
  * - Smooth expand/collapse transitions
  * - Hover effects with spring animations
  * - Accessibility-aware motion
@@ -35,11 +36,15 @@ export const AnimatedToolCard: React.FC<AnimatedToolCardProps> = ({
     ? window.matchMedia?.('(prefers-reduced-motion: reduce)').matches 
     : false;
 
+  // Detect true mobile devices (not touch laptops or tablets with hover)
+  const { isTouchDevice } = useUnifiedMobileDetection();
+
   return (
     <motion.div
       // Use tool ID for consistent layoutId across re-renders
       layoutId={`tool-card-${tool.id}`}
-      layout="position" // Only animate position changes, not size changes
+      // Disable layout animation on true mobile devices to prevent bobbling during expand/collapse
+      layout={isTouchDevice ? false : "position"}
       
       // Initial state
       initial={{
@@ -69,11 +74,11 @@ export const AnimatedToolCard: React.FC<AnimatedToolCardProps> = ({
       // No hover or tap effects - keeping it professional
       // Original hover effects are handled by CSS classes in the wrapped components
       
-      // Layout transition settings - only for position changes
+      // Layout transition settings - disabled on true mobile
       transition={{
         layout: {
           type: 'tween',
-          duration: 0.4,
+          duration: isTouchDevice ? 0 : 0.4,
           ease: 'easeInOut'
         },
         default: {

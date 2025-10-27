@@ -140,7 +140,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 mb-0.5">
               <CardTitle className="text-base md:text-lg text-gray-900 break-words">{tool.name}</CardTitle>
               {criteriaAdjusted ? (
-                <div className={`inline-flex items-center px-2 py-1 rounded-lg ${matchDisplay.bgColor} flex-shrink-0`}>
+                <div className={`inline-flex items-center px-2 py-1 rounded-lg ${matchDisplay.bgColor} flex-shrink-0 min-h-[44px] md:min-h-0`}>
                   <span className={`text-xs md:text-sm font-bold ${matchDisplay.color}`}>{matchDisplay.value}</span>
                   <span className="text-xs ml-1 text-gray-600">Match Score</span>
                 </div>
@@ -201,14 +201,16 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                   align="start"
                   className="max-w-xs text-sm"
                 >
-                  <div 
-                    className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 border-gray-200 flex-shrink-0"
+                  <button 
+                    type="button"
+                    className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 flex-shrink-0 hover:bg-gray-100 active:bg-gray-200 transition-colors min-h-[44px] md:min-h-0"
                     onClick={(e) => e.stopPropagation()}
+                    aria-label="Match Score Information - Not yet ranked, tap to learn more"
                   >
                     <span className="text-gray-500 text-xs">N/A</span>
                     <HelpCircle className="w-4 h-4 ml-1 text-gray-400" />
                     <span className="text-xs ml-1 text-gray-600">Match Score</span>
-                  </div>
+                  </button>
                 </MobileTooltip>
               )}
             </div>

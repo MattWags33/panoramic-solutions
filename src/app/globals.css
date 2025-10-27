@@ -636,6 +636,8 @@
       /* Legacy iOS support (deprecated but harmless) */
   -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
+      /* Prevent width shift when scrollbar appears/disappears on mobile */
+      scrollbar-gutter: stable;
     }
 
     .section-scroll {
@@ -643,6 +645,8 @@
       /* Legacy iOS support (deprecated but harmless) */
   -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
+      /* Prevent width shift when scrollbar appears/disappears on mobile */
+      scrollbar-gutter: stable;
     }
 
     .section-scroll::-webkit-scrollbar {
@@ -925,6 +929,8 @@ scroll-behavior: smooth;
     /* Legacy iOS support (deprecated but harmless) */
   -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    /* Prevent width shift when scrollbar appears/disappears on mobile */
+    scrollbar-gutter: stable;
   }
 
   .section-scroll::-webkit-scrollbar {
@@ -1013,12 +1019,16 @@ html.lenis {
     /* Legacy iOS support (deprecated but harmless) */
   -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    /* Prevent width shift when scrollbar appears/disappears on mobile */
+    scrollbar-gutter: stable;
   }
 
   #recommendations-section .section-scroll {
     @apply overflow-y-auto;
     /* Legacy iOS support (deprecated but harmless) */
   -webkit-overflow-scrolling: touch;
+    /* Prevent width shift when scrollbar appears/disappears on mobile */
+    scrollbar-gutter: stable;
   }
 
   .fullscreen-container {
@@ -1031,6 +1041,8 @@ html.lenis {
     /* Legacy iOS support (deprecated but harmless) */
   -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    /* Prevent width shift when scrollbar appears/disappears on mobile */
+    scrollbar-gutter: stable;
   }
 }
 
