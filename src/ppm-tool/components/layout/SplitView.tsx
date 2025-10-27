@@ -12,6 +12,7 @@ interface SplitViewProps {
   filterConditions: FilterCondition[];
   filterMode: 'AND' | 'OR';
   onCriteriaChange: (criteria: Criterion[]) => void;
+  onFullCriteriaReset?: () => void;
   onToolSelect: (tool: Tool) => void;
   onToolRemove: (toolId: string) => void;
   onRestoreAllTools: () => void;
@@ -38,6 +39,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
   filterConditions,
   filterMode,
   onCriteriaChange,
+  onFullCriteriaReset,
   onToolSelect,
   onToolRemove,
   onRestoreAllTools,
@@ -65,6 +67,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
         <CriteriaSection
           criteria={criteria}
           onCriteriaChange={onCriteriaChange}
+          onFullReset={onFullCriteriaReset}
           startWithGuidedQuestions={false}
           guidedButtonRef={guidedButtonRef}
           onOpenGuidedRanking={onOpenGuidedRanking}

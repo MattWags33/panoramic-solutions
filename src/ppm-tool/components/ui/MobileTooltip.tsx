@@ -43,6 +43,12 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     if (isTouchDevice || hasTouch) {
       e.preventDefault();
       e.stopPropagation();
+      
+      // Add subtle haptic feedback on mobile devices
+      if ('vibrate' in navigator && isTouchDevice) {
+        navigator.vibrate(10); // Very brief 10ms vibration for tactile feedback
+      }
+      
       setIsOpen(!isOpen);
     }
   };
@@ -64,8 +70,9 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
       document.addEventListener('click', handleClickOutside, { capture: true });
     }, 100);  // 100ms is sufficient to skip the opening click
     
-    // Only auto-close on true mobile devices, not touch-enabled laptops
-    const autoCloseTimer = isTouchDevice ? setTimeout(() => setIsOpen(false), 4000) : null;
+      // Only auto-close on true mobile devices, not touch-enabled laptops
+      // 6 seconds gives users enough time to read and interact with tooltip content
+      const autoCloseTimer = isTouchDevice ? setTimeout(() => setIsOpen(false), 6000) : null;
     
     return () => {
       clearTimeout(timeoutId);

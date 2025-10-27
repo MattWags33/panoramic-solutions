@@ -19,6 +19,7 @@ import { checkAndTrackNewActive } from '@/lib/posthog';
 interface CriteriaSectionProps {
   criteria: Criterion[];
   onCriteriaChange: (criteria: Criterion[]) => void;
+  onFullReset?: () => void; // Add this new prop for full reset including guided answers
   startWithGuidedQuestions?: boolean;
   guidedButtonRef?: React.RefObject<HTMLButtonElement>;
   onOpenGuidedRanking?: (criterionId?: string) => void;
@@ -27,6 +28,7 @@ interface CriteriaSectionProps {
 export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
   criteria,
   onCriteriaChange,
+  onFullReset,
   startWithGuidedQuestions = false,
   guidedButtonRef,
   onOpenGuidedRanking
@@ -74,23 +76,26 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
   };
 
   const handleResetCriteria = () => {
-    // Reset all criteria to default values
-    const resetCriteria = defaultCriteria.map(dc => {
-      const existingCriterion = criteria.find(c => c.id === dc.id);
-      return {
+    // Use the full reset handler if provided (clears guided answers too)
+    if (onFullReset) {
+      onFullReset();
+    } else {
+      // Fallback: just reset criteria values (legacy behavior)
+      const resetCriteria = defaultCriteria.map(dc => ({
         ...dc,
         userRating: 3 // Reset to default middle value
-      };
-    });
+      }));
+      onCriteriaChange(resetCriteria);
+    }
     
-    onCriteriaChange(resetCriteria);
     setIsSettingsOpen(false);
     
     // Track analytics
     try {
       checkAndTrackNewActive('Active-reset-criteria', {
         component: 'criteria_section',
-        interaction_type: 'reset_criteria'
+        interaction_type: 'reset_criteria',
+        full_reset: !!onFullReset
       });
     } catch (error) {
       console.warn('Failed to track criteria reset:', error);

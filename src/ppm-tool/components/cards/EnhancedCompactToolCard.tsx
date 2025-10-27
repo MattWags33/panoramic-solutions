@@ -9,6 +9,7 @@ import { roundMatchScore } from '@/ppm-tool/shared/utils/toolRating';
 import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
 import { MobileTooltip } from '@/ppm-tool/components/ui/MobileTooltip';
 import { getMatchScoreTooltipContent } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 
 interface EnhancedCompactToolCardProps {
   tool: Tool;
@@ -125,13 +126,15 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
   onOpenGuidedRanking
 }) => {
   const matchDisplay = getMatchScoreDisplay(matchScore);
+  const { isTouchDevice } = useUnifiedMobileDetection();
   
   return (
     <Card 
-      className="border border-gray-200 hover:border-alpine-blue-300 cursor-pointer !bg-white shadow-none rounded-xl overflow-hidden transition-colors duration-200"
+      className="border border-gray-200 hover:border-alpine-blue-300 cursor-pointer !bg-white shadow-none rounded-xl transition-colors duration-200"
       onClick={onToggleExpand}
+      style={{ overflow: 'visible' }}
     >
-      <CardHeader className="pb-3.5 md:pb-1.5 px-3 md:px-5 pt-3.5 md:pt-1.5">
+      <CardHeader className="px-3 md:px-6 py-2.5 md:py-2.5">
         <div className="flex items-start justify-between gap-2 md:gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 mb-0.5">
@@ -142,45 +145,71 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                   <span className="text-xs ml-1 text-gray-600">Match Score</span>
                 </div>
               ) : (
-                <div 
-                  className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 border-gray-200 flex-shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MobileTooltip 
-                    content={
-                      <div className="break-words">
-                        <p>{getMatchScoreTooltipContent()}</p>
-                        {onOpenGuidedRanking && (
-                          <>
-                            <div className="mt-2 pt-2 border-t border-gray-700" />
+                <MobileTooltip 
+                  content={
+                    <div className="break-words">
+                      <p className="text-sm leading-relaxed">{getMatchScoreTooltipContent()}</p>
+                      {onOpenGuidedRanking && (
+                        <>
+                          <div className="mt-2 pt-2 border-t border-gray-700" />
+                          
+                          {/* Mobile: Show both Comparison Chart and Guided Rankings links */}
+                          {isTouchDevice ? (
+                            <div className="mt-2 space-y-2">
+                              <a
+                                href="#chart-section"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Scroll to comparison chart section
+                                  const chartSection = document.getElementById('chart-section');
+                                  if (chartSection) {
+                                    chartSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }}
+                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"
+                              >
+                                View Comparison Chart →
+                              </a>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenGuidedRanking();
+                                }}
+                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"
+                              >
+                                Open Guided Rankings →
+                              </button>
+                            </div>
+                          ) : (
+                            // Desktop: Only show Guided Rankings link
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onOpenGuidedRanking();
                               }}
-                              className="mt-2 text-blue-300 hover:text-blue-200 underline text-xs block"
+                              className="mt-2 text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"
                             >
                               Open Guided Rankings →
                             </button>
-                          </>
-                        )}
-                      </div>
-                    }
-                    side="bottom"
-                    align="start"
-                    className="max-w-xs text-sm"
+                          )}
+                        </>
+                      )}
+                    </div>
+                  }
+                  side="right"
+                  align="start"
+                  className="max-w-xs text-sm"
+                >
+                  <div 
+                    className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 border-gray-200 flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <button 
-                      type="button"
-                      className="text-gray-400 hover:text-gray-600 active:text-gray-700 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200"
-                      aria-label="Match Score Information"
-                    >
-                      <span className="text-gray-500 text-xs">N/A</span>
-                      <HelpCircle className="w-4 h-4 ml-1 text-gray-400" />
-                      <span className="text-xs ml-1 text-gray-600">Match Score</span>
-                    </button>
-                  </MobileTooltip>
-                </div>
+                    <span className="text-gray-500 text-xs">N/A</span>
+                    <HelpCircle className="w-4 h-4 ml-1 text-gray-400" />
+                    <span className="text-xs ml-1 text-gray-600">Match Score</span>
+                  </div>
+                </MobileTooltip>
               )}
             </div>
             <MethodologyTags tool={tool} />
@@ -223,7 +252,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
 
       {/* Expanded content - only rendered when expanded */}
       {isExpanded && (
-        <CardContent className="space-y-2 md:space-y-3 px-4 md:px-6 pt-0 pb-3" onClick={(e) => e.stopPropagation()}>
+        <CardContent className="space-y-2 md:space-y-3 px-4 md:px-6 pt-0 pb-3">
           {selectedCriteria.map((criterion) => {
             const toolRating = getToolRating(tool, criterion);
             const userRating = criterion.userRating;

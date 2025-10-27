@@ -32,7 +32,7 @@ import {
   recordFullGuidedRankingsClick, 
   recordCriteriaSpecificGuidedRankingsClick 
 } from '@/ppm-tool/shared/utils/unifiedBumperState';
-import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { hasCriteriaBeenAdjusted, hasMinimumCriteriaAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import '@/ppm-tool/shared/utils/bumperDebugger'; // Import debugger for global functions
 // REMOVED: import { MobileDiagnostics } from './MobileDiagnostics'; - Causes browser compatibility issues
 import { MobileRecoverySystem } from './MobileRecoverySystem';
@@ -41,8 +41,11 @@ import { GuidedSubmitAnimation } from '@/ppm-tool/components/overlays/GuidedSubm
 import { 
   loadSavedCriteriaValues, 
   saveCriteriaValues, 
-  mergeCriteriaWithSaved 
+  mergeCriteriaWithSaved,
+  clearSavedCriteriaValues
 } from '@/ppm-tool/shared/utils/criteriaStorage';
+import { resetGuidedRankingCompletion } from '@/ppm-tool/shared/utils/guidedRankingState';
+import { checkAndTrackNewActive } from '@/lib/posthog';
 
 interface EmbeddedPPMToolFlowProps {
   showGuidedRanking?: boolean;
@@ -244,6 +247,9 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   // Flag to keep tools in alphabetical order during guided animation sequence
   const [isAnimatingGuidedRankings, setIsAnimatingGuidedRankings] = useState(false);
 
+  // Track if email modal has been shown this session (survives page refresh)
+  const hasShownEmailModalRef = useRef<boolean>(false);
+
   // Track if this is the initial mount to prevent saving default values
   const isInitialMountRef = useRef(true);
 
@@ -314,6 +320,22 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 
     return () => clearTimeout(saveTimer);
   }, [criteria]);
+
+  // Initialize email modal shown state from sessionStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        const hasShown = sessionStorage.getItem('ppm-email-modal-shown') === 'true';
+        hasShownEmailModalRef.current = hasShown;
+        console.log('📧 Email modal shown this session:', hasShown);
+      } catch (error) {
+        console.warn('Error reading from sessionStorage:', error);
+      }
+    }
+  }, []);
+
+  // Note: sessionStorage is updated directly in handleUpdateRankings when we set hasShownEmailModalRef.current = true
+  // No separate useEffect needed since ref mutations don't trigger re-renders
 
   // Convert saved answers from storage format (with timestamps) to form format (just values)
   const convertSavedAnswersToFormFormat = (
@@ -650,6 +672,51 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     setCriteria(newCriteria);
   };
 
+  // Handler for full criteria reset (including guided answers)
+  const handleFullCriteriaReset = () => {
+    // 1. Reset criteria to default values
+    const resetCriteria = defaultCriteria.map(dc => ({
+      ...dc,
+      userRating: 3 // Reset to default middle value
+    }));
+    setCriteria(resetCriteria);
+    
+    // 2. Clear guided ranking answers from state
+    setGuidedRankingAnswers({});
+    
+    // 3. Clear personalization data from state (reset to default with just timestamp)
+    setPersonalizationData({
+      timestamp: new Date().toISOString()
+    });
+    
+    // 4. Clear guided ranking completion flag (this hides match scores)
+    resetGuidedRankingCompletion();
+    
+    // 5. Clear saved criteria values
+    clearSavedCriteriaValues();
+    
+    // 6. Clear from localStorage
+    try {
+      localStorage.removeItem('guidedRankingAnswers');
+      localStorage.removeItem('personalizationData');
+      console.log('✅ Full criteria reset: cleared guided answers, personalization data, and match score visibility');
+    } catch (error) {
+      console.error('Error clearing localStorage during reset:', error);
+    }
+    
+    // 7. Track analytics
+    try {
+      checkAndTrackNewActive('Active-reset-criteria-full', {
+        component: 'embedded_ppm_tool_flow',
+        interaction_type: 'full_criteria_reset',
+        had_guided_answers: Object.keys(guidedRankingAnswers).length > 0,
+        had_personalization: !!(personalizationData?.userCount || personalizationData?.departments?.length || personalizationData?.methodologies?.length)
+      });
+    } catch (error) {
+      console.warn('Failed to track full criteria reset:', error);
+    }
+  };
+
   // Handlers for tools
   const handleToolSelect = (tool: Tool) => {
     setSelectedTools([...selectedTools, tool]);
@@ -746,7 +813,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       setDisableAutoShuffle(true);
       console.log('🚫 State-based auto-shuffle disabled for animation sequence');
       
-      // Phase 1: Wave animation (4 seconds) - NO criteria changes yet
+      // Phase 1: Wave animation (3 seconds) - NO criteria changes yet
       await guidedAnimation.startAnimation();
       console.log('✅ Wave animation complete');
       
@@ -757,14 +824,14 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       console.log('⏸️ Quick pause after wave (0.3s)');
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Phase 3: Update ALL criteria SIMULTANEOUSLY (sliders move together)
-      console.log('🔄 Updating ALL criteria at once - simultaneous slider movement...');
+      // Phase 3: Update criteria AND trigger shuffle SIMULTANEOUSLY
+      console.log('🔄 Starting simultaneous animation: sliders + tools...');
       
       const criteriaToAnimate = criteria.filter(c => 
         rankings[c.id] !== undefined && rankings[c.id] !== c.userRating
       );
       
-      console.log(`📊 Will animate ${criteriaToAnimate.length} criteria sliders simultaneously`);
+      console.log(`📊 Will animate ${criteriaToAnimate.length} criteria sliders + tool shuffle simultaneously`);
       
       // Update ALL criteria in a single setState call
       setCriteria(prev => 
@@ -774,36 +841,21 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
         }))
       );
       
-      console.log('✨ All criteria updated - sliders moving simultaneously');
-      
-      // Wait for slider animations to complete (3 seconds for smooth movement)
-      await new Promise(resolve => setTimeout(resolve, 3000)); // All sliders animate for 3s together
-      
-      console.log('✅ All criteria sliders animated simultaneously');
-      
-      // Phase 4: Small pause before tools shuffle
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Phase 5: RE-ENABLE auto-shuffle and trigger manual shuffle
-      console.log('🔄 Re-enabling auto-shuffle and triggering tool shuffle...');
-      
-      // Re-enable imperatively (immediate)
+      // IMMEDIATELY re-enable shuffle and trigger it (happens at same time as sliders move)
       if (shuffleControlRef.current) {
         shuffleControlRef.current.enable();
         console.log('✅ Imperative shuffle control: ENABLED (immediate)');
       }
-      
-      // Re-enable via state as backup
       setDisableAutoShuffle(false);
       
-      // Trigger manual shuffle if ref is available
+      // Trigger manual shuffle RIGHT NOW (simultaneous with slider animation)
       if (manualShuffleRef.current) {
         manualShuffleRef.current();
-        console.log('✅ Manual shuffle triggered');
+        console.log('✨ Manual shuffle triggered SIMULTANEOUSLY with sliders');
       }
       
-      // Wait for shuffle animation to complete
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1s tool shuffle
+      // Wait for BOTH animations to complete (sliders are 3s, shuffle is 1s)
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       // CLEAR ANIMATION FLAG - allow tools to sort by score now
       setIsAnimatingGuidedRankings(false);
@@ -813,44 +865,66 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       
       // Only show email modal for full guided rankings (not single-criterion mode)
       if (!guidedRankingCriterionId) {
-        // Check if user is on main state (criteria-tools view)
-        const isOnMainState = currentStep === 'criteria-tools';
+        // Check if we should show the email modal
+        const shouldShowModal = 
+          !hasShownEmailModalRef.current && // Haven't shown this session
+          hasMinimumCriteriaAdjusted(criteria, 3); // 3+ criteria adjusted
         
-        if (isOnMainState) {
-          // On main state: Wait 5 seconds before showing email modal
-          console.log('⏸️ On main state - pausing 5 seconds before opening email modal');
-          await new Promise(resolve => setTimeout(resolve, 5000));
+        if (shouldShowModal) {
+          // Mark as shown for this session
+          hasShownEmailModalRef.current = true;
           
-          console.log('📧 Opening email modal now (main state)');
-          setShowEmailModal(true);
-          
-          // Track that comparison report was opened
-          onComparisonReportClick();
-          onComparisonReportOpen();
-        } else {
-          // On other state: Show modal when user returns to main state (2 second delay)
-          console.log('📍 Not on main state - will show email modal when user returns');
-          
-          // Wait for user to return to main state
-          const checkInterval = setInterval(() => {
-            if (currentStep === 'criteria-tools') {
-              clearInterval(checkInterval);
-              console.log('✅ User returned to main state');
-              
-              // Wait 2 seconds then show modal
-              setTimeout(() => {
-                console.log('📧 Opening email modal now (returned to main state)');
-                setShowEmailModal(true);
-                onComparisonReportClick();
-                onComparisonReportOpen();
-              }, 2000);
+          // Persist to sessionStorage
+          if (typeof window !== 'undefined' && window.sessionStorage) {
+            try {
+              sessionStorage.setItem('ppm-email-modal-shown', 'true');
+              console.log('📧 Marked email modal as shown in sessionStorage');
+            } catch (error) {
+              console.warn('Error writing to sessionStorage:', error);
             }
-          }, 500); // Check every 500ms
+          }
           
-          // Clear interval after 30 seconds (timeout)
-          setTimeout(() => {
-            clearInterval(checkInterval);
-          }, 30000);
+          // Check if user is on main state (criteria-tools view)
+          const isOnMainState = currentStep === 'criteria-tools';
+          
+          if (isOnMainState) {
+            // On main state: Wait 2 seconds before showing email modal
+            console.log('⏸️ On main state - pausing 2 seconds before opening email modal');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            console.log('📧 Opening email modal now (main state)');
+            setShowEmailModal(true);
+            
+            // Track that comparison report was opened
+            onComparisonReportClick();
+            onComparisonReportOpen();
+          } else {
+            // On other state: Show modal when user returns to main state (2 second delay)
+            console.log('📍 Not on main state - will show email modal when user returns');
+            
+            // Wait for user to return to main state
+            const checkInterval = setInterval(() => {
+              if (currentStep === 'criteria-tools') {
+                clearInterval(checkInterval);
+                console.log('✅ User returned to main state');
+                
+                // Wait 2 seconds then show modal
+                setTimeout(() => {
+                  console.log('📧 Opening email modal now (returned to main state)');
+                  setShowEmailModal(true);
+                  onComparisonReportClick();
+                  onComparisonReportOpen();
+                }, 2000);
+              }
+            }, 500); // Check every 500ms
+            
+            // Clear interval after 30 seconds (timeout)
+            setTimeout(() => {
+              clearInterval(checkInterval);
+            }, 30000);
+          }
+        } else {
+          console.log('⏭️ Skipping email modal - already shown or not enough criteria adjusted');
         }
       } else {
         console.log('✅ Single-criterion mode - skipping email modal');
@@ -999,6 +1073,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
             filterConditions={filterConditions}
             filterMode={filterMode}
             onCriteriaChange={handleCriteriaChange}
+            onFullCriteriaReset={handleFullCriteriaReset}
             onToolSelect={handleToolSelect}
             onToolRemove={handleToolRemove}
             onRestoreAllTools={handleRestoreAllTools}
