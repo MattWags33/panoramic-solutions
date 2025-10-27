@@ -84,9 +84,8 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
       align="start"
       className="max-w-xs text-sm"
     >
-      <button 
-        type="button"
-        className={`inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 active:bg-gray-200 transition-colors min-h-[44px] md:min-h-0 ${className}`}
+      <div 
+        className={`inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 min-h-[44px] md:min-h-0 cursor-pointer ${className}`}
         aria-label="Match Score Information - Not yet ranked, tap to learn more"
       >
         <span className="text-gray-500 text-xs">N/A</span>
@@ -94,7 +93,7 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
         {includeLabel && (
           <span className="text-xs ml-1 text-gray-600">Match Score</span>
         )}
-      </button>
+      </div>
     </MobileTooltip>
   );
 };
