@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 import { BasicHoverTooltip } from './basic-hover-tooltip';
 
@@ -226,7 +227,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
           {children}
         </div>
         
-        {effectiveIsOpen && (
+        {effectiveIsOpen && typeof document !== 'undefined' && createPortal(
           <div
             ref={tooltipRef}
             className={`fixed z-[9999] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}
@@ -236,7 +237,8 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
             }}
           >
             {content}
-          </div>
+          </div>,
+          document.body
         )}
       </>
     );
@@ -264,7 +266,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
           </BasicHoverTooltip>
         </div>
         
-        {effectiveIsOpen && (
+        {effectiveIsOpen && typeof document !== 'undefined' && createPortal(
           <div
             ref={tooltipRef}
             className={`fixed z-[9999] px-3 py-2 text-sm bg-gray-900 text-white rounded-md shadow-lg pointer-events-auto max-w-xs break-words ${className}`}
@@ -274,7 +276,8 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
             }}
           >
             {content}
-          </div>
+          </div>,
+          document.body
         )}
       </>
     );

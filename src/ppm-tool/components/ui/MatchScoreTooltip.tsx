@@ -78,22 +78,24 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
   );
 
   return (
-    <MobileTooltip 
-      content={tooltipContent}
-      side="bottom"
-      align="start"
-      className="max-w-xs text-sm"
-    >
-      <div 
-        className={`inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 min-h-[44px] md:min-h-0 cursor-pointer relative z-10 ${className}`}
-        aria-label="Match Score Information - Not yet ranked, tap to learn more"
+    <div onClick={(e) => e.stopPropagation()} className="relative z-[100]">
+      <MobileTooltip 
+        content={tooltipContent}
+        side="bottom"
+        align="start"
+        className="max-w-xs text-sm !z-[9999]"
       >
-        <span className="text-gray-500 text-xs">N/A</span>
-        <HelpCircle className="w-4 h-4 ml-1 text-gray-400" />
-        {includeLabel && (
-          <span className="text-xs ml-1 text-gray-600">Match Score</span>
-        )}
-      </div>
-    </MobileTooltip>
+        <div 
+          className={`inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 min-h-[44px] md:min-h-0 cursor-pointer relative z-[100] ${className}`}
+          aria-label="Match Score Information - Not yet ranked, tap to learn more"
+        >
+          <span className="text-gray-500 text-xs">N/A</span>
+          <HelpCircle className="w-4 h-4 ml-1 text-gray-400" />
+          {includeLabel && (
+            <span className="text-xs ml-1 text-gray-600">Match Score</span>
+          )}
+        </div>
+      </MobileTooltip>
+    </div>
   );
 };
