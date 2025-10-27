@@ -197,12 +197,12 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                       )}
                     </div>
                   }
-                  side="right"
+                  side={isTouchDevice ? "bottom" : "right"}
                   align="start"
                   className="max-w-xs text-sm"
                 >
                   <div 
-                    className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 flex-shrink-0 min-h-[44px] md:min-h-0 cursor-pointer"
+                    className="inline-flex items-center px-2 py-1 rounded-lg bg-gray-50 flex-shrink-0 min-h-[44px] md:min-h-0 cursor-pointer relative z-10"
                     aria-label="Match Score Information - Not yet ranked, tap to learn more"
                   >
                     <span className="text-gray-500 text-xs">N/A</span>

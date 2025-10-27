@@ -42,7 +42,7 @@ export const MobileTooltip: React.FC<MobileTooltipProps> = ({
     // Handle clicks for mobile devices and touch-enabled laptops
     if (isTouchDevice || hasTouch) {
       e.preventDefault();
-      e.stopPropagation();
+      e.stopPropagation(); // Prevent event from bubbling to parent (like card expansion)
       
       // Add subtle haptic feedback on mobile devices
       if ('vibrate' in navigator && isTouchDevice) {
