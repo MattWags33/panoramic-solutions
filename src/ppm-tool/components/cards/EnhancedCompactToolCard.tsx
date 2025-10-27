@@ -145,7 +145,8 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                   <span className="text-xs ml-1 text-gray-600">Match Score</span>
                 </div>
               ) : (
-                <MobileTooltip 
+                <div onClick={(e) => e.stopPropagation()}>
+                  <MobileTooltip 
                   content={
                     <div className="break-words">
                       <p className="text-sm leading-relaxed">{getMatchScoreTooltipContent()}</p>
@@ -210,6 +211,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                     <span className="text-xs ml-1 text-gray-600">Match Score</span>
                   </div>
                 </MobileTooltip>
+                </div>
               )}
             </div>
             <MethodologyTags tool={tool} />
