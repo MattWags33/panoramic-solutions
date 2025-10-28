@@ -57,7 +57,7 @@ export function getBumperDebugInfo(): BumperDebugInfo {
   const unifiedState = getUnifiedBumperState();
   const homeState = getHomeState();
   const now = Date.now();
-  const toolOpenedAt = new Date(unifiedState.toolOpenedAt).getTime();
+  const toolOpenedAt = unifiedState.toolOpenedAt ? new Date(unifiedState.toolOpenedAt).getTime() : now;
   const timeOnPage = now - toolOpenedAt;
   
   // Check what's blocking Product Bumper
@@ -158,13 +158,13 @@ export function getBumperDebugInfo(): BumperDebugInfo {
       state: homeState
     },
     timing: {
-      toolOpenedAt: unifiedState.toolOpenedAt,
+      toolOpenedAt: unifiedState.toolOpenedAt || new Date().toISOString(),
       timeOnPage,
       timeOnPageFormatted: `${Math.round(timeOnPage/1000)}s`,
       initialTimerComplete: unifiedState.initialTimerComplete,
       mouseMovementTimerComplete: unifiedState.mouseMovementTimerComplete,
-      lastMouseMovementAt: unifiedState.lastMouseMovementAt,
-      mouseStoppedAt: unifiedState.mouseStoppedAt,
+      lastMouseMovementAt: unifiedState.lastMouseMovementAt || undefined,
+      mouseStoppedAt: unifiedState.mouseStoppedAt || undefined,
       timeSinceMouseStopped: unifiedState.mouseStoppedAt 
         ? now - new Date(unifiedState.mouseStoppedAt).getTime() 
         : undefined
@@ -172,10 +172,10 @@ export function getBumperDebugInfo(): BumperDebugInfo {
     userActions: {
       hasClickedIntoGuidedRankings: unifiedState.hasClickedIntoGuidedRankings,
       hasClickedIntoComparisonReport: unifiedState.hasClickedIntoComparisonReport,
-      guidedRankingsOpenedAt: unifiedState.guidedRankingsOpenedAt,
-      comparisonReportOpenedAt: unifiedState.comparisonReportOpenedAt,
-      guidedRankingsClosedAt: unifiedState.guidedRankingsClosedAt,
-      comparisonReportClosedAt: unifiedState.comparisonReportClosedAt
+      guidedRankingsOpenedAt: unifiedState.guidedRankingsOpenedAt || undefined,
+      comparisonReportOpenedAt: unifiedState.comparisonReportOpenedAt || undefined,
+      guidedRankingsClosedAt: unifiedState.guidedRankingsClosedAt || undefined,
+      comparisonReportClosedAt: unifiedState.comparisonReportClosedAt || undefined
     },
     bumperHistory: {
       productBumperShown: unifiedState.productBumperShown,
@@ -306,14 +306,14 @@ export function forceTriggerConditions(): void {
   unifiedState.isComparisonReportCurrentlyOpen = false;
   
   // Clear dismissal timestamps
-  unifiedState.productBumperDismissedAt = undefined;
-  unifiedState.exitIntentDismissedAt = undefined;
+  unifiedState.productBumperDismissedAt = null;
+  unifiedState.exitIntentDismissedAt = null;
   
   // Clear session tracking that might block scenarios
-  unifiedState.guidedRankingsOpenedAt = undefined;
-  unifiedState.guidedRankingsClosedAt = undefined;
-  unifiedState.comparisonReportOpenedAt = undefined;
-  unifiedState.comparisonReportClosedAt = undefined;
+  unifiedState.guidedRankingsOpenedAt = null;
+  unifiedState.guidedRankingsClosedAt = null;
+  unifiedState.comparisonReportOpenedAt = null;
+  unifiedState.comparisonReportClosedAt = null;
   
   // Save state
   localStorage.setItem('unifiedBumperState', JSON.stringify(unifiedState));

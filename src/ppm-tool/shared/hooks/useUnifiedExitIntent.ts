@@ -81,7 +81,7 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
       // Check if Exit Intent should be shown (but not from mouse leave)
       if (!hasTriggeredExitIntent && shouldShowExitIntentBumper()) {
         const state = getUnifiedBumperState();
-        const toolOpenedAt = new Date(state.toolOpenedAt).getTime();
+        const toolOpenedAt = state.toolOpenedAt ? new Date(state.toolOpenedAt).getTime() : Date.now();
         const timeOnPage = Date.now() - toolOpenedAt;
         
         // Only auto-trigger after 2 minutes (exit intent timer)
