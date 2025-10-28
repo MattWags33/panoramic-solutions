@@ -42,6 +42,7 @@ interface ToolSectionProps {
   chartButtonPosition?: { x: number; y: number };
   onOpenGuidedRanking?: () => void;
   disableAutoShuffle?: boolean;
+  shuffleDurationMs?: number;
   onShuffleReady?: (shuffleFn: () => void) => void;
   onShuffleControlReady?: (disableFn: () => void, enableFn: () => void) => void;
   isAnimatingGuidedRankings?: boolean;
@@ -71,6 +72,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
   chartButtonPosition,
   onOpenGuidedRanking,
   disableAutoShuffle = false,
+  shuffleDurationMs = 1000,
   onShuffleReady,
   onShuffleControlReady,
   isAnimatingGuidedRankings = false
@@ -87,10 +89,10 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
   const settingsRef = React.useRef<HTMLDivElement>(null);
   const modalContentRef = React.useRef<HTMLDivElement>(null);
   
-  // Initialize shuffle animation
+  // Initialize shuffle animation with dynamic duration
   const shuffleAnimation = useShuffleAnimation({
     delayMs: 0, // No delay - start immediately when triggered
-    shuffleDurationMs: isMobile ? 800 : 1000, // Desktop: 1 second for snappy tool shuffle (staggered with criteria)
+    shuffleDurationMs: isMobile ? 800 : shuffleDurationMs, // Desktop: Use dynamic duration (3s for guided, 1s for normal)
     disabled: false
   });
   
@@ -133,20 +135,14 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
 
   // Stable, deterministic sorting with hydration awareness
   const sortedTools = React.useMemo(() => {
-    // FREEZE tools in current order during guided animation sequence
-    // Don't re-sort at all - just return current order to prevent visual jump
-    if (isAnimatingGuidedRankings) {
-      console.log('📋 Freezing tools in current order during animation (no re-sorting)');
-      return [...filteredTools]; // Keep exact current order, no sorting
-    }
-    
-    // Always alphabetical until hydrated OR criteria not adjusted
+    // Keep alphabetical during animation (prevents pre-animation jump)
+    // Also keep alphabetical until hydrated OR criteria not adjusted
     // This ensures server and client render the same initial state
-    if (!isHydrated || !criteriaAdjusted) {
+    if (!isHydrated || !criteriaAdjusted || isAnimatingGuidedRankings) {
       return [...filteredTools].sort((a, b) => a.name.localeCompare(b.name));
     }
     
-    // Score-based with alphabetical tie-breaker (after hydration)
+    // Score-based with alphabetical tie-breaker (after hydration, criteria adjusted, and not animating)
     return [...filteredTools].sort((a, b) => {
       const scoreA = toolMatchScores.get(a.id) || 0;
       const scoreB = toolMatchScores.get(b.id) || 0;

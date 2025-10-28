@@ -81,7 +81,7 @@ export const MatchScoreTooltip: React.FC<MatchScoreTooltipProps> = ({
     <div onClick={(e) => e.stopPropagation()} className="relative z-[100]">
       <MobileTooltip 
         content={tooltipContent}
-        side="bottom"
+        side="top"
         align="start"
         className="max-w-xs text-sm !z-[9999]"
       >

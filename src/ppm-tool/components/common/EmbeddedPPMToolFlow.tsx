@@ -43,7 +43,7 @@ import {
   mergeCriteriaWithSaved,
   clearSavedCriteriaValues
 } from '@/ppm-tool/shared/utils/criteriaStorage';
-import { resetGuidedRankingCompletion } from '@/ppm-tool/shared/utils/guidedRankingState';
+import { resetGuidedRankingCompletion, markGuidedRankingAsCompleted } from '@/ppm-tool/shared/utils/guidedRankingState';
 import { checkAndTrackNewActive } from '@/lib/posthog';
 
 interface EmbeddedPPMToolFlowProps {
@@ -201,17 +201,15 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     },
     enabled: true
   });
-  // Set initial step based on mobile detection - move logic outside hook
-  const getInitialStep = () => {
-    try {
-      return isMobile ? 'tools' : 'criteria-tools';
-    } catch (error) {
-      console.warn('Error determining mobile state, defaulting to criteria-tools:', error);
-      return 'criteria-tools';
-    }
-  };
+  // Set initial step - default to 'tools' for mobile-first approach
+  const [currentStep, setCurrentStep] = useState<string>('tools');
   
-  const [currentStep, setCurrentStep] = useState<string>(getInitialStep());
+  // Update step after hydration based on actual device detection
+  useEffect(() => {
+    if (isHydrated) {
+      setCurrentStep(isMobile ? 'tools' : 'criteria-tools');
+    }
+  }, [isHydrated, isMobile]);
   const [criteria, setCriteria] = useState<Criterion[]>([]);
   const [selectedTools, setSelectedTools] = useState<Tool[]>(defaultTools);
   const [removedCriteria, setRemovedCriteria] = useState<Criterion[]>([]);
@@ -245,6 +243,9 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   
   // Flag to keep tools in alphabetical order during guided animation sequence
   const [isAnimatingGuidedRankings, setIsAnimatingGuidedRankings] = useState(false);
+
+  // Dynamic shuffle duration - 3s for guided animations, 1s for normal interactions
+  const [shuffleDurationMs, setShuffleDurationMs] = useState(1000);
 
   // Track if email modal has been shown this session (survives page refresh)
   const hasShownEmailModalRef = useRef<boolean>(false);
@@ -816,11 +817,25 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       setDisableAutoShuffle(true);
       console.log('🚫 State-based auto-shuffle disabled for animation sequence');
       
+      // Set shuffle duration to 3 seconds for elegant simultaneous animation
+      setShuffleDurationMs(3000);
+      
       // Start wave animation (non-blocking, runs in background)
       guidedAnimation.startAnimation();
       console.log('🌊 Wave animation started (running in background)');
+      console.log('⏸️ Phase 1: Wave plays alone - tools frozen, sliders not updated yet');
       
-      // IMMEDIATELY update criteria (sliders start moving while wave is showing)
+      // Wait for wave animation to complete (3 seconds)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Reset wave animation state
+      guidedAnimation.reset();
+      console.log('✅ Wave animation complete');
+      
+      // Phase 2: Simultaneous elegant animation - sliders + tools together
+      console.log('🎭 Phase 2: Starting simultaneous slider + tool animation (3 seconds)');
+      
+      // Update criteria - this triggers 3-second slider animations
       setCriteria(prev => 
         prev.map(c => ({
           ...c,
@@ -828,98 +843,101 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
         }))
       );
       console.log('📊 Criteria updated - sliders animating now');
-      console.log('⏸️ Keeping animation flag TRUE - tools stay frozen during wave + sliders (3 seconds)');
       
-      // Wait for wave + slider animations to complete (3 seconds total)
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Reset wave animation state
-      guidedAnimation.reset();
-      console.log('✅ Wave and slider animations complete');
-      
-      // NOW clear the animation flag - this will trigger tools to re-sort and shuffle
+      // IMMEDIATELY clear animation flag and enable shuffle
+      // (happens at same time as sliders start moving)
       setIsAnimatingGuidedRankings(false);
-      console.log('📋 Animation flag CLEARED - tools will now re-sort and shuffle');
       
-      // Re-enable shuffle - natural re-sort will trigger auto-shuffle
       if (shuffleControlRef.current) {
         shuffleControlRef.current.enable();
-        console.log('✅ Imperative shuffle control: ENABLED');
       }
       setDisableAutoShuffle(false);
-      console.log('✅ Auto-shuffle re-enabled - tools shuffling now');
+      console.log('✨ Animation flag cleared - sliders + tools moving together now');
       
-      // Wait for tool shuffle animation to complete (1 second on desktop)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('✅ All animations complete (wave + sliders + tool shuffle)');
+      // Wait for BOTH animations to complete (3 seconds - they're simultaneous)
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('✅ All animations complete (wave → sliders + tools together)');
       
-      // Only show email modal for full guided rankings (not single-criterion mode)
-      if (!guidedRankingCriterionId) {
-        // Check if we should show the email modal
-        const shouldShowModal = 
-          !hasShownEmailModalRef.current && // Haven't shown this session
-          !hasShownEmailModalEverRef.current && // Haven't shown ever (permanent check)
-          hasMinimumCriteriaAdjusted(criteria, 3); // 3+ criteria adjusted
+      // NOW mark as completed (shows match scores) - done AFTER animation to prevent pre-animation jump
+      markGuidedRankingAsCompleted();
+      console.log('✅ Marked guided ranking as completed - match scores will now display');
+      
+      // Reset shuffle duration back to normal for future interactions
+      setShuffleDurationMs(1000);
+      console.log('🔄 Shuffle duration reset to 1s for normal interactions');
+      
+      // Check if we should show the email modal (works for BOTH full and individual criterion modes)
+      const shouldShowModal = 
+        !hasShownEmailModalRef.current && // Haven't shown this session
+        !hasShownEmailModalEverRef.current && // Haven't shown ever (permanent check)
+        hasMinimumCriteriaAdjusted(criteria, 3); // 3+ criteria adjusted (cumulative from any source)
+      
+      if (shouldShowModal) {
+        // Mark as shown for this session AND permanently
+        hasShownEmailModalRef.current = true;
+        hasShownEmailModalEverRef.current = true;
         
-        if (shouldShowModal) {
-          // Mark as shown for this session AND permanently
-          hasShownEmailModalRef.current = true;
-          hasShownEmailModalEverRef.current = true;
-          
-          // Persist to sessionStorage
-          if (typeof window !== 'undefined' && window.sessionStorage) {
-            try {
-              sessionStorage.setItem('ppm-email-modal-shown', 'true');
-              console.log('📧 Marked email modal as shown in sessionStorage (permanent)');
-            } catch (error) {
-              console.warn('Error writing to sessionStorage:', error);
-            }
+        // Persist to sessionStorage
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          try {
+            sessionStorage.setItem('ppm-email-modal-shown', 'true');
+            console.log('📧 Marked email modal as shown in sessionStorage (permanent)');
+          } catch (error) {
+            console.warn('Error writing to sessionStorage:', error);
           }
+        }
+        
+        // Check if user is on main state (criteria-tools view)
+        const isOnMainState = currentStep === 'criteria-tools';
+        
+        if (isOnMainState) {
+          // On main state: Wait 2 seconds before showing email modal
+          console.log('⏸️ On main state - pausing 2 seconds before opening email modal');
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
-          // Check if user is on main state (criteria-tools view)
-          const isOnMainState = currentStep === 'criteria-tools';
+          console.log('📧 Opening email modal now (main state)');
           
-          if (isOnMainState) {
-            // On main state: Wait 2 seconds before showing email modal
-            console.log('⏸️ On main state - pausing 2 seconds before opening email modal');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            console.log('📧 Opening email modal now (main state)');
-            setShowEmailModal(true);
-            
-            // Track that comparison report was opened
-            onComparisonReportClick();
-            onComparisonReportOpen();
-          } else {
-            // On other state: Show modal when user returns to main state (2 second delay)
-            console.log('📍 Not on main state - will show email modal when user returns');
-            
-            // Wait for user to return to main state
-            const checkInterval = setInterval(() => {
-              if (currentStep === 'criteria-tools') {
-                clearInterval(checkInterval);
-                console.log('✅ User returned to main state');
-                
-                // Wait 2 seconds then show modal
-                setTimeout(() => {
-                  console.log('📧 Opening email modal now (returned to main state)');
-                  setShowEmailModal(true);
-                  onComparisonReportClick();
-                  onComparisonReportOpen();
-                }, 2000);
-              }
-            }, 500); // Check every 500ms
-            
-            // Clear interval after 30 seconds (timeout)
-            setTimeout(() => {
-              clearInterval(checkInterval);
-            }, 30000);
-          }
+          // Track click BEFORE opening modal (important for Exit Intent Bumper eligibility)
+          onComparisonReportClick();
+          
+          // Open the modal
+          setShowEmailModal(true);
+          
+          // Record that modal opened (sets overlay state)
+          onComparisonReportOpen();
         } else {
-          console.log('⏭️ Skipping email modal - already shown or not enough criteria adjusted');
+          // On other state: Show modal when user returns to main state (2 second delay)
+          console.log('📍 Not on main state - will show email modal when user returns');
+          
+          // Wait for user to return to main state
+          const checkInterval = setInterval(() => {
+            if (currentStep === 'criteria-tools') {
+              clearInterval(checkInterval);
+              console.log('✅ User returned to main state');
+              
+              // Wait 2 seconds then show modal
+              setTimeout(() => {
+                console.log('📧 Opening email modal now (returned to main state)');
+                
+                // Track click BEFORE opening modal
+                onComparisonReportClick();
+                
+                // Open the modal
+                setShowEmailModal(true);
+                
+                // Record that modal opened
+                onComparisonReportOpen();
+              }, 2000);
+            }
+          }, 500); // Check every 500ms
+          
+          // Clear interval after 30 seconds (timeout)
+          setTimeout(() => {
+            clearInterval(checkInterval);
+          }, 30000);
         }
       } else {
-        console.log('✅ Single-criterion mode - skipping email modal');
+        console.log('⏭️ Skipping email modal - already shown or not enough criteria adjusted');
       }
     } else {
       // Mobile: Apply immediately without animation
@@ -1080,6 +1098,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
             onOpenGuidedRanking={onOpenGuidedRanking}
             chartButtonPosition={chartButtonPosition}
             disableAutoShuffle={disableAutoShuffle}
+            shuffleDurationMs={shuffleDurationMs}
             onShuffleReady={(shuffleFn) => {
               manualShuffleRef.current = shuffleFn;
               console.log('🔗 Shuffle function registered');

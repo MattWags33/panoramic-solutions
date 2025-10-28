@@ -27,6 +27,7 @@ interface SplitViewProps {
   onOpenGuidedRanking?: () => void;
   chartButtonPosition?: { x: number; y: number };
   disableAutoShuffle?: boolean;
+  shuffleDurationMs?: number;
   onShuffleReady?: (shuffleFn: () => void) => void;
   onShuffleControlReady?: (disableFn: () => void, enableFn: () => void) => void;
   isAnimatingGuidedRankings?: boolean;
@@ -54,6 +55,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
   onOpenGuidedRanking,
   chartButtonPosition,
   disableAutoShuffle,
+  shuffleDurationMs = 1000,
   onShuffleReady,
   onShuffleControlReady,
   isAnimatingGuidedRankings
@@ -95,6 +97,7 @@ export const SplitView: React.FC<SplitViewProps> = ({
           chartButtonPosition={chartButtonPosition}
           onOpenGuidedRanking={onOpenGuidedRanking}
           disableAutoShuffle={disableAutoShuffle}
+          shuffleDurationMs={shuffleDurationMs}
           onShuffleReady={onShuffleReady}
           onShuffleControlReady={onShuffleControlReady}
           isAnimatingGuidedRankings={isAnimatingGuidedRankings}

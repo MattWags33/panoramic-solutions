@@ -516,7 +516,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     
     // Mark that user has completed guided ranking (prevents ProductBumper from showing again)
     markGuidedRankingComplete();
-    markGuidedRankingAsCompleted(); // Track for match score display
+    // NOTE: markGuidedRankingAsCompleted() is now called AFTER animation completes in handleUpdateRankings
     console.log('✅ Guided ranking completed - ProductBumper will no longer show');
     
     // Track PostHog New_Ranking_Submittal event (once per session)

@@ -283,7 +283,7 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
                                   {getTooltipDescription(criterion)}
                                 </div>
                               }
-                              side="bottom"
+                              side="top"
                               align="center"
                               className="max-w-xs text-sm"
                               forceOpen={dragTooltipCriterionId === criterion.id}
