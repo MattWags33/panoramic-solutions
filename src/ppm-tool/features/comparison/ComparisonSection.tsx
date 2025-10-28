@@ -8,12 +8,16 @@ interface ComparisonSectionProps {
   tools: Tool[];
   criteria: Criterion[];
   comparedTools?: Set<string>;
+  onOpenGuidedRanking?: () => void;
+  onNavigateToCriteria?: () => void;
 }
 
 export const ComparisonSection: React.FC<ComparisonSectionProps> = ({
   tools: selectedTools,
   criteria: selectedCriteria,
   comparedTools = new Set(),
+  onOpenGuidedRanking,
+  onNavigateToCriteria,
 }) => {
   // Track when user views the comparison chart for New_Active metric
   React.useEffect(() => {
@@ -37,6 +41,8 @@ export const ComparisonSection: React.FC<ComparisonSectionProps> = ({
       tools={selectedTools}
       criteria={selectedCriteria}
       comparedTools={comparedTools}
+      onOpenGuidedRanking={onOpenGuidedRanking}
+      onNavigateToCriteria={onNavigateToCriteria}
     />
   );
 };

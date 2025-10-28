@@ -39,7 +39,7 @@ const tooltipContent = (
                 e.stopPropagation();
                 onGuidedRankingClick();
               }}
-              className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left"
+              className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
             >
               Open Guided Rankings →
             </button>
@@ -54,7 +54,7 @@ const tooltipContent = (
                   criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
               }}
-              className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left"
+              className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
             >
               Adjust Criteria Sliders →
             </a>

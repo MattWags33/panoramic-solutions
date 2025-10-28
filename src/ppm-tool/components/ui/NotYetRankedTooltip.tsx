@@ -47,7 +47,7 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
                   e.stopPropagation();
                   onGuidedRankingClick();
                 }}
-                className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left"
+                className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
               >
                 Open Guided Rankings →
               </button>
@@ -67,7 +67,7 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
                     }
                   }
                 }}
-                className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left"
+                className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
               >
                 Adjust Criteria Sliders →
               </a>

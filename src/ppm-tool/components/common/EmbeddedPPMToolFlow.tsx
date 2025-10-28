@@ -1140,6 +1140,17 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
               criteria={criteria}
               comparedTools={comparedTools}
               onOpenGuidedRanking={onOpenGuidedRanking}
+              onNavigateToCriteria={() => {
+                // Navigate to criteria-tools tab on desktop
+                setCurrentStep('criteria-tools');
+                // Then scroll to criteria section after DOM update
+                setTimeout(() => {
+                  const criteriaSection = document.getElementById('criteria-section');
+                  if (criteriaSection) {
+                    criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 100);
+              }}
             />
           </div>
         );
