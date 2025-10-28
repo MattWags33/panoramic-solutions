@@ -154,24 +154,9 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                         <>
                           <div className="mt-2 pt-2 border-t border-gray-700" />
                           
-                          {/* Mobile: Show both Comparison Chart and Guided Rankings links */}
+                          {/* Mobile: Show Guided Rankings and Criteria Sliders links */}
                           {isTouchDevice ? (
                             <div className="mt-2 space-y-2">
-                              <a
-                                href="#chart-section"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  // Scroll to comparison chart section
-                                  const chartSection = document.getElementById('chart-section');
-                                  if (chartSection) {
-                                    chartSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                  }
-                                }}
-                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"
-                              >
-                                View Comparison Chart →
-                              </a>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -181,6 +166,21 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                               >
                                 Open Guided Rankings →
                               </button>
+                              <a
+                                href="#criteria-section"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Scroll to criteria section
+                                  const criteriaSection = document.getElementById('criteria-section');
+                                  if (criteriaSection) {
+                                    criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }}
+                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"
+                              >
+                                Adjust Criteria Sliders →
+                              </a>
                             </div>
                           ) : (
                             // Desktop: Only show Guided Rankings link

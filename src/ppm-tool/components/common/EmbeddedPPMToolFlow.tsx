@@ -201,15 +201,15 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     },
     enabled: true
   });
-  // Set initial step - default to 'tools' for mobile-first approach
-  const [currentStep, setCurrentStep] = useState<string>('tools');
+  // Set initial step - wait for hydration to determine correct starting page
+  const [currentStep, setCurrentStep] = useState<string>('');
   
-  // Update step after hydration based on actual device detection
+  // Set correct initial step after hydration based on device detection
   useEffect(() => {
-    if (isHydrated) {
+    if (isHydrated && !currentStep) {
       setCurrentStep(isMobile ? 'tools' : 'criteria-tools');
     }
-  }, [isHydrated, isMobile]);
+  }, [isHydrated, isMobile, currentStep]);
   const [criteria, setCriteria] = useState<Criterion[]>([]);
   const [selectedTools, setSelectedTools] = useState<Tool[]>(defaultTools);
   const [removedCriteria, setRemovedCriteria] = useState<Criterion[]>([]);
