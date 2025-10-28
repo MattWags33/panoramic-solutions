@@ -321,8 +321,8 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
             </div>
           )}
           
-          {/* Action Buttons - Right Side (Desktop only) */}
-          {isHydrated && !isMobile && (
+          {/* Action Buttons - Desktop: inline on right, Mobile: fixed bottom bar */}
+          {isHydrated && (
             <ActionButtons 
               selectedTools={selectedTools} 
               selectedCriteria={selectedCriteria}
