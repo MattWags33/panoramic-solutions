@@ -3,9 +3,11 @@
 /**
  * Production Test Helpers
  * Safe commands for testing bumpers in production
+ * Now uses UniversalBumperEngine (consolidated system)
  */
 
-import { bumperEngine } from './productionBumperEngine';
+import { universalBumperEngine } from '../engines/UniversalBumperEngine';
+import { stateManager } from '../state/UniversalBumperStateManager';
 import { printBumperDebugReport, resetAllBumperState, forceTriggerConditions } from './bumperDebugger';
 
 // Only expose in browser
@@ -18,7 +20,8 @@ if (typeof window !== 'undefined') {
      */
     status: () => {
       console.log('🔍 Bumper System Status');
-      console.log('Engine:', bumperEngine.getStatus());
+      console.log('Engine:', universalBumperEngine.getStatus());
+      console.log('State:', stateManager.getState());
       printBumperDebugReport();
     },
     
@@ -99,7 +102,7 @@ if (typeof window !== 'undefined') {
       let count = 0;
       const interval = setInterval(() => {
         const start = performance.now();
-        const status = bumperEngine.getStatus();
+        const status = universalBumperEngine.getStatus();
         const duration = performance.now() - start;
         
         console.log(`Monitor #${++count}: ${duration.toFixed(2)}ms`, status);

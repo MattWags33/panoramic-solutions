@@ -1,0 +1,234 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-01-28T00:00:00Z",
+  "type": "FIX",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "description": "Exit Intent Bumper fixes and device detection improvements"
+  },
+  "boss_feedback": {
+    "issue_reported": "Comparison Report bumper only shows if you click off the tab and then come back. It should also work if you just stay on the page without ever clicking off.",
+    "date_reported": "2025-01-28",
+    "affected_device": "Touchscreen laptop computer",
+    "severity": "HIGH"
+  },
+  "issues_identified": {
+    "issue_1": {
+      "title": "Exit Intent Only Triggers on Tab Switch",
+      "description": "Exit Intent Bumper does not auto-trigger after 2 minutes if user stays on page without moving mouse or switching tabs",
+      "root_cause": "The periodic check in useUnifiedExitIntent runs every 1s but doesn't actually trigger the UI - it only sets internal state",
+      "impact": "Boss and other users who stay on page don't see the exit intent bumper",
+      "severity": "CRITICAL"
+    },
+    "issue_2": {
+      "title": "Device Detection Too Conservative",
+      "description": "Using separate useTouchDevice() and useMobileDetection() hooks instead of unified detection",
+      "root_cause": "Inconsistent device detection could misidentify touchscreen laptops as mobile devices",
+      "impact": "Could block bumpers on touchscreen laptops (boss's device)",
+      "severity": "HIGH"
+    },
+    "issue_3": {
+      "title": "Exit Intent Blocked After Guided Rankings",
+      "description": "Exit Intent permanently blocked after user clicks into Guided Rankings, even after they close it",
+      "root_cause": "Line 312 in UniversalBumperEngine.ts had blanket hasClickedIntoGuidedRankings check",
+      "impact": "Table Row 3 requirements not met - Exit Intent should show after GR closes with 23s + 3s timing",
+      "severity": "HIGH"
+    },
+    "issue_4": {
+      "title": "Mouse Tracking Not Reset After GR Closes",
+      "description": "When Guided Rankings closes, mouse tracking flags not reset for the 3s stopped timer",
+      "root_cause": "recordGuidedRankingsClosed() didn't reset mouseStoppedAt and mouseMovementTimerComplete",
+      "impact": "Exit Intent couldn't detect 3s mouse stopped requirement after GR closes",
+      "severity": "MEDIUM"
+    }
+  },
+  "fixes_implemented": {
+    "fix_1_device_detection": {
+      "file": "src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+      "changes": [
+        "Replaced useMobileDetection() + useTouchDevice() with useUnifiedMobileDetection()",
+        "Now uses isTouchDevice from unified hook which correctly identifies true mobile vs touchscreen laptops"
+      ],
+      "lines_changed": "15-16, 104-105",
+      "verification": {
+        "desktop": "isTouchDevice = false → Bumpers enabled ✅",
+        "touchscreen_laptop": "isTouchDevice = false → Bumpers enabled ✅",
+        "mobile_phone": "isTouchDevice = true → Bumpers disabled ✅",
+        "tablet": "isTouchDevice = true → Bumpers disabled ✅"
+      }
+    },
+    "fix_2_exit_intent_auto_trigger": {
+      "file": "src/ppm-tool/shared/engines/UniversalBumperEngine.ts",
+      "changes": [
+        "Removed blanket hasClickedIntoGuidedRankings block (old line 312)",
+        "Added SCENARIO 1: Post-Guided-Rankings (23s + 3s mouse + 2min)",
+        "Added SCENARIO 2: Normal usage (2min auto-trigger)",
+        "Now checks isGuidedRankingsCurrentlyOpen instead of hasClickedIntoGuidedRankings"
+      ],
+      "lines_changed": "301-374 (complete method rewrite)",
+      "new_logic": {
+        "scenario_1_after_gr_closes": {
+          "conditions": [
+            "guidedRankingsClosedAt exists",
+            "Wait 23s after GR closed",
+            "Wait 3s after mouse stopped (mouseMovementTimerComplete)",
+            "Respect 2min minimum since tool opened",
+            "No comparison report was closed"
+          ],
+          "console_log": "✅ Exit Intent eligible: Post-Guided-Rankings scenario (23s + 3s + 2min)"
+        },
+        "scenario_2_normal_usage": {
+          "conditions": [
+            "No GR closed",
+            "No CR closed",
+            "At least 2min since tool opened"
+          ],
+          "console_log": "✅ Exit Intent eligible: Normal usage (2min auto-trigger)",
+          "note": "This fixes boss's issue - auto-triggers after 2min without requiring tab switch"
+        }
+      }
+    },
+    "fix_3_mouse_tracking_reset": {
+      "file": "src/ppm-tool/shared/state/UniversalBumperStateManager.ts",
+      "changes": [
+        "Updated recordGuidedRankingsClosed() to reset mouse tracking flags",
+        "Resets mouseStoppedAt to null",
+        "Resets mouseMovementTimerComplete to false",
+        "Allows 3s mouse stopped timer to restart after GR closes"
+      ],
+      "lines_changed": "254-264",
+      "console_log": "🔍 Guided Rankings closed - mouse tracking reset for Exit Intent (need 3s stopped + 23s delay)"
+    },
+    "fix_4_home_state_integration": {
+      "file": "src/ppm-tool/shared/engines/UniversalBumperEngine.ts",
+      "changes": [
+        "Added import of shouldAllowBumpers from homeState.ts",
+        "Added home state check at start of shouldShowProductBumper()",
+        "Added home state check at start of shouldShowExitIntentBumper()"
+      ],
+      "lines_changed": "11 (import), 255-259 (Product), 307-311 (Exit)",
+      "purpose": "Ensures bumpers only trigger when no overlays (GR, CR, How It Works) are open"
+    }
+  },
+  "testing_scenarios": {
+    "scenario_1_normal_usage": {
+      "description": "User opens tool, doesn't interact, stays on page",
+      "steps": [
+        "Open PPM Tool page",
+        "Wait 2 minutes without clicking anything",
+        "DO NOT switch tabs or move mouse to leave",
+        "Just wait and watch"
+      ],
+      "expected_behavior": "Exit Intent Bumper should auto-trigger after 2 minutes",
+      "verification_console": "Should see: ✅ Exit Intent eligible: Normal usage (2min auto-trigger)",
+      "devices_to_test": ["Desktop", "Touchscreen Laptop", "Mobile (should NOT trigger)"]
+    },
+    "scenario_2_guided_rankings_then_wait": {
+      "description": "User opens GR, closes it, then waits",
+      "steps": [
+        "Open PPM Tool",
+        "Click 'Guided Rankings' button",
+        "Close Guided Rankings modal (X button)",
+        "Wait 23 seconds",
+        "Stop moving mouse for 3 seconds",
+        "Ensure 2min total time has passed since tool opened"
+      ],
+      "expected_behavior": "Exit Intent Bumper should show after all conditions met",
+      "verification_console": "Should see: ✅ Exit Intent eligible: Post-Guided-Rankings scenario (23s + 3s + 2min)",
+      "devices_to_test": ["Desktop", "Touchscreen Laptop"]
+    },
+    "scenario_3_comparison_report_then_wait": {
+      "description": "User opens CR, closes it, then waits",
+      "steps": [
+        "Open PPM Tool",
+        "Click 'Get My Free Comparison Report'",
+        "Close Comparison Report modal (X button)",
+        "Wait 23 seconds",
+        "Stop moving mouse for 3 seconds"
+      ],
+      "expected_behavior": "Product Bumper should show (NOT Exit Intent - CR close blocks Exit Intent forever)",
+      "verification_console": "Product Bumper should appear",
+      "devices_to_test": ["Desktop", "Touchscreen Laptop"]
+    },
+    "scenario_4_touchscreen_laptop": {
+      "description": "Verify bumpers work on boss's touchscreen laptop",
+      "steps": [
+        "Open PPM Tool on Windows touchscreen laptop",
+        "Wait 2 minutes",
+        "Verify Exit Intent appears"
+      ],
+      "expected_behavior": "Exit Intent Bumper should auto-trigger (not blocked by touch detection)",
+      "verification_console": "useUnifiedMobileDetection should show isTouchDevice=false for laptop",
+      "critical": true,
+      "note": "This is the boss's specific device - must work!"
+    },
+    "scenario_5_mobile_exclusion": {
+      "description": "Verify bumpers DON'T show on mobile phones/tablets",
+      "steps": [
+        "Open PPM Tool on iPhone or Android phone",
+        "Wait 2+ minutes",
+        "Try to trigger exit intent"
+      ],
+      "expected_behavior": "NO bumpers should appear",
+      "verification_console": "useUnifiedMobileDetection should show isTouchDevice=true",
+      "devices_to_test": ["iPhone", "Android Phone", "iPad", "Android Tablet"]
+    },
+    "scenario_6_tab_switch_trigger": {
+      "description": "Verify exit intent still works on tab switch",
+      "steps": [
+        "Open PPM Tool",
+        "Wait 2 minutes",
+        "Switch to different tab",
+        "Switch back to PPM Tool tab"
+      ],
+      "expected_behavior": "Exit Intent Bumper should show",
+      "verification_console": "Should see: 🚪 Triggering Exit Intent Bumper: tab-switch",
+      "devices_to_test": ["Desktop", "Touchscreen Laptop"]
+    },
+    "scenario_7_mouse_leave_trigger": {
+      "description": "Verify exit intent still works on mouse leave",
+      "steps": [
+        "Open PPM Tool",
+        "Wait 2 minutes",
+        "Move mouse to top of browser (toward tabs/close button)",
+        "Move cursor out of browser window"
+      ],
+      "expected_behavior": "Exit Intent Bumper should show",
+      "verification_console": "Should see: 🚪 Triggering Exit Intent Bumper: mouse-leave",
+      "devices_to_test": ["Desktop", "Touchscreen Laptop"]
+    }
+  },
+  "verification_commands": {
+    "check_device_detection": {
+      "command": "console.log(useUnifiedMobileDetection())",
+      "expected_desktop": "{ isMobile: false, isTouchDevice: false, hasTouch: false }",
+      "expected_touchscreen_laptop": "{ isMobile: false, isTouchDevice: false, hasTouch: true }",
+      "expected_mobile": "{ isMobile: true, isTouchDevice: true, hasTouch: true }"
+    },
+    "check_bumper_status": {
+      "command": "universalBumperTest.status()",
+      "shows": "Complete system status including timing, state, and eligibility"
+    },
+    "force_test": {
+      "command": "universalBumperTest.force(); universalBumperTest.exit()",
+      "shows": "Bypasses all timing to test Exit Intent immediately"
+    }
+  },
+  "rollback_plan": {
+    "if_issues_found": [
+      "Run: git status (check modified files)",
+      "Run: git diff (review changes)",
+      "Run: git restore src/ppm-tool/shared/engines/UniversalBumperEngine.ts",
+      "Run: git restore src/ppm-tool/shared/state/UniversalBumperStateManager.ts",
+      "Run: git restore src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx"
+    ],
+    "backup_files": [
+      "UniversalBumperEngine.ts (modified lines 255-374)",
+      "UniversalBumperStateManager.ts (modified lines 254-264)",
+      "EmbeddedPPMToolFlow.tsx (modified lines 15-16, 104-105)"
+    ]
+  }
+}
+

@@ -1,0 +1,148 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-01-27T23:30:00Z",
+  "type": "UPDATE",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool Finder",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true
+  },
+  "update_summary": {
+    "title": "Match Score Tooltip Links Update - Mobile Navigation",
+    "date": "2025-01-27",
+    "component": "MatchScoreTooltip.tsx",
+    "change_type": "Content & Navigation Update",
+    "devices_affected": "Mobile/Touch devices only",
+    "status": "COMPLETED"
+  },
+  "changes": {
+    "mobile_tooltip_links": {
+      "before": [
+        "View Comparison Chart → (first)",
+        "Open Guided Rankings → (second)"
+      ],
+      "after": [
+        "Open Guided Rankings → (first)",
+        "Adjust Criteria Sliders → (second)"
+      ],
+      "reason": "Better user flow - guide users to ranking tools before chart comparisons"
+    },
+    "desktop_tooltip_links": {
+      "change": "No change",
+      "still_shows": "Open Guided Rankings → (only)"
+    }
+  },
+  "implementation_details": {
+    "file_modified": "src/ppm-tool/components/ui/MatchScoreTooltip.tsx",
+    "lines_changed": "35-62",
+    "changes_made": [
+      {
+        "change": "Reordered links - Guided Rankings now first",
+        "reasoning": "Primary call-to-action should be the guided ranking tool"
+      },
+      {
+        "change": "Replaced 'View Comparison Chart' with 'Adjust Criteria Sliders'",
+        "new_link_target": "#criteria-section",
+        "scroll_behavior": "smooth, block: 'start'",
+        "reasoning": "Direct users to adjust their criteria first before viewing charts"
+      },
+      {
+        "change": "Added w-full text-left classes to buttons/links",
+        "reasoning": "Better touch target consistency on mobile"
+      }
+    ]
+  },
+  "user_flow_improvement": {
+    "old_flow": {
+      "step_1": "User sees N/A Match Score",
+      "step_2": "Clicks tooltip",
+      "step_3": "Sees: 1) View Comparison Chart, 2) Open Guided Rankings",
+      "issue": "Chart comparison not helpful when criteria not ranked yet"
+    },
+    "new_flow": {
+      "step_1": "User sees N/A Match Score",
+      "step_2": "Clicks tooltip",
+      "step_3": "Sees: 1) Open Guided Rankings, 2) Adjust Criteria Sliders",
+      "benefit": "Guides users to rank criteria first (via guided or manual sliders)"
+    }
+  },
+  "link_destinations": {
+    "guided_rankings": {
+      "action": "onClick -> onGuidedRankingClick()",
+      "opens": "Guided Ranking modal/overlay",
+      "purpose": "Help users rank criteria through guided questions"
+    },
+    "criteria_sliders": {
+      "action": "scrollIntoView -> #criteria-section",
+      "scrolls_to": "Rank Your Criteria section with manual sliders",
+      "purpose": "Let users manually adjust criteria importance"
+    }
+  },
+  "comparison_chart_note": {
+    "removed_from": "MatchScoreTooltip (tool cards)",
+    "still_available_in": "CriteriaSection.tsx (lines 38-52)",
+    "why": "Chart comparison link is more relevant in criteria section context where users are actively ranking"
+  },
+  "code_snippet": {
+    "mobile_tooltip_content": {
+      "link_1": {
+        "text": "Open Guided Rankings →",
+        "type": "button",
+        "action": "onGuidedRankingClick()",
+        "order": "first"
+      },
+      "link_2": {
+        "text": "Adjust Criteria Sliders →",
+        "type": "anchor",
+        "action": "scroll to #criteria-section",
+        "order": "second"
+      }
+    }
+  },
+  "testing_checklist": [
+    {
+      "test": "Mobile - Click N/A Match Score tooltip",
+      "verify": "Tooltip shows with 2 links: Guided Rankings (first), Criteria Sliders (second)",
+      "device": "iPhone/Android"
+    },
+    {
+      "test": "Mobile - Click 'Open Guided Rankings'",
+      "verify": "Guided ranking modal opens",
+      "device": "iPhone/Android"
+    },
+    {
+      "test": "Mobile - Click 'Adjust Criteria Sliders'",
+      "verify": "Page scrolls smoothly to criteria section",
+      "device": "iPhone/Android"
+    },
+    {
+      "test": "Desktop - Hover N/A Match Score",
+      "verify": "Tooltip shows only 'Open Guided Rankings' link",
+      "device": "Desktop"
+    },
+    {
+      "test": "Criteria Section - View Comparison Chart still works",
+      "verify": "Chart comparison link still available in criteria tooltips",
+      "device": "All devices"
+    }
+  ],
+  "user_benefits": {
+    "clearer_guidance": "Users understand they need to rank criteria first",
+    "better_cta_order": "Primary action (Guided Rankings) shown first",
+    "contextual_links": "Links relevant to 'no match score yet' state",
+    "improved_navigation": "Direct path to both guided and manual ranking methods"
+  },
+  "backwards_compatibility": {
+    "breaking_changes": false,
+    "desktop_affected": false,
+    "mobile_only": true,
+    "impact": "Improved UX, no functionality removed"
+  },
+  "deployment_notes": {
+    "requires_testing": true,
+    "test_on_mobile": "Required - verify both links work",
+    "monitor": "User engagement with Guided Rankings vs Criteria Sliders",
+    "rollback_easy": true
+  }
+}
+

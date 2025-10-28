@@ -1,0 +1,361 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-01-28T00:00:00Z",
+  "type": "ARCHITECTURE",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "description": "Consolidated bumper system architecture after cleanup"
+  },
+  "system_overview": {
+    "description": "The bumper system shows contextual prompts (Product Bumper and Exit Intent Bumper) to guide users toward the Guided Rankings feature. It uses a layered architecture with engines, state management, React integration, and UI components.",
+    "active_system": "UniversalBumperEngine",
+    "deleted_systems": [
+      "productionBumperEngine.ts (duplicate, replaced by UniversalBumperEngine)",
+      "BumperSystemProvider.tsx (duplicate, replaced by UniversalBumperProvider)"
+    ]
+  },
+  "architecture_layers": {
+    "layer_1_engines": {
+      "description": "Core logic for timing, detection, and trigger decisions",
+      "files": [
+        {
+          "path": "src/ppm-tool/shared/engines/UniversalBumperEngine.ts",
+          "status": "ACTIVE",
+          "purpose": "Main bumper engine with browser capability detection and production safety",
+          "key_responsibilities": [
+            "Initialize timers (10s initial, 3s mouse stopped, 2min exit intent)",
+            "Track mouse movement and detect when mouse stops",
+            "Determine when to trigger Product Bumper or Exit Intent Bumper",
+            "Validate timing conditions and blocking rules"
+          ],
+          "timing_constants": {
+            "INITIAL_TIMER_MS": 10000,
+            "MOUSE_MOVEMENT_TIMER_MS": 3000,
+            "EXIT_INTENT_TIMER_MS": 120000,
+            "POST_BUMPER_DELAY_MS": 23000
+          },
+          "modify_when": [
+            "Changing core timing logic",
+            "Adding new trigger conditions",
+            "Improving browser compatibility"
+          ]
+        }
+      ]
+    },
+    "layer_2_state_management": {
+      "description": "Data persistence and state tracking using localStorage/sessionStorage",
+      "files": [
+        {
+          "path": "src/ppm-tool/shared/state/UniversalBumperStateManager.ts",
+          "status": "ACTIVE - PRIMARY",
+          "purpose": "Single source of truth for all bumper state",
+          "storage_strategy": "localStorage → sessionStorage → in-memory fallback",
+          "state_fields": {
+            "timing": [
+              "toolOpenedAt",
+              "initialTimerComplete",
+              "mouseStoppedAt",
+              "mouseMovementTimerComplete"
+            ],
+            "user_actions": [
+              "hasClickedIntoGuidedRankings",
+              "hasClickedIntoComparisonReport",
+              "guidedRankingsOpenedAt",
+              "guidedRankingsClosedAt",
+              "comparisonReportOpenedAt",
+              "comparisonReportClosedAt"
+            ],
+            "bumper_states": [
+              "productBumperShown",
+              "productBumperDismissed",
+              "productBumperDismissedAt",
+              "exitIntentShown",
+              "exitIntentDismissed",
+              "exitIntentDismissedAt"
+            ],
+            "current_ui": [
+              "isAnyBumperCurrentlyOpen",
+              "isGuidedRankingsCurrentlyOpen",
+              "isComparisonReportCurrentlyOpen"
+            ],
+            "metadata": [
+              "stateVersion",
+              "lastUpdated",
+              "sessionId"
+            ]
+          },
+          "modify_when": [
+            "Adding new state fields",
+            "Changing storage strategy",
+            "Implementing state migrations"
+          ]
+        },
+        {
+          "path": "src/ppm-tool/shared/utils/unifiedBumperState.ts",
+          "status": "ACTIVE - COMPATIBILITY LAYER",
+          "purpose": "Thin wrapper for backwards compatibility with existing code",
+          "note": "Now delegates all operations to UniversalBumperStateManager",
+          "recommendation": "New code should use UniversalBumperStateManager directly",
+          "modify_when": [
+            "Adding legacy compatibility features",
+            "Migrating old code to new system"
+          ]
+        }
+      ]
+    },
+    "layer_3_react_providers": {
+      "description": "React context that integrates engines with React component tree",
+      "files": [
+        {
+          "path": "src/ppm-tool/components/UniversalBumperProvider.tsx",
+          "status": "ACTIVE",
+          "purpose": "Main React provider that wraps UniversalBumperEngine",
+          "features": [
+            "Initializes engine on mount with 100ms hydration delay",
+            "Provides triggerProductBumper() and triggerExitIntentBumper() functions",
+            "Includes production monitoring via ProductionMonitor",
+            "Exposes universalBumperTest.* debugging functions in browser console"
+          ],
+          "usage": "Wraps entire PPM tool in src/app/ppm-tool/page.tsx",
+          "modify_when": [
+            "Changing React integration",
+            "Adding debugging tools",
+            "Modifying provider initialization"
+          ]
+        }
+      ]
+    },
+    "layer_4_react_hooks": {
+      "description": "Custom hooks for tracking user behavior",
+      "files": [
+        {
+          "path": "src/ppm-tool/shared/hooks/useUnifiedMouseTracking.ts",
+          "purpose": "Tracks mouse movement and detects when mouse stops moving",
+          "triggers": "Calls engine when initial timer completes or mouse stops for 3s",
+          "modify_when": "Changing mouse detection sensitivity or timing"
+        },
+        {
+          "path": "src/ppm-tool/shared/hooks/useUnifiedExitIntent.ts",
+          "purpose": "Detects exit intent (mouse leaving page or tab switch)",
+          "triggers": "Calls engine when user tries to leave the page",
+          "modify_when": "Changing exit detection behavior"
+        }
+      ]
+    },
+    "layer_5_guidance_context": {
+      "description": "Business logic layer that connects bumper triggers to UI",
+      "files": [
+        {
+          "path": "src/ppm-tool/shared/contexts/GuidanceContext.tsx",
+          "purpose": "React context managing guidance/bumper visibility state",
+          "functions_provided": [
+            "triggerProductBumper()",
+            "triggerExitIntentBumper()",
+            "closeProductBumper()",
+            "closeExitIntentBumper()",
+            "onGuidedRankingStart()",
+            "onGuidedRankingComplete()",
+            "onComparisonReportOpen()",
+            "onComparisonReportClose()"
+          ],
+          "modify_when": [
+            "Adding new bumper types",
+            "Changing visibility rules",
+            "Adding user interaction tracking"
+          ]
+        }
+      ]
+    },
+    "layer_6_ui_components": {
+      "description": "Visual components that users actually see",
+      "files": [
+        {
+          "path": "src/ppm-tool/components/overlays/ProductBumper.tsx",
+          "purpose": "Product Bumper modal UI",
+          "modify_when": "Changing Product Bumper design or copy"
+        },
+        {
+          "path": "src/ppm-tool/components/overlays/ExitIntentBumper.tsx",
+          "purpose": "Exit Intent Bumper modal UI",
+          "modify_when": "Changing Exit Intent design or copy"
+        }
+      ]
+    },
+    "layer_7_monitoring": {
+      "description": "Debugging and production monitoring tools",
+      "files": [
+        {
+          "path": "src/ppm-tool/shared/monitoring/ProductionMonitor.ts",
+          "purpose": "Logs all bumper events for debugging",
+          "console_access": "productionMonitor.diagnose()"
+        },
+        {
+          "path": "src/ppm-tool/shared/state/BrowserCapabilityDetector.ts",
+          "purpose": "Detects browser capabilities (localStorage, timers, etc.)",
+          "modify_when": "Adding new browser compatibility checks"
+        },
+        {
+          "path": "src/ppm-tool/shared/utils/productionTestHelpers.ts",
+          "purpose": "Production-safe test commands",
+          "console_access": "bumperTest.status(), bumperTest.product(), bumperTest.exit()",
+          "note": "Now uses UniversalBumperEngine instead of old productionBumperEngine"
+        }
+      ]
+    }
+  },
+  "timing_logic": {
+    "product_bumper": {
+      "description": "Shows after 10s + 3s of no mouse movement, only if user hasn't clicked into Guided Rankings",
+      "conditions": [
+        "10s initial timer complete",
+        "3s after mouse stops moving",
+        "User has NOT clicked into Guided Rankings",
+        "No bumper currently open",
+        "Guided Rankings not open",
+        "Comparison Report not open",
+        "Not already shown or dismissed",
+        "23s cooldown after Exit Intent dismissed"
+      ]
+    },
+    "exit_intent_bumper": {
+      "description": "Shows after 2 minutes OR when user tries to leave, only if user hasn't clicked into Guided Rankings",
+      "conditions": [
+        "At least 2 minutes since tool opened OR mouse leaving page/tab switch",
+        "User has NOT clicked into Guided Rankings",
+        "No bumper currently open",
+        "Guided Rankings not open",
+        "Comparison Report not open",
+        "Not already shown or dismissed",
+        "23s cooldown after Product Bumper dismissed",
+        "Never shows if Comparison Report was closed"
+      ]
+    },
+    "cross_bumper_cooldown": {
+      "description": "23 seconds must pass after dismissing one bumper before another can show",
+      "constant": "POST_BUMPER_DELAY_MS = 23000"
+    }
+  },
+  "modification_guide": {
+    "change_timing": {
+      "task": "Change timing constants (10s, 3s, 2min, 23s)",
+      "files_to_modify": [
+        "src/ppm-tool/shared/engines/UniversalBumperEngine.ts (lines 13-18)"
+      ],
+      "example": "To change initial timer from 10s to 15s, modify INITIAL_TIMER_MS: 15000"
+    },
+    "change_trigger_logic": {
+      "task": "Change when bumpers show",
+      "files_to_modify": [
+        "src/ppm-tool/shared/engines/UniversalBumperEngine.ts (shouldShowProductBumper, shouldShowExitIntentBumper methods)"
+      ]
+    },
+    "add_state_field": {
+      "task": "Add new state tracking field",
+      "files_to_modify": [
+        "src/ppm-tool/shared/state/UniversalBumperStateManager.ts (BumperState interface, getDefaultState method)"
+      ]
+    },
+    "change_storage": {
+      "task": "Change storage strategy",
+      "files_to_modify": [
+        "src/ppm-tool/shared/state/UniversalBumperStateManager.ts (StorageAdapter class)"
+      ]
+    },
+    "change_react_integration": {
+      "task": "Modify React integration",
+      "files_to_modify": [
+        "src/ppm-tool/components/UniversalBumperProvider.tsx"
+      ]
+    },
+    "change_mouse_detection": {
+      "task": "Change mouse tracking sensitivity",
+      "files_to_modify": [
+        "src/ppm-tool/shared/hooks/useUnifiedMouseTracking.ts"
+      ]
+    },
+    "change_exit_detection": {
+      "task": "Change exit intent behavior",
+      "files_to_modify": [
+        "src/ppm-tool/shared/hooks/useUnifiedExitIntent.ts"
+      ]
+    },
+    "change_bumper_ui": {
+      "task": "Change bumper design or copy",
+      "files_to_modify": [
+        "src/ppm-tool/components/overlays/ProductBumper.tsx",
+        "src/ppm-tool/components/overlays/ExitIntentBumper.tsx"
+      ]
+    }
+  },
+  "console_debugging_commands": {
+    "universal_bumper_test": {
+      "description": "Primary test suite from UniversalBumperProvider",
+      "commands": {
+        "universalBumperTest.status()": "Show full system status",
+        "universalBumperTest.reset()": "Clear state and reload",
+        "universalBumperTest.force()": "Skip timing conditions",
+        "universalBumperTest.product(bypass)": "Trigger Product Bumper",
+        "universalBumperTest.exit(bypass)": "Trigger Exit Intent Bumper",
+        "universalBumperTest.capabilities()": "Check browser capabilities",
+        "universalBumperTest.diagnose()": "Full diagnostic report"
+      }
+    },
+    "bumper_test": {
+      "description": "Legacy test suite from productionTestHelpers (now using UniversalBumperEngine)",
+      "commands": {
+        "bumperTest.status()": "Check current status",
+        "bumperTest.reset()": "Clear and reload",
+        "bumperTest.force()": "Skip timers",
+        "bumperTest.product()": "Show Product Bumper",
+        "bumperTest.exit()": "Show Exit Intent",
+        "bumperTest.runAll()": "Full test sequence",
+        "bumperTest.monitor()": "Performance monitoring"
+      }
+    },
+    "keyboard_shortcuts": {
+      "Ctrl+Shift+Q": "Trigger Product Bumper",
+      "Ctrl+Shift+X": "Trigger Exit Intent Bumper",
+      "Ctrl+Shift+D": "Show debug info",
+      "Ctrl+Shift+R": "Reset all state"
+    }
+  },
+  "cleanup_summary": {
+    "date": "2025-01-28",
+    "actions_taken": [
+      "Deleted duplicate BumperSystemProvider.tsx",
+      "Deleted duplicate productionBumperEngine.ts",
+      "Refactored unifiedBumperState.ts to delegate to UniversalBumperStateManager",
+      "Updated productionTestHelpers.ts to use UniversalBumperEngine",
+      "Created consolidated architecture documentation"
+    ],
+    "files_deleted": [
+      "src/ppm-tool/components/BumperSystemProvider.tsx",
+      "src/ppm-tool/shared/utils/productionBumperEngine.ts"
+    ],
+    "files_refactored": [
+      "src/ppm-tool/shared/utils/unifiedBumperState.ts (now compatibility layer)",
+      "src/ppm-tool/shared/utils/productionTestHelpers.ts (updated imports)"
+    ],
+    "active_system": {
+      "engine": "UniversalBumperEngine",
+      "state_manager": "UniversalBumperStateManager",
+      "provider": "UniversalBumperProvider",
+      "status": "Consolidated and production-ready"
+    }
+  },
+  "migration_notes": {
+    "for_developers": [
+      "All new code should use UniversalBumperStateManager directly",
+      "unifiedBumperState.ts is kept for backwards compatibility only",
+      "Use universalBumperTest.* commands for debugging in production",
+      "Check Docs/json/bumper-system-architecture.json for complete reference"
+    ],
+    "breaking_changes": [
+      "Removed BumperSystemProvider - code using it should switch to UniversalBumperProvider",
+      "Removed productionBumperEngine - code using it should switch to UniversalBumperEngine"
+    ]
+  }
+}
+

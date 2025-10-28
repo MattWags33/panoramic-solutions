@@ -8,6 +8,7 @@
 
 import { stateManager, BumperState } from '../state/UniversalBumperStateManager';
 import { capabilityDetector, BrowserCapabilities } from '../state/BrowserCapabilityDetector';
+import { shouldAllowBumpers } from '../utils/homeState';
 
 // Timing constants (10 seconds for Product Bumper)
 const TIMING_CONSTANTS = {
@@ -252,6 +253,11 @@ export class UniversalBumperEngine {
   }
   
   shouldShowProductBumper(): boolean {
+    // PRIORITY CHECK: Must be in home state (no overlays open)
+    if (!shouldAllowBumpers()) {
+      return false;
+    }
+    
     const state = stateManager.getState();
     const now = Date.now();
     
@@ -299,6 +305,11 @@ export class UniversalBumperEngine {
   }
   
   shouldShowExitIntentBumper(): boolean {
+    // PRIORITY CHECK: Must be in home state (no overlays open)
+    if (!shouldAllowBumpers()) {
+      return false;
+    }
+    
     const state = stateManager.getState();
     const now = Date.now();
     
@@ -308,16 +319,13 @@ export class UniversalBumperEngine {
     // Never show if already shown
     if (state.exitIntentShown) return false;
     
-    // Never show if user clicked into Guided Rankings
-    if (state.hasClickedIntoGuidedRankings) return false;
-    
     // Never show if any bumper is currently open
     if (state.isAnyBumperCurrentlyOpen) return false;
     
-    // Never show if Guided Rankings is open
+    // Never show if Guided Rankings is CURRENTLY open (but allow after it closes)
     if (state.isGuidedRankingsCurrentlyOpen) return false;
     
-    // Never show if Comparison Report is open
+    // Never show if Comparison Report is CURRENTLY open
     if (state.isComparisonReportCurrentlyOpen) return false;
     
     // If user opened and closed the Comparison Report, never show Exit-Intent
@@ -331,15 +339,49 @@ export class UniversalBumperEngine {
       }
     }
     
-    // Must be at least 2 minutes since tool opened
-    if (state.toolOpenedAt) {
-      const timeSinceOpened = now - new Date(state.toolOpenedAt).getTime();
-      if (timeSinceOpened < TIMING_CONSTANTS.EXIT_INTENT_TIMER_MS) {
+    // SCENARIO 1: After Guided Rankings closes (Table Row 3)
+    // Show after 23s delay + 3s mouse stopped + respect 2min rule
+    if (state.guidedRankingsClosedAt && !state.comparisonReportClosedAt) {
+      const sinceGRClosed = now - new Date(state.guidedRankingsClosedAt).getTime();
+      
+      // Must wait 23s after GR closed
+      if (sinceGRClosed < TIMING_CONSTANTS.POST_BUMPER_DELAY_MS) {
         return false;
       }
+      
+      // Must have mouse stopped for 3s (tracked by mouse tracking hook)
+      if (!state.mouseMovementTimerComplete) {
+        return false;
+      }
+      
+      // Still respect 2min minimum since tool opened
+      if (state.toolOpenedAt) {
+        const timeSinceOpened = now - new Date(state.toolOpenedAt).getTime();
+        if (timeSinceOpened < TIMING_CONSTANTS.EXIT_INTENT_TIMER_MS) {
+          return false;
+        }
+      }
+      
+      console.log('✅ Exit Intent eligible: Post-Guided-Rankings scenario (23s + 3s + 2min)');
+      return true;
     }
     
-    return true;
+    // SCENARIO 2: Normal usage - user stays on page without GR or CR interaction (Table Row 5)
+    // Auto-trigger after 2min OR when user tries to leave
+    if (!state.guidedRankingsClosedAt && !state.comparisonReportClosedAt) {
+      // Must be at least 2 minutes since tool opened
+      if (state.toolOpenedAt) {
+        const timeSinceOpened = now - new Date(state.toolOpenedAt).getTime();
+        if (timeSinceOpened < TIMING_CONSTANTS.EXIT_INTENT_TIMER_MS) {
+          return false;
+        }
+      }
+      
+      console.log('✅ Exit Intent eligible: Normal usage (2min auto-trigger)');
+      return true;
+    }
+    
+    return false;
   }
   
   // Manual trigger methods (for testing)

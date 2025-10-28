@@ -12,8 +12,7 @@ import { FilterCondition } from '@/ppm-tool/components/filters/FilterSystem';
 import { filterTools } from '@/ppm-tool/shared/utils/filterTools';
 import { supabase } from '@/lib/supabase';
 import { ErrorBoundary } from '@/ppm-tool/components/common/ErrorBoundary';
-import { useMobileDetection } from '@/ppm-tool/shared/hooks/useMobileDetection';
-import { useTouchDevice } from '@/ppm-tool/shared/hooks/useTouchDevice';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 import { useLenis } from '@/ppm-tool/shared/hooks/useLenis';
 import { CriteriaSection } from '@/ppm-tool/features/criteria/components/CriteriaSection';
 import { ToolSection } from '@/ppm-tool/features/tools/ToolSection';
@@ -101,8 +100,8 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   onShowHowItWorks,
   guidedButtonRef
 }) => {
-  const isMobile = useMobileDetection();
-  const isTouchDevice = useTouchDevice();
+  // Unified device detection - correctly identifies true mobile devices vs touchscreen laptops
+  const { isMobile, isTouchDevice, hasTouch } = useUnifiedMobileDetection();
   
   // Track hydration to prevent SSR/client mismatches
   const [isHydrated, setIsHydrated] = useState(false);
@@ -249,6 +248,9 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 
   // Track if email modal has been shown this session (survives page refresh)
   const hasShownEmailModalRef = useRef<boolean>(false);
+  
+  // Track if email modal has EVER been shown (permanent, survives any guided ranking completion)
+  const hasShownEmailModalEverRef = useRef<boolean>(false);
 
   // Track if this is the initial mount to prevent saving default values
   const isInitialMountRef = useRef(true);
@@ -327,6 +329,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       try {
         const hasShown = sessionStorage.getItem('ppm-email-modal-shown') === 'true';
         hasShownEmailModalRef.current = hasShown;
+        hasShownEmailModalEverRef.current = hasShown; // Also set permanent flag
         console.log('📧 Email modal shown this session:', hasShown);
       } catch (error) {
         console.warn('Error reading from sessionStorage:', error);
@@ -813,72 +816,61 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       setDisableAutoShuffle(true);
       console.log('🚫 State-based auto-shuffle disabled for animation sequence');
       
-      // Phase 1: Wave animation (3 seconds) - NO criteria changes yet
-      await guidedAnimation.startAnimation();
-      console.log('✅ Wave animation complete');
+      // Start wave animation (non-blocking, runs in background)
+      guidedAnimation.startAnimation();
+      console.log('🌊 Wave animation started (running in background)');
       
-      // Reset animation state
-      guidedAnimation.reset();
-      
-      // Phase 2: Quick pause after wave (0.3 seconds)
-      console.log('⏸️ Quick pause after wave (0.3s)');
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Phase 3: Update criteria AND trigger shuffle SIMULTANEOUSLY
-      console.log('🔄 Starting simultaneous animation: sliders + tools...');
-      
-      const criteriaToAnimate = criteria.filter(c => 
-        rankings[c.id] !== undefined && rankings[c.id] !== c.userRating
-      );
-      
-      console.log(`📊 Will animate ${criteriaToAnimate.length} criteria sliders + tool shuffle simultaneously`);
-      
-      // Update ALL criteria in a single setState call
+      // IMMEDIATELY update criteria (sliders start moving while wave is showing)
       setCriteria(prev => 
         prev.map(c => ({
           ...c,
           userRating: rankings[c.id] !== undefined ? rankings[c.id] : c.userRating
         }))
       );
+      console.log('📊 Criteria updated - sliders animating now');
+      console.log('⏸️ Keeping animation flag TRUE - tools stay frozen during wave + sliders (3 seconds)');
       
-      // IMMEDIATELY re-enable shuffle and trigger it (happens at same time as sliders move)
-      if (shuffleControlRef.current) {
-        shuffleControlRef.current.enable();
-        console.log('✅ Imperative shuffle control: ENABLED (immediate)');
-      }
-      setDisableAutoShuffle(false);
-      
-      // Trigger manual shuffle RIGHT NOW (simultaneous with slider animation)
-      if (manualShuffleRef.current) {
-        manualShuffleRef.current();
-        console.log('✨ Manual shuffle triggered SIMULTANEOUSLY with sliders');
-      }
-      
-      // Wait for BOTH animations to complete (sliders are 3s, shuffle is 1s)
+      // Wait for wave + slider animations to complete (3 seconds total)
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // CLEAR ANIMATION FLAG - allow tools to sort by score now
-      setIsAnimatingGuidedRankings(false);
-      console.log('📋 Animation flag CLEARED - tools can now sort by score');
+      // Reset wave animation state
+      guidedAnimation.reset();
+      console.log('✅ Wave and slider animations complete');
       
-      console.log('✅ All animations complete');
+      // NOW clear the animation flag - this will trigger tools to re-sort and shuffle
+      setIsAnimatingGuidedRankings(false);
+      console.log('📋 Animation flag CLEARED - tools will now re-sort and shuffle');
+      
+      // Re-enable shuffle - natural re-sort will trigger auto-shuffle
+      if (shuffleControlRef.current) {
+        shuffleControlRef.current.enable();
+        console.log('✅ Imperative shuffle control: ENABLED');
+      }
+      setDisableAutoShuffle(false);
+      console.log('✅ Auto-shuffle re-enabled - tools shuffling now');
+      
+      // Wait for tool shuffle animation to complete (1 second on desktop)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('✅ All animations complete (wave + sliders + tool shuffle)');
       
       // Only show email modal for full guided rankings (not single-criterion mode)
       if (!guidedRankingCriterionId) {
         // Check if we should show the email modal
         const shouldShowModal = 
           !hasShownEmailModalRef.current && // Haven't shown this session
+          !hasShownEmailModalEverRef.current && // Haven't shown ever (permanent check)
           hasMinimumCriteriaAdjusted(criteria, 3); // 3+ criteria adjusted
         
         if (shouldShowModal) {
-          // Mark as shown for this session
+          // Mark as shown for this session AND permanently
           hasShownEmailModalRef.current = true;
+          hasShownEmailModalEverRef.current = true;
           
           // Persist to sessionStorage
           if (typeof window !== 'undefined' && window.sessionStorage) {
             try {
               sessionStorage.setItem('ppm-email-modal-shown', 'true');
-              console.log('📧 Marked email modal as shown in sessionStorage');
+              console.log('📧 Marked email modal as shown in sessionStorage (permanent)');
             } catch (error) {
               console.warn('Error writing to sessionStorage:', error);
             }

@@ -254,8 +254,13 @@ export class UniversalBumperStateManager {
   recordGuidedRankingsClosed(): void {
     this.setState({ 
       guidedRankingsClosedAt: new Date().toISOString(),
-      isGuidedRankingsCurrentlyOpen: false 
+      isGuidedRankingsCurrentlyOpen: false,
+      // Reset mouse tracking to restart 3s timer for Exit Intent eligibility
+      mouseStoppedAt: null,
+      mouseMovementTimerComplete: false
     });
+    
+    console.log('🔍 Guided Rankings closed - mouse tracking reset for Exit Intent (need 3s stopped + 23s delay)');
   }
   
   recordComparisonReportOpened(): void {

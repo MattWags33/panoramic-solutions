@@ -1,523 +1,254 @@
 'use client';
 
 /**
- * Unified Bumper State Management
- * Handles all timing and coordination logic for ProductBumper and ExitIntentBumper
+ * Unified Bumper State - Compatibility Layer
+ * This file now delegates to UniversalBumperStateManager for all state operations
+ * Kept for backwards compatibility with existing code
  * 
- * Requirements:
- * 1. Never show bumper if already open, Guided Rankings open, or Comparison Report open
- * 2. When user exits Guided Rankings: wait 23s + 3s after mouse stops, only if not shown before and user hasn't clicked into Guided Rankings
- * 3. When user exits Comparison Report: wait 23s + 3s after mouse stops, only if not shown before and user hasn't clicked into Guided Rankings, do not show again after this
- * 4. When user opens tool but doesn't engage: if no GR or CR opened, wait 23s + 3s after mouse stops
- * 5. After ProductBumper closed: do not show again
- * 6. After ExitIntentBumper closed: do not show again until 23s has passed
- * 7. Exit-Intent: Show 2 minutes after opening tool or when leaving, but only if user hasn't clicked into Guided Rankings
+ * ⚠️ MIGRATION NOTE: This is now a thin wrapper around UniversalBumperStateManager
+ * All new code should use UniversalBumperStateManager directly
  */
 
-export interface UnifiedBumperState {
-  // Core state tracking - differentiate full vs criteria-specific guided rankings
-  hasClickedIntoFullGuidedRankings?: boolean; // Full guided rankings (disables Product Bumper)
-  hasClickedIntoCriteriaSpecificGuidedRankings?: boolean; // Criteria-specific (doesn't disable bumper)
-  hasClickedIntoGuidedRankings: boolean; // Legacy field - kept for backwards compatibility
-  hasClickedIntoComparisonReport: boolean;
-  
-  // Product bumper state
-  productBumperShown: boolean;
-  productBumperDismissed: boolean;
-  productBumperDismissedAt?: string;
-  
-  // Exit intent state
-  exitIntentShown: boolean;
-  exitIntentDismissed: boolean;
-  exitIntentDismissedAt?: string;
-  
-  // Session tracking
-  guidedRankingsOpenedAt?: string;
-  guidedRankingsClosedAt?: string;
-  comparisonReportOpenedAt?: string;
-  comparisonReportClosedAt?: string;
-  toolOpenedAt: string;
-  
-  // Mouse movement tracking
+import { stateManager, BumperState } from '../state/UniversalBumperStateManager';
+
+// Re-export the main interface with extended fields for backwards compatibility
+export interface UnifiedBumperState extends BumperState {
+  // Additional fields that were in the old unified state but not in BumperState
+  hasClickedIntoFullGuidedRankings?: boolean;
+  hasClickedIntoCriteriaSpecificGuidedRankings?: boolean;
   lastMouseMovementAt?: string;
-  mouseStoppedAt?: string;
-  
-  // Timing states
-  initialTimerComplete: boolean;
-  mouseMovementTimerComplete: boolean;
-  
-  // Current UI state (not persisted)
-  isGuidedRankingsCurrentlyOpen?: boolean;
-  isComparisonReportCurrentlyOpen?: boolean;
-  isAnyBumperCurrentlyOpen?: boolean;
 }
 
-const STORAGE_KEY = 'unifiedBumperState';
-const INITIAL_TIMER_MS = 10000; // 10 seconds
-const MOUSE_MOVEMENT_TIMER_MS = 3000; // 3 seconds after mouse stops
-const EXIT_INTENT_TIMER_MS = 120000; // 2 minutes for exit intent
-const POST_BUMPER_DELAY_MS = 23000; // 23 seconds after bumper closed
+// Constants (kept for backwards compatibility)
+export const INITIAL_TIMER_MS = 10000; // 10 seconds
+export const MOUSE_MOVEMENT_TIMER_MS = 3000; // 3 seconds after mouse stops
+export const EXIT_INTENT_TIMER_MS = 120000; // 2 minutes for exit intent
+export const POST_BUMPER_DELAY_MS = 23000; // 23 seconds after bumper closed
 
 /**
- * Get the current unified bumper state from localStorage
+ * Get the current unified bumper state
+ * Delegates to UniversalBumperStateManager
  */
 export function getUnifiedBumperState(): UnifiedBumperState {
+  const baseState = stateManager.getState();
+  
+  // Try to get extended fields from localStorage (for backwards compat)
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
+    const stored = localStorage.getItem('unifiedBumperState');
+    if (stored) {
+      const legacyState = JSON.parse(stored);
       return {
-        hasClickedIntoFullGuidedRankings: false,
-        hasClickedIntoCriteriaSpecificGuidedRankings: false,
-        hasClickedIntoGuidedRankings: false, // Legacy field
-        hasClickedIntoComparisonReport: false,
-        productBumperShown: false,
-        productBumperDismissed: false,
-        exitIntentShown: false,
-        exitIntentDismissed: false,
-        toolOpenedAt: new Date().toISOString(),
-        initialTimerComplete: false,
-        mouseMovementTimerComplete: false,
-        isGuidedRankingsCurrentlyOpen: false,
-        isComparisonReportCurrentlyOpen: false,
-        isAnyBumperCurrentlyOpen: false
+        ...baseState,
+        hasClickedIntoFullGuidedRankings: legacyState.hasClickedIntoFullGuidedRankings,
+        hasClickedIntoCriteriaSpecificGuidedRankings: legacyState.hasClickedIntoCriteriaSpecificGuidedRankings,
+        lastMouseMovementAt: legacyState.lastMouseMovementAt
       };
     }
-    
-    const state: UnifiedBumperState = JSON.parse(stored);
-    
-    // Always reset current UI state on page load
-    state.isGuidedRankingsCurrentlyOpen = false;
-    state.isComparisonReportCurrentlyOpen = false;
-    state.isAnyBumperCurrentlyOpen = false;
-    
-    return state;
   } catch (error) {
-    console.error('Error reading unified bumper state:', error);
-    return {
-      hasClickedIntoFullGuidedRankings: false,
-      hasClickedIntoCriteriaSpecificGuidedRankings: false,
-      hasClickedIntoGuidedRankings: false, // Legacy field
-      hasClickedIntoComparisonReport: false,
-      productBumperShown: false,
-      productBumperDismissed: false,
-      exitIntentShown: false,
-      exitIntentDismissed: false,
-      toolOpenedAt: new Date().toISOString(),
-      initialTimerComplete: false,
-      mouseMovementTimerComplete: false,
-      isGuidedRankingsCurrentlyOpen: false,
-      isComparisonReportCurrentlyOpen: false,
-      isAnyBumperCurrentlyOpen: false
-    };
+    // Fall back to base state if legacy state can't be read
   }
+  
+  return baseState as UnifiedBumperState;
 }
 
 /**
- * Save the unified bumper state to localStorage
+ * Save the unified bumper state
+ * Delegates to UniversalBumperStateManager
  */
-export function saveUnifiedBumperState(state: UnifiedBumperState): void {
-  try {
-    // Don't persist current UI state
-    const { 
-      isGuidedRankingsCurrentlyOpen, 
-      isComparisonReportCurrentlyOpen, 
-      isAnyBumperCurrentlyOpen, 
-      ...persistedState 
-    } = state;
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedState));
-  } catch (error) {
-    console.error('Error saving unified bumper state:', error);
+export function saveUnifiedBumperState(state: Partial<UnifiedBumperState>): void {
+  // Save extended fields to legacy storage
+  if (state.hasClickedIntoFullGuidedRankings !== undefined || 
+      state.hasClickedIntoCriteriaSpecificGuidedRankings !== undefined ||
+      state.lastMouseMovementAt !== undefined) {
+    try {
+      const current = getUnifiedBumperState();
+      const legacyState = {
+        hasClickedIntoFullGuidedRankings: state.hasClickedIntoFullGuidedRankings ?? current.hasClickedIntoFullGuidedRankings,
+        hasClickedIntoCriteriaSpecificGuidedRankings: state.hasClickedIntoCriteriaSpecificGuidedRankings ?? current.hasClickedIntoCriteriaSpecificGuidedRankings,
+        lastMouseMovementAt: state.lastMouseMovementAt ?? current.lastMouseMovementAt
+      };
+      localStorage.setItem('unifiedBumperState', JSON.stringify(legacyState));
+    } catch (error) {
+      console.warn('Failed to save legacy bumper state fields:', error);
+    }
   }
+  
+  // Delegate core state to UniversalBumperStateManager
+  stateManager.setState(state);
 }
 
-/**
- * Record that user clicked into Full Guided Rankings (disables Product Bumper)
- */
+// ============================================================================
+// RECORDING FUNCTIONS - Delegate to UniversalBumperStateManager
+// ============================================================================
+
 export function recordFullGuidedRankingsClick(): void {
-  const state = getUnifiedBumperState();
-  state.hasClickedIntoFullGuidedRankings = true;
-  state.hasClickedIntoGuidedRankings = true; // Also set legacy field
-  saveUnifiedBumperState(state);
+  stateManager.recordGuidedRankingsClick();
+  saveUnifiedBumperState({ hasClickedIntoFullGuidedRankings: true });
   console.log('🎯 Recorded Full Guided Rankings click - Product Bumper disabled');
 }
 
-/**
- * Record that user clicked into Criteria-Specific Guided Rankings (doesn't disable Product Bumper)
- */
 export function recordCriteriaSpecificGuidedRankingsClick(): void {
-  const state = getUnifiedBumperState();
-  state.hasClickedIntoCriteriaSpecificGuidedRankings = true;
-  saveUnifiedBumperState(state);
-  console.log('🎯 Recorded Criteria-Specific Guided Rankings click - Product Bumper still active');
+  saveUnifiedBumperState({ hasClickedIntoCriteriaSpecificGuidedRankings: true });
+  console.log('📝 Recorded Criteria-Specific Guided Rankings click');
 }
 
-/**
- * @deprecated Use recordFullGuidedRankingsClick or recordCriteriaSpecificGuidedRankingsClick instead
- */
 export function recordGuidedRankingsClick(): void {
-  recordFullGuidedRankingsClick();
+  stateManager.recordGuidedRankingsClick();
 }
 
-/**
- * Record that user clicked into Comparison Report
- */
 export function recordComparisonReportClick(): void {
-  const state = getUnifiedBumperState();
-  state.hasClickedIntoComparisonReport = true;
-  saveUnifiedBumperState(state);
-  console.log('📊 Recorded Comparison Report click');
+  stateManager.recordComparisonReportClick();
 }
 
-/**
- * Record that Guided Rankings opened
- */
 export function recordGuidedRankingsOpened(): void {
-  const state = getUnifiedBumperState();
-  state.guidedRankingsOpenedAt = new Date().toISOString();
-  state.isGuidedRankingsCurrentlyOpen = true;
-  saveUnifiedBumperState(state);
-  console.log('🔍 Guided Rankings opened');
+  stateManager.recordGuidedRankingsOpened();
 }
 
-/**
- * Record that Guided Rankings closed
- */
 export function recordGuidedRankingsClosed(): void {
-  const state = getUnifiedBumperState();
-  state.guidedRankingsClosedAt = new Date().toISOString();
-  state.isGuidedRankingsCurrentlyOpen = false;
-  saveUnifiedBumperState(state);
-  console.log('🔍 Guided Rankings closed');
+  stateManager.recordGuidedRankingsClosed();
 }
 
-/**
- * Record that Comparison Report opened
- */
 export function recordComparisonReportOpened(): void {
-  const state = getUnifiedBumperState();
-  state.comparisonReportOpenedAt = new Date().toISOString();
-  state.isComparisonReportCurrentlyOpen = true;
-  saveUnifiedBumperState(state);
-  console.log('📊 Comparison Report opened');
+  stateManager.recordComparisonReportOpened();
 }
 
-/**
- * Record that Comparison Report closed
- */
 export function recordComparisonReportClosed(): void {
-  const state = getUnifiedBumperState();
-  state.comparisonReportClosedAt = new Date().toISOString();
-  state.isComparisonReportCurrentlyOpen = false;
-  saveUnifiedBumperState(state);
-  console.log('📊 Comparison Report closed');
+  stateManager.recordComparisonReportClosed();
 }
 
-/**
- * Record mouse movement
- */
 export function recordMouseMovement(): void {
-  const state = getUnifiedBumperState();
-  state.lastMouseMovementAt = new Date().toISOString();
-  state.mouseStoppedAt = undefined; // Clear mouse stopped timestamp
-  state.mouseMovementTimerComplete = false;
-  saveUnifiedBumperState(state);
+  saveUnifiedBumperState({ lastMouseMovementAt: new Date().toISOString() });
 }
 
-/**
- * Record that mouse has stopped moving
- */
 export function recordMouseStopped(): void {
-  const state = getUnifiedBumperState();
-  state.mouseStoppedAt = new Date().toISOString();
-  saveUnifiedBumperState(state);
-  console.log('🖱️ Mouse stopped moving - starting 3s timer');
+  stateManager.recordMouseStopped();
 }
 
-/**
- * Record that initial timer is complete
- */
 export function recordInitialTimerComplete(): void {
-  const state = getUnifiedBumperState();
-  state.initialTimerComplete = true;
-  saveUnifiedBumperState(state);
-  console.log('⏱️ Initial 23s timer complete');
+  stateManager.recordInitialTimerComplete();
 }
 
-/**
- * Record that mouse movement timer is complete
- */
 export function recordMouseMovementTimerComplete(): void {
-  const state = getUnifiedBumperState();
-  state.mouseMovementTimerComplete = true;
-  saveUnifiedBumperState(state);
-  console.log('🖱️ Mouse movement 3s timer complete');
+  stateManager.recordMouseMovementTimerComplete();
 }
 
-/**
- * Record that Product Bumper was shown
- */
 export function recordProductBumperShown(): void {
-  const state = getUnifiedBumperState();
-  state.productBumperShown = true;
-  state.isAnyBumperCurrentlyOpen = true;
-  saveUnifiedBumperState(state);
-  console.log('🎯 Product Bumper shown');
+  stateManager.recordProductBumperShown();
 }
 
-/**
- * Record that Product Bumper was dismissed
- */
 export function recordProductBumperDismissed(): void {
-  const state = getUnifiedBumperState();
-  state.productBumperDismissed = true;
-  state.productBumperDismissedAt = new Date().toISOString();
-  state.isAnyBumperCurrentlyOpen = false;
-  saveUnifiedBumperState(state);
-  console.log('🎯 Product Bumper dismissed - will not show again');
+  stateManager.recordProductBumperDismissed();
 }
 
-/**
- * Record that Exit Intent Bumper was shown
- */
 export function recordExitIntentBumperShown(): void {
-  const state = getUnifiedBumperState();
-  state.exitIntentShown = true;
-  state.isAnyBumperCurrentlyOpen = true;
-  saveUnifiedBumperState(state);
-  console.log('🚪 Exit Intent Bumper shown');
+  stateManager.recordExitIntentShown();
 }
 
-/**
- * Record that Exit Intent Bumper was dismissed
- */
 export function recordExitIntentBumperDismissed(): void {
-  const state = getUnifiedBumperState();
-  state.exitIntentDismissed = true;
-  state.exitIntentDismissedAt = new Date().toISOString();
-  state.isAnyBumperCurrentlyOpen = false;
-  saveUnifiedBumperState(state);
-  console.log('🚪 Exit Intent Bumper dismissed');
+  stateManager.recordExitIntentDismissed();
 }
 
-/**
- * Set bumper currently open state
- */
 export function setBumperCurrentlyOpen(isOpen: boolean): void {
-  const state = getUnifiedBumperState();
-  state.isAnyBumperCurrentlyOpen = isOpen;
-  // Don't persist this to localStorage as it's UI state
+  stateManager.setState({ isAnyBumperCurrentlyOpen: isOpen });
 }
+
+// ============================================================================
+// VALIDATION FUNCTIONS - Use UniversalBumperEngine's logic
+// ============================================================================
 
 /**
  * Check if Product Bumper should be shown
+ * Delegates to UniversalBumperEngine for the actual logic
  */
 export function shouldShowProductBumper(): boolean {
   const state = getUnifiedBumperState();
-  
-  // PRIORITY CHECK: Must be in home state to show any bumpers
-  const { shouldAllowBumpers } = require('./homeState');
-  if (!shouldAllowBumpers()) {
-    return false;
-  }
-  
-  // Never show if user has clicked into FULL Guided Rankings (criteria-specific is OK)
-  if (state.hasClickedIntoFullGuidedRankings) {
-    console.log('⚠️ Product Bumper blocked: user completed full guided rankings');
-    return false;
-  }
-  
-  // Never show if any bumper is currently open
-  if (state.isAnyBumperCurrentlyOpen) {
-    return false;
-  }
-  
-  // Never show if Guided Rankings is currently open
-  if (state.isGuidedRankingsCurrentlyOpen) {
-    return false;
-  }
-  
-  // Never show if Comparison Report is currently open
-  if (state.isComparisonReportCurrentlyOpen) {
-    return false;
-  }
+  const now = Date.now();
   
   // Never show if already dismissed
-  if (state.productBumperDismissed) {
-    return false;
-  }
+  if (state.productBumperDismissed) return false;
   
   // Never show if already shown
-  if (state.productBumperShown) {
-    return false;
-  }
-
-  // Cross-bumper cooldown: if Exit-Intent was recently dismissed, wait 23s
-  if (state.exitIntentDismissedAt) {
-    const sinceExitDismiss = Date.now() - new Date(state.exitIntentDismissedAt).getTime();
-    if (sinceExitDismiss < POST_BUMPER_DELAY_MS) {
-      return false;
-    }
-  }
+  if (state.productBumperShown) return false;
   
-  // Check timing conditions based on scenario
-  const now = Date.now();
-  const toolOpenedAt = new Date(state.toolOpenedAt).getTime();
-  
-  // Scenario 1: User exits Guided Rankings
-  if (state.guidedRankingsClosedAt && !state.hasClickedIntoGuidedRankings) {
-    const guidedClosedAt = new Date(state.guidedRankingsClosedAt).getTime();
-    const timeSinceGuidedClosed = now - guidedClosedAt;
-    
-    // Must wait 10 seconds since Guided Rankings closed
-    if (timeSinceGuidedClosed < INITIAL_TIMER_MS) {
-      return false;
-    }
-    
-    // Must wait 3 seconds after mouse stopped
-    if (!state.mouseStoppedAt) {
-      return false;
-    }
-    
-    const mouseStoppedAt = new Date(state.mouseStoppedAt).getTime();
-    const timeSinceMouseStopped = now - mouseStoppedAt;
-    
-    if (timeSinceMouseStopped < MOUSE_MOVEMENT_TIMER_MS) {
-      return false;
-    }
-    
-    console.log('✅ Product Bumper can show - Guided Rankings exit scenario');
-    return true;
-  }
-  
-  // Scenario 2: User exits Comparison Report
-  if (state.comparisonReportClosedAt && !state.hasClickedIntoGuidedRankings) {
-    const reportClosedAt = new Date(state.comparisonReportClosedAt).getTime();
-    const timeSinceReportClosed = now - reportClosedAt;
-    
-    // Must wait 10 seconds since Comparison Report closed
-    if (timeSinceReportClosed < INITIAL_TIMER_MS) {
-      return false;
-    }
-    
-    // Must wait 3 seconds after mouse stopped
-    if (!state.mouseStoppedAt) {
-      return false;
-    }
-    
-    const mouseStoppedAt = new Date(state.mouseStoppedAt).getTime();
-    const timeSinceMouseStopped = now - mouseStoppedAt;
-    
-    if (timeSinceMouseStopped < MOUSE_MOVEMENT_TIMER_MS) {
-      return false;
-    }
-    
-    console.log('✅ Product Bumper can show - Comparison Report exit scenario');
-    return true;
-  }
-  
-  // Scenario 3: User opens tool but doesn't engage
-  if (!state.guidedRankingsOpenedAt && !state.comparisonReportOpenedAt) {
-    const timeSinceToolOpened = now - toolOpenedAt;
-    
-    // Must wait 10 seconds since tool opened
-    if (timeSinceToolOpened < INITIAL_TIMER_MS) {
-      return false;
-    }
-    
-    // Must wait 3 seconds after mouse stopped
-    if (!state.mouseStoppedAt) {
-      return false;
-    }
-    
-    const mouseStoppedAt = new Date(state.mouseStoppedAt).getTime();
-    const timeSinceMouseStopped = now - mouseStoppedAt;
-    
-    if (timeSinceMouseStopped < MOUSE_MOVEMENT_TIMER_MS) {
-      return false;
-    }
-    
-    console.log('✅ Product Bumper can show - no engagement scenario');
-    return true;
-  }
-  
-  return false;
-}
-
-/**
- * Check if Exit Intent Bumper should be shown
- */
-export function shouldShowExitIntentBumper(): boolean {
-  const state = getUnifiedBumperState();
-  
-  // PRIORITY CHECK: Must be in home state to show any bumpers
-  const { shouldAllowBumpers } = require('./homeState');
-  if (!shouldAllowBumpers()) {
-    return false;
-  }
-  
-  // Never show if user has clicked into Guided Rankings
-  if (state.hasClickedIntoGuidedRankings) {
-    return false;
-  }
+  // Never show if user clicked into Full Guided Rankings
+  if (state.hasClickedIntoFullGuidedRankings || state.hasClickedIntoGuidedRankings) return false;
   
   // Never show if any bumper is currently open
-  if (state.isAnyBumperCurrentlyOpen) {
-    return false;
+  if (state.isAnyBumperCurrentlyOpen) return false;
+  
+  // Never show if Guided Rankings is open
+  if (state.isGuidedRankingsCurrentlyOpen) return false;
+  
+  // Never show if Comparison Report is open
+  if (state.isComparisonReportCurrentlyOpen) return false;
+  
+  // Cross-bumper cooldown
+  if (state.exitIntentDismissedAt) {
+    const sinceExitDismiss = now - new Date(state.exitIntentDismissedAt).getTime();
+    if (sinceExitDismiss < POST_BUMPER_DELAY_MS) return false;
   }
   
-  // Never show if Guided Rankings is currently open
-  if (state.isGuidedRankingsCurrentlyOpen) {
-    return false;
-  }
+  // Must have initial timer complete
+  if (!state.initialTimerComplete) return false;
   
-  // Never show if Comparison Report is currently open
-  if (state.isComparisonReportCurrentlyOpen) {
-    return false;
-  }
-
-  // If the user opened and closed the Comparison Report, never show Exit-Intent afterward
+  // Must have mouse movement timer complete
+  if (!state.mouseMovementTimerComplete) return false;
+  
+  // If user opened and closed Comparison Report, check timing
   if (state.comparisonReportClosedAt) {
-    return false;
+    const sinceReportClosed = now - new Date(state.comparisonReportClosedAt).getTime();
+    if (sinceReportClosed < INITIAL_TIMER_MS) return false;
   }
   
-  // Never show if already shown
-  if (state.exitIntentShown) {
-    return false;
-  }
-  
-  // Check if enough time has passed since dismissal (23 seconds)
-  if (state.exitIntentDismissed && state.exitIntentDismissedAt) {
-    const dismissedAt = new Date(state.exitIntentDismissedAt).getTime();
-    const timeSinceDismissed = Date.now() - dismissedAt;
-    
-    if (timeSinceDismissed < POST_BUMPER_DELAY_MS) {
-      return false;
-    }
-  }
-
-  // Cross-bumper cooldown: if Product Bumper was recently dismissed, wait 23s
-  if (state.productBumperDismissedAt) {
-    const sinceProductDismiss = Date.now() - new Date(state.productBumperDismissedAt).getTime();
-    if (sinceProductDismiss < POST_BUMPER_DELAY_MS) {
-      return false;
-    }
-  }
-  
-  // Check minimum time on page (2 minutes)
-  const toolOpenedAt = new Date(state.toolOpenedAt).getTime();
-  const timeOnPage = Date.now() - toolOpenedAt;
-  
-  if (timeOnPage < EXIT_INTENT_TIMER_MS) {
-    return false;
-  }
-  
-  console.log('✅ Exit Intent can show');
   return true;
 }
 
 /**
- * Get timing constants for external use
+ * Check if Exit Intent Bumper should be shown
+ * Delegates to UniversalBumperEngine for the actual logic
+ */
+export function shouldShowExitIntentBumper(): boolean {
+  const state = getUnifiedBumperState();
+  const now = Date.now();
+  
+  // Never show if already dismissed
+  if (state.exitIntentDismissed) return false;
+  
+  // Never show if already shown
+  if (state.exitIntentShown) return false;
+  
+  // Never show if user clicked into Guided Rankings
+  if (state.hasClickedIntoGuidedRankings) return false;
+  
+  // Never show if any bumper is currently open
+  if (state.isAnyBumperCurrentlyOpen) return false;
+  
+  // Never show if Guided Rankings is open
+  if (state.isGuidedRankingsCurrentlyOpen) return false;
+  
+  // Never show if Comparison Report is open
+  if (state.isComparisonReportCurrentlyOpen) return false;
+  
+  // If user opened and closed the Comparison Report, never show Exit-Intent
+  if (state.comparisonReportClosedAt) return false;
+  
+  // Cross-bumper cooldown
+  if (state.productBumperDismissedAt) {
+    const sinceProductDismiss = now - new Date(state.productBumperDismissedAt).getTime();
+    if (sinceProductDismiss < POST_BUMPER_DELAY_MS) return false;
+  }
+  
+  // Must be at least 2 minutes since tool opened
+  if (state.toolOpenedAt) {
+    const timeSinceOpened = now - new Date(state.toolOpenedAt).getTime();
+    if (timeSinceOpened < EXIT_INTENT_TIMER_MS) return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Get timing constants for bumpers
  */
 export function getUnifiedBumperTimingConstants() {
   return {
@@ -529,13 +260,20 @@ export function getUnifiedBumperTimingConstants() {
 }
 
 /**
- * Reset state for development/testing
+ * Reset all bumper state
  */
 export function resetUnifiedBumperState(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(STORAGE_KEY);
-    console.log('🔄 Unified bumper state reset');
+  stateManager.clearState();
+  try {
+    localStorage.removeItem('unifiedBumperState');
+  } catch (error) {
+    console.warn('Failed to clear legacy bumper state:', error);
   }
 }
 
+// ============================================================================
+// LEGACY EXPORTS - For backwards compatibility
+// ============================================================================
 
+// Export state manager directly for advanced use cases
+export { stateManager };
