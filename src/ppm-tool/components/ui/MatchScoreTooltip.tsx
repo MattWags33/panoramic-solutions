@@ -66,7 +66,7 @@ const tooltipContent = (
               e.stopPropagation();
               onGuidedRankingClick();
             }}
-            className="mt-2 text-blue-300 hover:text-blue-200 underline text-xs block"
+            className="mt-2 text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
           >
             Open Guided Rankings →
           </button>

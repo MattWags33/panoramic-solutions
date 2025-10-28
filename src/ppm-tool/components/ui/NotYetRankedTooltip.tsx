@@ -35,54 +35,60 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
   const tooltipContent = (
     <div className="break-words">
       <p>{getNotYetRankedTooltipContent()}</p>
-      {onGuidedRankingClick && (
+      {(onGuidedRankingClick || onNavigateToCriteria) && (
         <>
           <div className="mt-2 pt-2 border-t border-gray-700" />
           
           {/* Mobile: Show both Guided Rankings and Criteria Sliders links */}
           {isTouchDevice ? (
             <div className="mt-2 space-y-2">
+              {onGuidedRankingClick && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGuidedRankingClick();
+                  }}
+                  className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
+                >
+                  Open Guided Rankings →
+                </button>
+              )}
+              {onNavigateToCriteria && (
+                <a
+                  href="#criteria-section"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // If callback provided (mobile multi-tab), use it to navigate
+                    if (onNavigateToCriteria) {
+                      onNavigateToCriteria();
+                    } else {
+                      // Otherwise, try to scroll to criteria section (single page/desktop)
+                      const criteriaSection = document.getElementById('criteria-section');
+                      if (criteriaSection) {
+                        criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }
+                  }}
+                  className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
+                >
+                  Adjust Criteria Sliders →
+                </a>
+              )}
+            </div>
+          ) : (
+            // Desktop: Only show Guided Rankings link if available
+            onGuidedRankingClick && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onGuidedRankingClick();
                 }}
-                className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
+                className="mt-2 text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
               >
                 Open Guided Rankings →
               </button>
-              <a
-                href="#criteria-section"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  // If callback provided (mobile multi-tab), use it to navigate
-                  if (onNavigateToCriteria) {
-                    onNavigateToCriteria();
-                  } else {
-                    // Otherwise, try to scroll to criteria section (single page/desktop)
-                    const criteriaSection = document.getElementById('criteria-section');
-                    if (criteriaSection) {
-                      criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                  }
-                }}
-                className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
-              >
-                Adjust Criteria Sliders →
-              </a>
-            </div>
-          ) : (
-            // Desktop: Only show Guided Rankings link
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onGuidedRankingClick();
-              }}
-              className="mt-2 text-blue-300 hover:text-blue-200 underline text-xs block"
-            >
-              Open Guided Rankings →
-            </button>
+            )
           )}
         </>
       )}
