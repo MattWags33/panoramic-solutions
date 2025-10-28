@@ -41,6 +41,7 @@ interface ToolSectionProps {
   comparedTools?: Set<string>;
   chartButtonPosition?: { x: number; y: number };
   onOpenGuidedRanking?: () => void;
+  onNavigateToCriteria?: () => void;
   disableAutoShuffle?: boolean;
   shuffleDurationMs?: number;
   onShuffleReady?: (shuffleFn: () => void) => void;
@@ -71,6 +72,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
   comparedTools = new Set(),
   chartButtonPosition,
   onOpenGuidedRanking,
+  onNavigateToCriteria,
   disableAutoShuffle = false,
   shuffleDurationMs = 1000,
   onShuffleReady,
@@ -288,6 +290,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
         isCompared={comparedTools.has(tool.id)}
         criteriaAdjusted={criteriaAdjusted}
         onOpenGuidedRanking={onOpenGuidedRanking}
+        onNavigateToCriteria={onNavigateToCriteria}
       />
     </AnimatedToolCard>
   );

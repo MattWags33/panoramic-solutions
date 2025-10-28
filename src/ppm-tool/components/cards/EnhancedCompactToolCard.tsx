@@ -21,6 +21,7 @@ interface EnhancedCompactToolCardProps {
   isCompared?: boolean;
   criteriaAdjusted?: boolean;
   onOpenGuidedRanking?: () => void;
+  onNavigateToCriteria?: () => void;
 }
 
 // Helper function to get tool rating for a criterion
@@ -123,7 +124,8 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
   onCompare,
   isCompared = false,
   criteriaAdjusted = true,
-  onOpenGuidedRanking
+  onOpenGuidedRanking,
+  onNavigateToCriteria
 }) => {
   const matchDisplay = getMatchScoreDisplay(matchScore);
   const { isTouchDevice } = useUnifiedMobileDetection();
@@ -171,10 +173,15 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  // Scroll to criteria section
-                                  const criteriaSection = document.getElementById('criteria-section');
-                                  if (criteriaSection) {
-                                    criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  // If callback provided (mobile multi-tab), use it to navigate
+                                  if (onNavigateToCriteria) {
+                                    onNavigateToCriteria();
+                                  } else {
+                                    // Otherwise, try to scroll to criteria section (single page/desktop)
+                                    const criteriaSection = document.getElementById('criteria-section');
+                                    if (criteriaSection) {
+                                      criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
                                   }
                                 }}
                                 className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"

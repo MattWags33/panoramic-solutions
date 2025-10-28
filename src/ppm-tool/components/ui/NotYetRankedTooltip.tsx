@@ -9,6 +9,7 @@ import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMob
 interface NotYetRankedTooltipProps {
   className?: string;
   onGuidedRankingClick?: () => void;
+  onNavigateToCriteria?: () => void;
   inline?: boolean;
   wrapYourTool?: boolean; // When true, includes "Your Tool" text in the tooltip trigger area
   isVisible?: boolean; // Whether the tool is currently visible (for styling)
@@ -24,6 +25,7 @@ interface NotYetRankedTooltipProps {
 export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
   className = '',
   onGuidedRankingClick,
+  onNavigateToCriteria,
   inline = false,
   wrapYourTool = false,
   isVisible = false
@@ -54,10 +56,15 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  // Scroll to criteria section
-                  const criteriaSection = document.getElementById('criteria-section');
-                  if (criteriaSection) {
-                    criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  // If callback provided (mobile multi-tab), use it to navigate
+                  if (onNavigateToCriteria) {
+                    onNavigateToCriteria();
+                  } else {
+                    // Otherwise, try to scroll to criteria section (single page/desktop)
+                    const criteriaSection = document.getElementById('criteria-section');
+                    if (criteriaSection) {
+                      criteriaSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
                   }
                 }}
                 className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left"

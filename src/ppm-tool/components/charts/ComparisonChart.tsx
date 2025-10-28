@@ -31,6 +31,7 @@ interface ComparisonChartProps {
   criteria: Criterion[];
   comparedTools?: Set<string>;
   onOpenGuidedRanking?: () => void;
+  onNavigateToCriteria?: () => void;
 }
 
 ChartJS.register(
@@ -46,7 +47,8 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
   tools: selectedTools,
   criteria: selectedCriteria,
   comparedTools = new Set(),
-  onOpenGuidedRanking
+  onOpenGuidedRanking,
+  onNavigateToCriteria
 }) => {
   const isMobile = useMobileDetection();
   
@@ -451,6 +453,7 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
               ) : (
                 <NotYetRankedTooltip 
                   onGuidedRankingClick={onOpenGuidedRanking}
+                  onNavigateToCriteria={onNavigateToCriteria}
                   inline={true}
                   wrapYourTool={true}
                   isVisible={visibleTools.has('requirements')}
