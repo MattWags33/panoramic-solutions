@@ -1,0 +1,278 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-01-29T20:00:00Z",
+  "type": "BUGFIX",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool Finder",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "severity": "MEDIUM",
+    "impact": "User Experience - Email Modal Trigger"
+  },
+  "fix": {
+    "title": "Email Modal Now Triggers After Manual Slider Adjustments",
+    "issue_id": "EMAIL-MODAL-001",
+    "reported_date": "2025-01-29",
+    "fixed_date": "2025-01-29",
+    "status": "IMPLEMENTED"
+  },
+  "problem_description": {
+    "summary": "Email capture modal was only triggering after guided rankings (full or individual) but NOT after manual slider adjustments. Users who adjusted 3+ sliders manually never saw the email modal.",
+    "symptoms": [
+      "Adjust 3 sliders manually → No email modal",
+      "Complete 3 individual guided rankings → Email modal triggers ✅",
+      "Complete full guided ranking → Email modal triggers ✅",
+      "Modal trigger was inconsistent across different criteria adjustment methods"
+    ],
+    "affected_scenarios": [
+      "Manual slider adjustments (3+ sliders changed from default value of 3)",
+      "Users who prefer hands-on control vs guided rankings"
+    ],
+    "not_affected": [
+      "Guided rankings (full or individual) - these already triggered the modal",
+      "Users who had already seen the email modal once"
+    ]
+  },
+  "root_cause": {
+    "category": "Missing Logic - Incomplete Implementation",
+    "description": "The email modal trigger logic was only implemented in `handleUpdateRankings` (called by guided rankings), but NOT in `handleCriteriaChange` (called by manual slider adjustments). This created an inconsistent experience where the modal would appear for some users but not others, depending on how they adjusted their criteria.",
+    "technical_details": {
+      "guided_rankings_path": "User completes guided form → handleUpdateRankings → Email modal check ✅",
+      "manual_sliders_path": "User adjusts sliders → handleCriteriaChange → setCriteria ONLY (no email modal check) ❌",
+      "missing_trigger": "handleCriteriaChange had no logic to check if 3+ criteria were adjusted"
+    },
+    "code_flow_broken": [
+      "1. User manually adjusts 3 sliders",
+      "2. handleCriteriaChange(newCriteria) is called",
+      "3. setCriteria(newCriteria) updates state",
+      "4. NO email modal check happens ❌",
+      "5. User never sees modal despite meeting the criteria"
+    ]
+  },
+  "solution": {
+    "approach": "Extract Reusable Function + Debounced Trigger",
+    "strategy": "Create a shared `checkAndShowEmailModal` function that can be called from both guided rankings AND manual slider adjustments, with debouncing to avoid triggering during rapid slider changes",
+    "implementation_steps": [
+      "1. Extract email modal check logic from handleUpdateRankings into checkAndShowEmailModal function",
+      "2. Add debounce timer ref (emailModalCheckTimerRef) to track slider adjustment delays",
+      "3. Update handleCriteriaChange to call checkAndShowEmailModal after 500ms debounce",
+      "4. Replace duplicate code in handleUpdateRankings with call to shared function",
+      "5. Ensure both paths use identical logic for consistency"
+    ],
+    "key_changes": [
+      {
+        "file": "src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+        "line": "~276",
+        "change": "Added emailModalCheckTimerRef to track debounce timer",
+        "reason": "Needed to clear previous timers when user adjusts multiple sliders rapidly"
+      },
+      {
+        "file": "src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+        "line": "~706-718",
+        "change": "Enhanced handleCriteriaChange with debounced email modal check",
+        "reason": "Triggers modal after 500ms of no slider activity (3+ criteria adjusted)"
+      },
+      {
+        "file": "src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+        "line": "~843-920",
+        "change": "Created reusable checkAndShowEmailModal function",
+        "reason": "Shared logic for both guided rankings and manual sliders"
+      },
+      {
+        "file": "src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+        "line": "~1030",
+        "change": "Replaced duplicate email modal logic in handleUpdateRankings",
+        "reason": "Use shared function instead of duplicate code"
+      }
+    ]
+  },
+  "implementation_details": {
+    "debounce_mechanism": {
+      "delay": "500ms",
+      "purpose": "Wait for user to finish adjusting multiple sliders before checking",
+      "behavior": "Each slider adjustment resets the timer, modal only checks after 500ms of inactivity",
+      "user_experience": "Feels natural - modal appears shortly after user finishes adjustments"
+    },
+    "trigger_conditions": {
+      "criteria_count": "3 or more criteria with userRating !== 3",
+      "session_check": "!hasShownEmailModalRef.current (not shown this session)",
+      "permanent_check": "!hasShownEmailModalEverRef.current (not shown ever)",
+      "combined_logic": "ALL three conditions must be true to trigger modal"
+    },
+    "modal_timing": {
+      "on_main_state": "Wait 2 seconds after trigger conditions met, then show modal",
+      "on_other_state": "Wait for user to return to main state, then wait 2 seconds",
+      "polling_interval": "Check every 500ms if user has returned to main state",
+      "timeout": "Stop checking after 30 seconds (safety mechanism)"
+    },
+    "state_persistence": {
+      "storage_key": "ppm-email-modal-shown",
+      "storage_type": "sessionStorage",
+      "persistence": "Survives page refresh within same session",
+      "purpose": "Ensure modal only shows once per user session"
+    }
+  },
+  "testing": {
+    "test_scenarios": [
+      {
+        "id": "TS-001",
+        "name": "Manual Slider Adjustments (3+ sliders)",
+        "steps": [
+          "1. Fresh page load (no previous rankings)",
+          "2. Manually adjust first slider from 3 to 2",
+          "3. Manually adjust second slider from 3 to 4",
+          "4. Manually adjust third slider from 3 to 1",
+          "5. Wait 500ms"
+        ],
+        "expected": [
+          "Console log: '📊 Adjusted criteria count: 3/7 - Modal eligible: true'",
+          "Wait 2 seconds",
+          "Console log: '📧 Opening email modal now (main state)'",
+          "Email modal appears ✅"
+        ],
+        "status": "NEEDS_TESTING"
+      },
+      {
+        "id": "TS-002",
+        "name": "Rapid Slider Adjustments (Debounce Test)",
+        "steps": [
+          "1. Quickly adjust 3 sliders in rapid succession (< 500ms apart)",
+          "2. Wait 500ms after last adjustment"
+        ],
+        "expected": [
+          "Timer resets on each adjustment",
+          "Check only happens 500ms after LAST adjustment",
+          "Modal appears once after debounce period ✅"
+        ],
+        "status": "NEEDS_TESTING"
+      },
+      {
+        "id": "TS-003",
+        "name": "Guided Rankings (Control - Should Still Work)",
+        "steps": [
+          "1. Complete full guided ranking",
+          "2. Click 'Apply Rankings'"
+        ],
+        "expected": [
+          "Animation plays",
+          "Console log: '📊 Adjusted criteria count: X/7 - Modal eligible: true'",
+          "Email modal appears after animation ✅"
+        ],
+        "status": "NEEDS_TESTING"
+      },
+      {
+        "id": "TS-004",
+        "name": "Individual Guided Rankings (Control)",
+        "steps": [
+          "1. Click ? icon on 3 different criteria",
+          "2. Complete each individual ranking"
+        ],
+        "expected": [
+          "After 3rd completion, email modal triggers ✅"
+        ],
+        "status": "NEEDS_TESTING"
+      },
+      {
+        "id": "TS-005",
+        "name": "Mixed Methods (Slider + Guided)",
+        "steps": [
+          "1. Adjust 2 sliders manually",
+          "2. Complete 1 individual guided ranking",
+          "3. Wait 500ms"
+        ],
+        "expected": [
+          "After 3rd criterion adjusted (via guided), modal triggers ✅"
+        ],
+        "status": "NEEDS_TESTING"
+      },
+      {
+        "id": "TS-006",
+        "name": "Modal Already Shown (Should Not Retrigger)",
+        "steps": [
+          "1. Trigger modal once (any method)",
+          "2. Close modal",
+          "3. Adjust more sliders or complete more rankings"
+        ],
+        "expected": [
+          "Console log: '⏭️ Skipping email modal - already shown or not enough criteria adjusted'",
+          "Modal does NOT appear again ✅"
+        ],
+        "status": "NEEDS_TESTING"
+      }
+    ],
+    "console_log_validation": {
+      "on_slider_adjustment_3rd_slider": [
+        "📊 Adjusted criteria count: 3/7 - Modal eligible: true",
+        "📧 Marked email modal as shown in sessionStorage (permanent)",
+        "⏸️ On main state - pausing 2 seconds before opening email modal",
+        "📧 Opening email modal now (main state)"
+      ],
+      "on_subsequent_adjustments": [
+        "⏭️ Skipping email modal - already shown or not enough criteria adjusted"
+      ],
+      "should_NOT_see": [
+        "Modal triggering before 500ms debounce period",
+        "Modal triggering when only 1-2 criteria adjusted",
+        "Modal triggering multiple times in same session"
+      ]
+    }
+  },
+  "benefits": {
+    "consistency": "Email modal now triggers regardless of HOW user adjusts criteria (guided vs manual)",
+    "user_experience": "All users get the same prompt to receive their personalized report",
+    "conversion": "Captures more email leads by triggering on manual slider adjustments",
+    "flexibility": "Users can choose their preferred interaction method without missing the modal"
+  },
+  "edge_cases_handled": {
+    "rapid_adjustments": {
+      "scenario": "User rapidly adjusts 5+ sliders in quick succession",
+      "mitigation": "Debounce timer resets on each change, check only happens after 500ms of inactivity",
+      "status": "HANDLED"
+    },
+    "modal_already_shown": {
+      "scenario": "User has already seen modal via guided ranking, then adjusts sliders",
+      "mitigation": "hasShownEmailModalRef prevents retriggering",
+      "status": "HANDLED"
+    },
+    "mixed_methods": {
+      "scenario": "User adjusts 2 sliders, then completes 1 guided ranking (total 3 criteria)",
+      "mitigation": "checkAndShowEmailModal works with ANY criteria array, counts all adjusted criteria",
+      "status": "HANDLED"
+    },
+    "page_refresh": {
+      "scenario": "User adjusts sliders, refreshes page, adjusts more",
+      "mitigation": "sessionStorage persists modal shown state across refreshes",
+      "status": "HANDLED"
+    }
+  },
+  "related_files": [
+    "src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+    "src/ppm-tool/components/forms/EmailCaptureModal.tsx",
+    "src/ppm-tool/components/layout/ActionButtons.tsx",
+    "src/ppm-tool/shared/utils/criteriaAdjustmentState.ts"
+  ],
+  "verification_queries": {
+    "check_debounce_ref": "grep -n 'emailModalCheckTimerRef' src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+    "check_shared_function": "grep -n 'checkAndShowEmailModal' src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+    "check_handle_criteria_change": "grep -n -A 10 'handleCriteriaChange =' src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx"
+  },
+  "success_criteria": {
+    "primary": "Email modal triggers after adjusting 3+ criteria via ANY method (guided OR manual sliders)",
+    "secondary": [
+      "Debounce works correctly (waits 500ms after last slider change)",
+      "Modal only appears once per session",
+      "Console logs clearly show trigger logic",
+      "No duplicate triggers or race conditions"
+    ],
+    "all_met": "PENDING_TESTING"
+  },
+  "additional_fix": {
+    "date": "2025-01-29T21:00:00Z",
+    "issue": "Individual guided rankings were using OLD criteria state before checking email modal",
+    "solution": "Calculate newCriteriaValues BEFORE updating state, then pass to checkAndShowEmailModal",
+    "file": "src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx",
+    "lines": "1008-1031",
+    "reason": "React state updates are async, so criteria variable contained old values when checkAndShowEmailModal was called"
+  }
+}
+

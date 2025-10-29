@@ -271,6 +271,9 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 
   // Track if this is the initial mount to prevent saving default values
   const isInitialMountRef = useRef(true);
+  
+  // Track the debounce timer for slider-based email modal check
+  const emailModalCheckTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Enhanced localStorage handling for guided ranking answers and personalization
   useEffect(() => {
@@ -702,6 +705,16 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   // Handlers for criteria
   const handleCriteriaChange = (newCriteria: Criterion[]) => {
     setCriteria(newCriteria);
+    
+    // Clear any existing timer
+    if (emailModalCheckTimerRef.current) {
+      clearTimeout(emailModalCheckTimerRef.current);
+    }
+    
+    // Debounce: Wait 500ms after last slider change to check for email modal trigger
+    emailModalCheckTimerRef.current = setTimeout(() => {
+      checkAndShowEmailModal(newCriteria);
+    }, 500);
   };
 
   // Handler for full criteria reset (including guided answers)
@@ -826,6 +839,86 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   };
 
   // Update criteria rankings from guided form
+  // Helper function to check and show email modal based on criteria adjustments
+  const checkAndShowEmailModal = async (criteriaToCheck: Criterion[]) => {
+    // Check if we should show the email modal (works for ANY 3+ adjusted criteria)
+    const adjustedCount = criteriaToCheck.filter(c => c.userRating !== 3).length;
+    const shouldShowModal = 
+      !hasShownEmailModalRef.current && // Haven't shown this session
+      !hasShownEmailModalEverRef.current && // Haven't shown ever (permanent check)
+      adjustedCount >= 3; // 3+ criteria adjusted from default (ANY method: sliders, guided, individual)
+    
+    console.log(`📊 Adjusted criteria count: ${adjustedCount}/${criteriaToCheck.length} - Modal eligible: ${shouldShowModal}`);
+    
+    if (shouldShowModal) {
+      // Mark as shown for this session AND permanently
+      hasShownEmailModalRef.current = true;
+      hasShownEmailModalEverRef.current = true;
+      
+      // Persist to sessionStorage
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        try {
+          sessionStorage.setItem('ppm-email-modal-shown', 'true');
+          console.log('📧 Marked email modal as shown in sessionStorage (permanent)');
+        } catch (error) {
+          console.warn('Error writing to sessionStorage:', error);
+        }
+      }
+      
+      // Check if user is on main state (criteria-tools view)
+      const isOnMainState = currentStep === 'criteria-tools';
+      
+      if (isOnMainState) {
+        // On main state: Wait 2 seconds before showing email modal
+        console.log('⏸️ On main state - pausing 2 seconds before opening email modal');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        console.log('📧 Opening email modal now (main state)');
+        
+        // Track click BEFORE opening modal (important for Exit Intent Bumper eligibility)
+        onComparisonReportClick();
+        
+        // Open the modal
+        setShowEmailModal(true);
+        
+        // Record that modal opened (sets overlay state)
+        onComparisonReportOpen();
+      } else {
+        // On other state: Show modal when user returns to main state (2 second delay)
+        console.log('📍 Not on main state - will show email modal when user returns');
+        
+        // Wait for user to return to main state
+        const checkInterval = setInterval(() => {
+          if (currentStep === 'criteria-tools') {
+            clearInterval(checkInterval);
+            console.log('✅ User returned to main state');
+            
+            // Wait 2 seconds then show modal
+            setTimeout(() => {
+              console.log('📧 Opening email modal now (returned to main state)');
+              
+              // Track click BEFORE opening modal
+              onComparisonReportClick();
+              
+              // Open the modal
+              setShowEmailModal(true);
+              
+              // Record that modal opened
+              onComparisonReportOpen();
+            }, 2000);
+          }
+        }, 500); // Check every 500ms
+        
+        // Safety timeout: Stop checking after 30 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+        }, 30000);
+      }
+    } else {
+      console.log('⏭️ Skipping email modal - already shown or not enough criteria adjusted');
+    }
+  };
+
   const handleUpdateRankings = async (rankings: { [key: string]: number }) => {
     // Desktop: Run animation sequence
     if (!isMobile) {
@@ -912,13 +1005,14 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       await new Promise(resolve => setTimeout(resolve, 0));
       console.log('✨ Animation flags cleared and shuffle enabled - ready for simultaneous animation');
       
+      // Calculate NEW criteria values BEFORE updating state (for email modal check)
+      const newCriteriaValues = criteria.map(c => ({
+        ...c,
+        userRating: rankings[c.id] !== undefined ? rankings[c.id] : c.userRating
+      }));
+      
       // NOW update criteria - this triggers BOTH slider animations AND tool shuffle simultaneously
-      setCriteria(prev => 
-        prev.map(c => ({
-          ...c,
-          userRating: rankings[c.id] !== undefined ? rankings[c.id] : c.userRating
-        }))
-      );
+      setCriteria(newCriteriaValues);
       console.log('📊 Criteria updated - sliders + tools animating together now');
       
       // Wait for BOTH animations to complete (3 seconds - they're simultaneous)
@@ -933,82 +1027,8 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       setShuffleDurationMs(1000);
       console.log('🔄 Shuffle duration reset to 1s for normal interactions');
       
-      // Check if we should show the email modal (works for ANY 3+ adjusted criteria)
-      const adjustedCount = criteria.filter(c => c.userRating !== 3).length;
-      const shouldShowModal = 
-        !hasShownEmailModalRef.current && // Haven't shown this session
-        !hasShownEmailModalEverRef.current && // Haven't shown ever (permanent check)
-        adjustedCount >= 3; // 3+ criteria adjusted from default (ANY method: sliders, guided, individual)
-      
-      console.log(`📊 Adjusted criteria count: ${adjustedCount}/${criteria.length} - Modal eligible: ${shouldShowModal}`);
-      
-      if (shouldShowModal) {
-        // Mark as shown for this session AND permanently
-        hasShownEmailModalRef.current = true;
-        hasShownEmailModalEverRef.current = true;
-        
-        // Persist to sessionStorage
-        if (typeof window !== 'undefined' && window.sessionStorage) {
-          try {
-            sessionStorage.setItem('ppm-email-modal-shown', 'true');
-            console.log('📧 Marked email modal as shown in sessionStorage (permanent)');
-          } catch (error) {
-            console.warn('Error writing to sessionStorage:', error);
-          }
-        }
-        
-        // Check if user is on main state (criteria-tools view)
-        const isOnMainState = currentStep === 'criteria-tools';
-        
-        if (isOnMainState) {
-          // On main state: Wait 2 seconds before showing email modal
-          console.log('⏸️ On main state - pausing 2 seconds before opening email modal');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          console.log('📧 Opening email modal now (main state)');
-          
-          // Track click BEFORE opening modal (important for Exit Intent Bumper eligibility)
-          onComparisonReportClick();
-          
-          // Open the modal
-          setShowEmailModal(true);
-          
-          // Record that modal opened (sets overlay state)
-          onComparisonReportOpen();
-        } else {
-          // On other state: Show modal when user returns to main state (2 second delay)
-          console.log('📍 Not on main state - will show email modal when user returns');
-          
-          // Wait for user to return to main state
-          const checkInterval = setInterval(() => {
-            if (currentStep === 'criteria-tools') {
-              clearInterval(checkInterval);
-              console.log('✅ User returned to main state');
-              
-              // Wait 2 seconds then show modal
-              setTimeout(() => {
-                console.log('📧 Opening email modal now (returned to main state)');
-                
-                // Track click BEFORE opening modal
-                onComparisonReportClick();
-                
-                // Open the modal
-                setShowEmailModal(true);
-                
-                // Record that modal opened
-                onComparisonReportOpen();
-              }, 2000);
-            }
-          }, 500); // Check every 500ms
-          
-          // Clear interval after 30 seconds (timeout)
-          setTimeout(() => {
-            clearInterval(checkInterval);
-          }, 30000);
-        }
-      } else {
-        console.log('⏭️ Skipping email modal - already shown or not enough criteria adjusted');
-      }
+      // Check and show email modal if applicable (use NEW criteria values, not old state)
+      await checkAndShowEmailModal(newCriteriaValues);
     } else {
       // Mobile: Apply immediately without animation
       console.log('📱 Applying rankings immediately on mobile (no animation)');
