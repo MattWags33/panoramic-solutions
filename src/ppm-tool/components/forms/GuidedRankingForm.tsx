@@ -267,22 +267,17 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   }, [isOpen, onMethodologyFilter]);
 
   const handleClose = () => {
-    // FULL GUIDED MODE: Apply partial rankings even on close
+    // FULL GUIDED MODE: Save partial answers but DO NOT trigger animation
+    // Animation should ONLY happen when handleSubmit is called (form completed)
     if (!criterionId && Object.keys(answers).length > 0) {
-      console.log('📊 Full guided mode with partial answers - applying on close');
-      const rankings = calculateRankings();
+      console.log('📊 Full guided mode with partial answers - saving but NOT applying (no animation)');
       const personalizationData = extractPersonalizationData(answers);
       
-      // Apply rankings to criteria
-      onUpdateRankings(rankings);
-      
-      // Save answers and personalization data
+      // Save answers and personalization data for later completion
+      // But DO NOT call onUpdateRankings - that triggers animation
       onSaveAnswers?.(answers, personalizationData);
       
-      // Mark as completed
-      markGuidedRankingComplete();
-      // NOTE: markGuidedRankingAsCompleted() is now called AFTER animation completes in handleUpdateRankings
-      console.log('✅ Full guided mode - partial answers applied on close');
+      console.log('✅ Full guided mode - partial answers saved (will be applied when form is completed)');
     } 
     // CRITERIA-SPECIFIC MODE: Do NOT apply on close (only on Apply button)
     else {
