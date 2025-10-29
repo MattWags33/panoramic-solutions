@@ -32,6 +32,15 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
 }) => {
   const { isTouchDevice } = useUnifiedMobileDetection();
   
+  // Debug logging
+  console.log('🔍 NotYetRankedTooltip Debug:', {
+    hasGuidedRankingClick: !!onGuidedRankingClick,
+    hasNavigateToCriteria: !!onNavigateToCriteria,
+    isTouchDevice,
+    inline,
+    wrapYourTool
+  });
+  
   const tooltipContent = (
     <div className="break-words">
       <p>{getNotYetRankedTooltipContent()}</p>
@@ -48,7 +57,7 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
                     e.stopPropagation();
                     onGuidedRankingClick();
                   }}
-                  className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
+                  className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left"
                 >
                   Open Guided Rankings →
                 </button>
@@ -70,7 +79,7 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
                       }
                     }
                   }}
-                  className="text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
+                  className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left"
                 >
                   Adjust Criteria Sliders →
                 </a>
@@ -84,7 +93,7 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
                   e.stopPropagation();
                   onGuidedRankingClick();
                 }}
-                className="mt-2 text-blue-300 hover:text-blue-200 underline text-xs block w-full text-left py-1"
+                className="mt-2 text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left"
               >
                 Open Guided Rankings →
               </button>

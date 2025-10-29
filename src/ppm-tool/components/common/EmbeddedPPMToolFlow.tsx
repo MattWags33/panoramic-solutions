@@ -171,13 +171,8 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     }
   });
 
-  // Unified exit intent detection
-  const { hasTriggeredProductBumper, hasTriggeredExitIntent } = useUnifiedExitIntent({
-    enabled: !isTouchDevice, // Changed from !isMobile
-    isTouchDevice, // Pass the value to the hook
-    onTriggerProductBumper: triggerProductBumper,
-    onTriggerExitIntentBumper: triggerExitIntentBumper
-  });
+  // State tracking - will be initialized properly after criteria state is defined
+  // MOVED: useUnifiedExitIntent will be called after criteria state is available
 
   // Development keyboard shortcuts for testing bumpers
   useDevelopmentKeyboards({
@@ -238,8 +233,29 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   const [disableAutoShuffle, setDisableAutoShuffle] = useState(false);
   const manualShuffleRef = useRef<(() => void) | null>(null);
   
+  // NEW: Flag to prevent ANY shuffling during animation preparation (prevents race conditions)
+  const [isPreparingAnimation, setIsPreparingAnimation] = useState(false);
+  
   // Imperative shuffle control (immediate, synchronous)
   const shuffleControlRef = useRef<{ disable: () => void; enable: () => void } | null>(null);
+  
+  // Check if 3+ criteria have been adjusted (for Exit Intent Bumper)
+  const adjustedCriteriaCount = criteria.filter(c => c.userRating !== 3).length;
+  const hasMinimumAdjusted = adjustedCriteriaCount >= 3;
+  
+  // Debug log for Exit Intent eligibility (only when adjusted count changes)
+  useEffect(() => {
+    console.log(`🎯 Exit Intent Eligibility: ${adjustedCriteriaCount}/7 criteria adjusted - ${hasMinimumAdjusted ? '✅ ELIGIBLE' : '❌ NOT ELIGIBLE (need 3+)'}`);
+  }, [adjustedCriteriaCount, hasMinimumAdjusted]);
+  
+  // Unified exit intent detection (NOW with criteria state available)
+  const { hasTriggeredProductBumper, hasTriggeredExitIntent } = useUnifiedExitIntent({
+    enabled: !isTouchDevice,
+    isTouchDevice,
+    hasMinimumCriteriaAdjusted: hasMinimumAdjusted, // NEW: Exit Intent only shows if 3+ criteria adjusted
+    onTriggerProductBumper: triggerProductBumper,
+    onTriggerExitIntentBumper: triggerExitIntentBumper
+  });
   
   // Flag to keep tools in alphabetical order during guided animation sequence
   const [isAnimatingGuidedRankings, setIsAnimatingGuidedRankings] = useState(false);
@@ -669,7 +685,19 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   const filteredTools = filterTools(selectedTools, filterConditions, filterMode);
   
   // Check if criteria have been adjusted from defaults (isolated from bumper logic)
-  const criteriaAdjusted = hasCriteriaBeenAdjusted(criteria);
+  // Override to false during ANY part of the guided animation sequence to prevent premature tool re-sorting
+  // isPreparingAnimation ensures we block shuffling BEFORE isAnimatingGuidedRankings updates (prevents race condition)
+  // This ensures BOTH full guided rankings AND individual criterion rankings have elegant animations
+  const criteriaAdjusted = (isAnimatingGuidedRankings || isPreparingAnimation) ? false : hasCriteriaBeenAdjusted(criteria);
+
+  // Debug log for animation state (only when animation flag changes)
+  useEffect(() => {
+    if (isAnimatingGuidedRankings || isPreparingAnimation) {
+      console.log(`🎬 Animation active (preparing=${isPreparingAnimation}, animating=${isAnimatingGuidedRankings}) → criteriaAdjusted forced to FALSE (tools frozen alphabetical)`);
+    } else {
+      console.log(`✨ Animation inactive → criteriaAdjusted=${criteriaAdjusted} (normal state)`);
+    }
+  }, [isAnimatingGuidedRankings, isPreparingAnimation, criteriaAdjusted]);
 
   // Handlers for criteria
   const handleCriteriaChange = (newCriteria: Criterion[]) => {
@@ -803,23 +831,42 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     if (!isMobile) {
       console.log('🎬 Starting guided submit animation on desktop');
       
-      // SET ANIMATION FLAG to keep tools alphabetical during animation
+      // ============================================================================
+      // PHASE 0: LOCK DOWN - Prevent ANY shuffling before animation starts
+      // ============================================================================
+      // Set ALL freeze flags synchronously to prevent race conditions
+      // This creates a multi-layer defense against premature shuffling
+      
+      // Layer 1: Immediate preparation flag (blocks criteriaAdjusted calculation)
+      setIsPreparingAnimation(true);
+      console.log('🔒 Pre-animation flag SET - blocking all shuffle triggers');
+      
+      // Layer 2: Animation flag (primary control)
       setIsAnimatingGuidedRankings(true);
       console.log('📋 Animation flag SET - tools will stay alphabetical');
       
-      // IMMEDIATELY disable auto-shuffle BEFORE any state updates (imperative, synchronous)
+      // Layer 3: Imperative shuffle control (synchronous backup)
       if (shuffleControlRef.current) {
         shuffleControlRef.current.disable();
         console.log('🚫 Imperative shuffle control: DISABLED (immediate)');
       }
       
-      // ALSO set state-based disable as backup
+      // Layer 4: State-based disable (React-based backup)
       setDisableAutoShuffle(true);
       console.log('🚫 State-based auto-shuffle disabled for animation sequence');
       
       // Set shuffle duration to 3 seconds for elegant simultaneous animation
       setShuffleDurationMs(3000);
+      console.log('⏱️ Shuffle duration set to 3 seconds for guided animation');
       
+      // CRITICAL: Wait for React to process ALL state updates before continuing
+      // This ensures sortedTools recalculates with ALL freeze flags active
+      await new Promise(resolve => setTimeout(resolve, 0));
+      console.log('✅ All freeze flags processed - ready for animation');
+      
+      // ============================================================================
+      // PHASE 1: WAVE ANIMATION - GooeyLoader plays alone
+      // ============================================================================
       // Start wave animation (non-blocking, runs in background)
       guidedAnimation.startAnimation();
       console.log('🌊 Wave animation started (running in background)');
@@ -832,31 +879,51 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       guidedAnimation.reset();
       console.log('✅ Wave animation complete');
       
-      // Phase 2: Simultaneous elegant animation - sliders + tools together
+      // Brief pause for anticipation (0.5 seconds)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('⏸️ Brief pause after wave (0.5s)');
+      
+      // ============================================================================
+      // PHASE 2: SIMULTANEOUS SLIDER + TOOL ANIMATION
+      // ============================================================================
       console.log('🎭 Phase 2: Starting simultaneous slider + tool animation (3 seconds)');
       
-      // Update criteria - this triggers 3-second slider animations
+      // FIRST: Clear ALL freeze flags to enable the final shuffle
+      // Clear preparation flag first
+      setIsPreparingAnimation(false);
+      console.log('🔓 Pre-animation flag CLEARED');
+      
+      // Clear animation flag
+      setIsAnimatingGuidedRankings(false);
+      console.log('📋 Animation flag CLEARED');
+      
+      // Re-enable imperative shuffle control
+      if (shuffleControlRef.current) {
+        shuffleControlRef.current.enable();
+        console.log('✅ Imperative shuffle control: ENABLED');
+      }
+      
+      // Re-enable state-based shuffle
+      setDisableAutoShuffle(false);
+      console.log('✅ State-based auto-shuffle ENABLED');
+      
+      // CRITICAL: Wait for React to process the flag changes before updating criteria
+      // This ensures sortedTools sees criteriaAdjusted=true when criteria update
+      await new Promise(resolve => setTimeout(resolve, 0));
+      console.log('✨ Animation flags cleared and shuffle enabled - ready for simultaneous animation');
+      
+      // NOW update criteria - this triggers BOTH slider animations AND tool shuffle simultaneously
       setCriteria(prev => 
         prev.map(c => ({
           ...c,
           userRating: rankings[c.id] !== undefined ? rankings[c.id] : c.userRating
         }))
       );
-      console.log('📊 Criteria updated - sliders animating now');
-      
-      // IMMEDIATELY clear animation flag and enable shuffle
-      // (happens at same time as sliders start moving)
-      setIsAnimatingGuidedRankings(false);
-      
-      if (shuffleControlRef.current) {
-        shuffleControlRef.current.enable();
-      }
-      setDisableAutoShuffle(false);
-      console.log('✨ Animation flag cleared - sliders + tools moving together now');
+      console.log('📊 Criteria updated - sliders + tools animating together now');
       
       // Wait for BOTH animations to complete (3 seconds - they're simultaneous)
       await new Promise(resolve => setTimeout(resolve, 3000));
-      console.log('✅ All animations complete (wave → sliders + tools together)');
+      console.log('✅ All animations complete (sliders + tools finished together)');
       
       // NOW mark as completed (shows match scores) - done AFTER animation to prevent pre-animation jump
       markGuidedRankingAsCompleted();
@@ -866,11 +933,14 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       setShuffleDurationMs(1000);
       console.log('🔄 Shuffle duration reset to 1s for normal interactions');
       
-      // Check if we should show the email modal (works for BOTH full and individual criterion modes)
+      // Check if we should show the email modal (works for ANY 3+ adjusted criteria)
+      const adjustedCount = criteria.filter(c => c.userRating !== 3).length;
       const shouldShowModal = 
         !hasShownEmailModalRef.current && // Haven't shown this session
         !hasShownEmailModalEverRef.current && // Haven't shown ever (permanent check)
-        hasMinimumCriteriaAdjusted(criteria, 3); // 3+ criteria adjusted (cumulative from any source)
+        adjustedCount >= 3; // 3+ criteria adjusted from default (ANY method: sliders, guided, individual)
+      
+      console.log(`📊 Adjusted criteria count: ${adjustedCount}/${criteria.length} - Modal eligible: ${shouldShowModal}`);
       
       if (shouldShowModal) {
         // Mark as shown for this session AND permanently

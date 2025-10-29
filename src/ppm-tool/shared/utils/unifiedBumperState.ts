@@ -206,6 +206,9 @@ export function shouldShowProductBumper(): boolean {
 /**
  * Check if Exit Intent Bumper should be shown
  * Delegates to UniversalBumperEngine for the actual logic
+ * NOTE: This function checks timing/state. The criteria adjustment check (3+ criteria)
+ * is done separately in the component that calls this, because criteria state is not
+ * stored in bumper state - it lives in the component's criteria array.
  */
 export function shouldShowExitIntentBumper(): boolean {
   const state = getUnifiedBumperState();

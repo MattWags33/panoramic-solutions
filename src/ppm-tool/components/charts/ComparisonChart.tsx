@@ -52,6 +52,13 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
 }) => {
   const isMobile = useMobileDetection();
   
+  // Debug logging for callbacks
+  console.log('📊 ComparisonChart Props:', {
+    hasOnOpenGuidedRanking: !!onOpenGuidedRanking,
+    hasOnNavigateToCriteria: !!onNavigateToCriteria,
+    isMobile
+  });
+  
   // Check if criteria have been adjusted from defaults (isolated from bumper logic)
   const criteriaAdjusted = hasCriteriaBeenAdjusted(selectedCriteria);
 

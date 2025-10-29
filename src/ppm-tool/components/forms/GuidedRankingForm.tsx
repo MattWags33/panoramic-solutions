@@ -281,7 +281,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
       
       // Mark as completed
       markGuidedRankingComplete();
-      markGuidedRankingAsCompleted();
+      // NOTE: markGuidedRankingAsCompleted() is now called AFTER animation completes in handleUpdateRankings
       console.log('✅ Full guided mode - partial answers applied on close');
     } 
     // CRITERIA-SPECIFIC MODE: Do NOT apply on close (only on Apply button)

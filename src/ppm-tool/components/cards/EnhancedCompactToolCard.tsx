@@ -164,7 +164,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                                   e.stopPropagation();
                                   onOpenGuidedRanking();
                                 }}
-                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"
+                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left"
                               >
                                 Open Guided Rankings →
                               </button>
@@ -184,7 +184,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                                     }
                                   }
                                 }}
-                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"
+                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left"
                               >
                                 Adjust Criteria Sliders →
                               </a>
@@ -196,7 +196,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                                 e.stopPropagation();
                                 onOpenGuidedRanking();
                               }}
-                              className="mt-2 text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left py-1"
+                              className="mt-2 text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left"
                             >
                               Open Guided Rankings →
                             </button>

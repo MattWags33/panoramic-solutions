@@ -16,7 +16,8 @@ import {
 
 interface UseUnifiedExitIntentOptions {
   enabled?: boolean;
-  isTouchDevice?: boolean; // ADD THIS
+  isTouchDevice?: boolean;
+  hasMinimumCriteriaAdjusted?: boolean; // NEW: Check if 3+ criteria adjusted
   onTriggerProductBumper?: () => void;
   onTriggerExitIntentBumper?: (triggerType: 'mouse-leave' | 'tab-switch') => void;
 }
@@ -50,7 +51,7 @@ const getBrowserInfo = (): BrowserInfo => {
 };
 
 export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) {
-  const { enabled = true, isTouchDevice = false, onTriggerProductBumper, onTriggerExitIntentBumper } = options;
+  const { enabled = true, isTouchDevice = false, hasMinimumCriteriaAdjusted = false, onTriggerProductBumper, onTriggerExitIntentBumper } = options;
   
   const [hasTriggeredProductBumper, setHasTriggeredProductBumper] = useState(false);
   const [hasTriggeredExitIntent, setHasTriggeredExitIntent] = useState(false);
@@ -79,14 +80,15 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
       }
       
       // Check if Exit Intent should be shown (but not from mouse leave)
-      if (!hasTriggeredExitIntent && shouldShowExitIntentBumper()) {
+      // MUST have 3+ criteria adjusted to show Exit Intent Bumper
+      if (!hasTriggeredExitIntent && hasMinimumCriteriaAdjusted && shouldShowExitIntentBumper()) {
         const state = getUnifiedBumperState();
         const toolOpenedAt = state.toolOpenedAt ? new Date(state.toolOpenedAt).getTime() : Date.now();
         const timeOnPage = Date.now() - toolOpenedAt;
         
         // Only auto-trigger after 2 minutes (exit intent timer)
         if (timeOnPage >= EXIT_INTENT_TIMER_MS) {
-          console.log('🚪 Triggering Exit Intent Bumper via 2-minute timer');
+          console.log('🚪 Triggering Exit Intent Bumper via 2-minute timer (3+ criteria adjusted)');
           setHasTriggeredExitIntent(true);
           onTriggerExitIntentBumper?.('tab-switch'); // Use tab-switch as default for timer trigger
         }
@@ -101,15 +103,15 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
         clearInterval(checkTimersRef.current);
       }
     };
-  }, [enabled, isTouchDevice, hasTriggeredProductBumper, hasTriggeredExitIntent, EXIT_INTENT_TIMER_MS, onTriggerProductBumper, onTriggerExitIntentBumper]);
+  }, [enabled, isTouchDevice, hasMinimumCriteriaAdjusted, hasTriggeredProductBumper, hasTriggeredExitIntent, EXIT_INTENT_TIMER_MS, onTriggerProductBumper, onTriggerExitIntentBumper]);
   
   // Mouse leave detection for exit intent
   useEffect(() => {
     if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleMouseLeave = (e: MouseEvent) => {
-      // Only trigger exit intent if it should be shown
-      if (!shouldShowExitIntentBumper()) {
+      // Only trigger exit intent if it should be shown AND 3+ criteria adjusted
+      if (!hasMinimumCriteriaAdjusted || !shouldShowExitIntentBumper()) {
         return;
       }
       
@@ -135,7 +137,7 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
       ];
       
       if (conditions.some(condition => condition)) {
-        console.log('🚪 Triggering Exit Intent Bumper via mouse leave');
+        console.log('🚪 Triggering Exit Intent Bumper via mouse leave (3+ criteria adjusted)');
         setHasTriggeredExitIntent(true);
         onTriggerExitIntentBumper?.('mouse-leave');
       }
@@ -151,15 +153,15 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [enabled, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
+  }, [enabled, hasMinimumCriteriaAdjusted, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
   
   // Tab switch detection for exit intent
   useEffect(() => {
     if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleVisibilityChange = () => {
-      if (document.hidden && shouldShowExitIntentBumper()) {
-        console.log('🚪 Triggering Exit Intent Bumper via tab switch');
+      if (document.hidden && hasMinimumCriteriaAdjusted && shouldShowExitIntentBumper()) {
+        console.log('🚪 Triggering Exit Intent Bumper via tab switch (3+ criteria adjusted)');
         setHasTriggeredExitIntent(true);
         onTriggerExitIntentBumper?.('tab-switch');
       }
@@ -170,7 +172,7 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [enabled, hasTriggeredExitIntent, isTouchDevice, onTriggerExitIntentBumper]);
+  }, [enabled, hasMinimumCriteriaAdjusted, hasTriggeredExitIntent, isTouchDevice, onTriggerExitIntentBumper]);
   
   // Mouse movement tracking for enhanced exit detection
   useEffect(() => {
@@ -229,9 +231,9 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
         zone = 'header';
       }
       
-      if (delay > 0 && shouldShowExitIntentBumper()) {
+      if (delay > 0 && hasMinimumCriteriaAdjusted && shouldShowExitIntentBumper()) {
         mouseLeaveTimeoutRef.current = setTimeout(() => {
-          console.log(`🚪 Triggering Exit Intent Bumper via mouse movement (${zone})`);
+          console.log(`🚪 Triggering Exit Intent Bumper via mouse movement (${zone}) (3+ criteria adjusted)`);
           setHasTriggeredExitIntent(true);
           onTriggerExitIntentBumper?.('mouse-leave');
         }, delay);
@@ -251,7 +253,7 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
         clearTimeout(mouseLeaveTimeoutRef.current);
       }
     };
-  }, [enabled, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
+  }, [enabled, hasMinimumCriteriaAdjusted, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
   
   // Reset function for testing
   const reset = useCallback(() => {

@@ -27,15 +27,16 @@ export function hasCriteriaBeenAdjusted(criteria: Criterion[]): boolean {
  * Check if at least the specified number of criteria have been adjusted
  * @param criteria - Array of criteria to check
  * @param minimum - Minimum number of criteria that must be adjusted (default: 3)
- * @returns true if at least 'minimum' criteria have userRating !== 3 OR user completed guided ranking
+ * @returns true if at least 'minimum' criteria have userRating !== 3
  */
 export function hasMinimumCriteriaAdjusted(criteria: Criterion[], minimum: number = 3): boolean {
   const adjustedCount = criteria.filter(criterion => criterion.userRating !== 3).length;
   
-  // Show button if either:
-  // 1. At least 'minimum' criteria manually adjusted, OR
-  // 2. User completed any guided ranking (trusts guided process)
-  return adjustedCount >= minimum || hasCompletedAnyGuidedRanking();
+  console.log(`📊 hasMinimumCriteriaAdjusted: ${adjustedCount}/${criteria.length} criteria adjusted (need ${minimum})`);
+  
+  // Simple check: count criteria that differ from default
+  // Works for ANY adjustment method: manual sliders, full guided rankings, individual criterion rankings, or any mix
+  return adjustedCount >= minimum;
 }
 
 /**
