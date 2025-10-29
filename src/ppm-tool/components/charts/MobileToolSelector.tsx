@@ -13,13 +13,17 @@ interface MobileToolSelectorProps {
   visibleTools: Set<string>;
   onToggleTool: (toolId: string) => void;
   criteria?: Criterion[];
+  onGuidedRankingClick?: () => void;
+  onNavigateToCriteria?: () => void;
 }
 
 export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
   tools,
   visibleTools,
   onToggleTool,
-  criteria
+  criteria,
+  onGuidedRankingClick,
+  onNavigateToCriteria
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -111,6 +115,8 @@ export const MobileToolSelector: React.FC<MobileToolSelectorProps> = ({
                     wrapYourTool={true}
                     isVisible={visibleTools.has('requirements')}
                     className="text-gray-900"
+                    onGuidedRankingClick={onGuidedRankingClick}
+                    onNavigateToCriteria={onNavigateToCriteria}
                   />
                 )}
               </div>

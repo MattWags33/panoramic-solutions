@@ -685,15 +685,15 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   const filteredTools = filterTools(selectedTools, filterConditions, filterMode);
   
   // Check if criteria have been adjusted from defaults (isolated from bumper logic)
-  // Override to false during ANY part of the guided animation sequence to prevent premature tool re-sorting
-  // isPreparingAnimation ensures we block shuffling BEFORE isAnimatingGuidedRankings updates (prevents race condition)
-  // This ensures BOTH full guided rankings AND individual criterion rankings have elegant animations
-  const criteriaAdjusted = (isAnimatingGuidedRankings || isPreparingAnimation) ? false : hasCriteriaBeenAdjusted(criteria);
+  // NO LONGER force to false during animation - this allows tools to stay in their current sort order
+  // during Phase 1 (whether that's alphabetical for first-time users or score-based for returning users)
+  // This prevents the unwanted "snap back to alphabetical" shuffle when re-ranking
+  const criteriaAdjusted = hasCriteriaBeenAdjusted(criteria);
 
   // Debug log for animation state (only when animation flag changes)
   useEffect(() => {
     if (isAnimatingGuidedRankings || isPreparingAnimation) {
-      console.log(`🎬 Animation active (preparing=${isPreparingAnimation}, animating=${isAnimatingGuidedRankings}) → criteriaAdjusted forced to FALSE (tools frozen alphabetical)`);
+      console.log(`🎬 Animation active (preparing=${isPreparingAnimation}, animating=${isAnimatingGuidedRankings}) → tools stay in current order (criteriaAdjusted=${criteriaAdjusted})`);
     } else {
       console.log(`✨ Animation inactive → criteriaAdjusted=${criteriaAdjusted} (normal state)`);
     }

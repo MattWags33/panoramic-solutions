@@ -164,7 +164,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                                   e.stopPropagation();
                                   onOpenGuidedRanking();
                                 }}
-                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left"
+                                className="text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left p-0"
                               >
                                 Open Guided Rankings →
                               </button>
@@ -196,7 +196,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                                 e.stopPropagation();
                                 onOpenGuidedRanking();
                               }}
-                              className="mt-2 text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left"
+                              className="mt-2 text-blue-300 hover:text-blue-200 underline text-sm block w-full text-left p-0"
                             >
                               Open Guided Rankings →
                             </button>

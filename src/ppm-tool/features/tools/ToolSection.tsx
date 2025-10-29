@@ -137,10 +137,11 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
 
   // Stable, deterministic sorting with hydration awareness
   const sortedTools = React.useMemo(() => {
-    // Keep alphabetical during animation (prevents pre-animation jump)
-    // Also keep alphabetical until hydrated OR criteria not adjusted
+    // Keep alphabetical until hydrated OR criteria not adjusted
+    // REMOVED isAnimatingGuidedRankings check - this allows tools to maintain their current
+    // sort order during animations (preventing unwanted snap-back to alphabetical)
     // This ensures server and client render the same initial state
-    if (!isHydrated || !criteriaAdjusted || isAnimatingGuidedRankings) {
+    if (!isHydrated || !criteriaAdjusted) {
       return [...filteredTools].sort((a, b) => a.name.localeCompare(b.name));
     }
     
@@ -157,7 +158,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
       
       return scoreDiff;
     });
-  }, [filteredTools, toolMatchScores, criteriaAdjusted, isHydrated, isAnimatingGuidedRankings]);
+  }, [filteredTools, toolMatchScores, criteriaAdjusted, isHydrated]);
 
   // Combine both disable sources (prop-based and imperative)
   const isShuffleDisabled = disableAutoShuffle || localDisableShuffle;
