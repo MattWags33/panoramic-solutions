@@ -32,6 +32,8 @@ import {
   recordCriteriaSpecificGuidedRankingsClick 
 } from '@/ppm-tool/shared/utils/unifiedBumperState';
 import { hasCriteriaBeenAdjusted, hasMinimumCriteriaAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { hasCompletedAnyGuidedRanking } from '@/ppm-tool/shared/utils/guidedRankingState';
+import { shouldShowExitIntentBumper } from '@/ppm-tool/shared/utils/unifiedBumperState';
 import '@/ppm-tool/shared/utils/bumperDebugger'; // Import debugger for global functions
 // REMOVED: import { MobileDiagnostics } from './MobileDiagnostics'; - Causes browser compatibility issues
 import { MobileRecoverySystem } from './MobileRecoverySystem';
@@ -43,7 +45,7 @@ import {
   mergeCriteriaWithSaved,
   clearSavedCriteriaValues
 } from '@/ppm-tool/shared/utils/criteriaStorage';
-import { resetGuidedRankingCompletion, markGuidedRankingAsCompleted } from '@/ppm-tool/shared/utils/guidedRankingState';
+import { resetGuidedRankingCompletion, markGuidedRankingAsCompleted, getGuidedRankingCriteriaIds } from '@/ppm-tool/shared/utils/guidedRankingState';
 import { checkAndTrackNewActive } from '@/lib/posthog';
 
 interface EmbeddedPPMToolFlowProps {
@@ -711,6 +713,10 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       clearTimeout(emailModalCheckTimerRef.current);
     }
     
+    // Note: Exit Intent Bumper is handled automatically by useUnifiedExitIntent hook
+    // when timing conditions are met (3+ criteria adjusted, 3s mouse stopped, 23s delay)
+    // No manual trigger needed here - let the hook handle it based on its internal timing logic
+    
     // Debounce: Wait 500ms after last slider change to check for email modal trigger
     emailModalCheckTimerRef.current = setTimeout(() => {
       checkAndShowEmailModal(newCriteria);
@@ -842,13 +848,32 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   // Helper function to check and show email modal based on criteria adjustments
   const checkAndShowEmailModal = async (criteriaToCheck: Criterion[]) => {
     // Check if we should show the email modal (works for ANY 3+ adjusted criteria)
-    const adjustedCount = criteriaToCheck.filter(c => c.userRating !== 3).length;
+    // Count criteria that are either:
+    // 1. Adjusted from default (userRating !== 3), OR
+    // 2. Completed via guided ranking (even if result is 3)
+    const nonDefaultCount = criteriaToCheck.filter(c => c.userRating !== 3).length;
+    const guidedRankingCriteriaIds = getGuidedRankingCriteriaIds();
+    
+    // Count criteria that were ranked via guided ranking (even if value is 3)
+    const guidedRankingCount = criteriaToCheck.filter(c => 
+      guidedRankingCriteriaIds.includes(c.id)
+    ).length;
+    
+    // Total adjusted count = non-default values + guided ranking completions (avoid double counting)
+    // If a criterion was ranked via guided ranking AND has non-default value, it's already counted in nonDefaultCount
+    // So we only need to add guided ranking criteria that still have value 3
+    const guidedRankingAtDefaultCount = criteriaToCheck.filter(c => 
+      guidedRankingCriteriaIds.includes(c.id) && c.userRating === 3
+    ).length;
+    
+    const adjustedCount = nonDefaultCount + guidedRankingAtDefaultCount;
+    
     const shouldShowModal = 
       !hasShownEmailModalRef.current && // Haven't shown this session
       !hasShownEmailModalEverRef.current && // Haven't shown ever (permanent check)
       adjustedCount >= 3; // 3+ criteria adjusted from default (ANY method: sliders, guided, individual)
     
-    console.log(`📊 Adjusted criteria count: ${adjustedCount}/${criteriaToCheck.length} - Modal eligible: ${shouldShowModal}`);
+    console.log(`📊 Adjusted criteria count: ${adjustedCount}/${criteriaToCheck.length} - Modal eligible: ${shouldShowModal} (non-default: ${nonDefaultCount}, guided ranking at default: ${guidedRankingAtDefaultCount}, total guided: ${guidedRankingCount})`);
     
     if (shouldShowModal) {
       // Mark as shown for this session AND permanently
@@ -1015,12 +1040,13 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       setCriteria(newCriteriaValues);
       console.log('📊 Criteria updated - sliders + tools animating together now');
       
-      // Wait for BOTH animations to complete (3 seconds - they're simultaneous)
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Wait for BOTH animations to complete (0.5 seconds - they're simultaneous)
+      await new Promise(resolve => setTimeout(resolve, 500));
       console.log('✅ All animations complete (sliders + tools finished together)');
       
       // NOW mark as completed (shows match scores) - done AFTER animation to prevent pre-animation jump
-      markGuidedRankingAsCompleted();
+      // Pass criterionId if this was an individual criterion ranking
+      markGuidedRankingAsCompleted(guidedRankingCriterionId);
       console.log('✅ Marked guided ranking as completed - match scores will now display');
       
       // Reset shuffle duration back to normal for future interactions
@@ -1038,8 +1064,20 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
           userRating: rankings[criterion.id] !== undefined ? rankings[criterion.id] : criterion.userRating
         }))
       );
+      
+      // Mark as completed on mobile too (pass criterionId if individual ranking)
+      markGuidedRankingAsCompleted(guidedRankingCriterionId);
+      
+      // Check email modal on mobile as well
+      const mobileCriteriaValues = criteria.map(c => ({
+        ...c,
+        userRating: rankings[c.id] !== undefined ? rankings[c.id] : c.userRating
+      }));
+      checkAndShowEmailModal(mobileCriteriaValues);
     }
     
+    // Call completion callback AFTER all processing is done (including animation on desktop)
+    // This ensures the modal doesn't close prematurely
     onGuidedRankingCompleteFromParent?.();
   };
 
@@ -1440,10 +1478,16 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
         <GuidedRankingForm
           isOpen={showGuidedRanking}
           onClose={() => {
-            // Call the coordination handler first from useGuidance
-            onGuidedRankingComplete();
-            // Then call the original handler from props
-            onGuidedRankingCompleteFromParent && onGuidedRankingCompleteFromParent();
+            // Only call completion handler if we're not in the middle of an animation
+            // This prevents premature closing that interferes with the animation sequence
+            if (!isAnimatingGuidedRankings && !isPreparingAnimation) {
+              // Call the coordination handler first from useGuidance
+              onGuidedRankingComplete();
+              // Then call the original handler from props
+              onGuidedRankingCompleteFromParent && onGuidedRankingCompleteFromParent();
+            } else {
+              console.log('⏸️ Skipping guided ranking complete callback - animation in progress');
+            }
           }}
           criteria={criteria}
           criterionId={guidedRankingCriterionId}

@@ -533,9 +533,20 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
       // Don't fail the form submission for PostHog tracking issues
     }
     
-    // Reset form state and close
+    // Reset form state
     resetFormState();
-    onClose();
+    
+    // Close modal - delay on desktop to allow animation to complete
+    // On mobile, close immediately since there's no animation
+    if (isTouchDevice) {
+      // Mobile: Close immediately (no animation)
+      onClose();
+    } else {
+      // Desktop: Delay close to allow animation to complete (500ms animation + 100ms buffer)
+      setTimeout(() => {
+        onClose();
+      }, 600);
+    }
   };
 
   if (!isOpen) return null;
