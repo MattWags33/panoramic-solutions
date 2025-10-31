@@ -146,21 +146,25 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
   const triggerExitIntentBumper = (triggerType: 'mouse-leave' | 'tab-switch', bypassRules = false) => {
     console.log('🎯 triggerExitIntentBumper called - trigger type:', triggerType, 'bypassRules:', bypassRules);
     
-    // PERMANENT RULES - Never bypass these, even for testing
+    // PERMANENT RULES - Never bypass these, even for testing (specification compliance)
     const state = getUnifiedBumperState();
     
+    // PERMANENT BLOCK #1: If user opened and closed the Comparison Report, NEVER show Exit-Intent again
+    // This is a permanent block that persists across page refreshes (specification Row 4)
     if (state.comparisonReportClosedAt) {
-      console.log('⚠️ ExitIntentBumper permanently disabled - Comparison Report was closed');
+      console.log('🚫 ExitIntentBumper PERMANENTLY DISABLED - Comparison Report was closed (specification Row 4)');
       return;
     }
     
+    // PERMANENT BLOCK #2: If user clicked into Guided Rankings, never show Exit-Intent
     if (state.hasClickedIntoGuidedRankings) {
-      console.log('⚠️ ExitIntentBumper permanently disabled - user clicked Guided Rankings');
+      console.log('🚫 ExitIntentBumper PERMANENTLY DISABLED - user clicked Guided Rankings');
       return;
     }
     
+    // PERMANENT BLOCK #3: If already dismissed, never show again
     if (state.exitIntentDismissed) {
-      console.log('⚠️ ExitIntentBumper permanently disabled - already dismissed');
+      console.log('🚫 ExitIntentBumper PERMANENTLY DISABLED - already dismissed');
       return;
     }
     

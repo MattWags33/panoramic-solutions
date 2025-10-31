@@ -4,11 +4,11 @@ import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail } from 'lucide-react';
 import { getCriteriaAdjustmentMessage } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 
 interface ExitIntentBumperProps {
   isVisible: boolean;
   onClose: () => void;
-  onTriggerExitIntent?: (triggerType: 'mouse-leave' | 'tab-switch') => void;
   triggerType?: 'mouse-leave' | 'tab-switch';
   toolCount?: number;
   hasFilters?: boolean;
@@ -19,7 +19,6 @@ interface ExitIntentBumperProps {
 export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
   isVisible,
   onClose,
-  onTriggerExitIntent,
   triggerType = 'mouse-leave',
   toolCount = 0,
   hasFilters = false,
@@ -27,7 +26,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
   criteriaAdjusted = true
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const { isTouchDevice } = useUnifiedMobileDetection();
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [emailButtonPosition, setEmailButtonPosition] = useState({ 
     x: '50%', 
@@ -41,82 +40,8 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
     setIsMounted(true);
   }, []);
   
-  // Exit intent detection state
-  const [lastMouseY, setLastMouseY] = useState(0);
-  const [mouseLeaveTimer, setMouseLeaveTimer] = useState<NodeJS.Timeout | null>(null);
-  
-  // Check for mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Exit Intent Detection - Only when bumper is NOT visible
-  useEffect(() => {
-    if (isVisible || isMobile || !onTriggerExitIntent) return;
-
-    let isExitIntentTriggered = false;
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      setLastMouseY(e.clientY);
-      
-      // Clear any existing timer
-      if (mouseLeaveTimer) {
-        clearTimeout(mouseLeaveTimer);
-        setMouseLeaveTimer(null);
-      }
-    };
-
-    const handleMouseLeave = (e: MouseEvent) => {
-      // Only trigger if mouse is moving toward the top of the screen (browser controls)
-      // and the mouse is leaving from the top edge
-      if (e.clientY <= 5 && lastMouseY > 50 && !isExitIntentTriggered) {
-        console.log('🚪 Exit intent detected: mouse leaving toward browser controls');
-        isExitIntentTriggered = true;
-        onTriggerExitIntent('mouse-leave');
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      // Detect tab switching or window minimizing
-      if (document.hidden && !isExitIntentTriggered) {
-        console.log('🚪 Exit intent detected: tab switch/minimize');
-        isExitIntentTriggered = true;
-        onTriggerExitIntent('tab-switch');
-      }
-    };
-
-    const handleBeforeUnload = () => {
-      // Detect actual page navigation/close
-      if (!isExitIntentTriggered) {
-        console.log('🚪 Exit intent detected: page unload');
-        isExitIntentTriggered = true;
-        onTriggerExitIntent('mouse-leave');
-      }
-    };
-
-    // Add event listeners
-    document.addEventListener('mousemove', handleMouseMove, { passive: true });
-    document.addEventListener('mouseleave', handleMouseLeave);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      
-      if (mouseLeaveTimer) {
-        clearTimeout(mouseLeaveTimer);
-      }
-    };
-  }, [isVisible, isMobile, onTriggerExitIntent, lastMouseY, mouseLeaveTimer]);
+  // NOTE: Exit intent detection is handled by useUnifiedExitIntent hook in EmbeddedPPMToolFlow
+  // This component only handles rendering and email button position tracking
 
   // Track email button position for the unblur cutout
   useEffect(() => {
@@ -287,8 +212,9 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
     return null;
   }
 
-  // Don't render anything on mobile
-  if (isMobile) {
+  // Don't render anything on touch devices (mobile/tablet)
+  // Touch-screen laptops are NOT blocked - only true mobile/tablet devices
+  if (isTouchDevice) {
     return null;
   }
 

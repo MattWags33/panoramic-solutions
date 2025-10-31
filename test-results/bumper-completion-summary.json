@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-01-23T22:00:00Z",
+  "type": "VERIFICATION",
+  "metadata": {
+    "project": "PPM Tool Finder",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true
+  },
+  "bumpers_status": {
+    "ExitIntentBumper": {
+      "status": "COMPLETE",
+      "triggers_working": [
+        "mouse-leave (mouse goes off screen)",
+        "tab-switch (user switches tabs)",
+        "2-minute timer (auto-trigger)",
+        "keyboard-shortcut (Ctrl+Shift+X for testing)"
+      ],
+      "device_detection": {
+        "mobile": "DISABLED",
+        "tablet": "DISABLED",
+        "touch_screen_laptop": "ENABLED",
+        "desktop": "ENABLED",
+        "implementation": "useUnifiedMobileDetection hook"
+      },
+      "blocking_conditions": {
+        "when_email_modal_open": "BLOCKED",
+        "when_guided_rankings_open": "BLOCKED",
+        "when_how_it_works_open": "BLOCKED",
+        "after_comparison_report_closed": "PERMANENTLY_BLOCKED",
+        "when_product_bumper_open": "BLOCKED",
+        "implementation": "homeState overlay tracking"
+      },
+      "requirements": {
+        "3_plus_criteria_adjusted": "REQUIRED",
+        "2_minutes_on_page": "REQUIRED",
+        "home_state_required": "REQUIRED",
+        "not_permanently_blocked": "REQUIRED"
+      },
+      "fixes_implemented": [
+        "Removed duplicate exit intent detection from component",
+        "Centralized detection in useUnifiedExitIntent hook",
+        "Added EmailCaptureModal overlay registration",
+        "Enhanced permanent block validation",
+        "Unified device detection"
+      ]
+    },
+    "ProductBumper": {
+      "status": "COMPLETE",
+      "triggers_working": [
+        "timing-based (10s initial + 3s mouse stop)",
+        "keyboard-shortcut (Ctrl+Shift+Q for testing)"
+      ],
+      "device_detection": {
+        "mobile": "DISABLED",
+        "tablet": "DISABLED",
+        "touch_screen_laptop": "ENABLED",
+        "desktop": "ENABLED",
+        "implementation": "useUnifiedMobileDetection hook"
+      },
+      "blocking_conditions": {
+        "when_email_modal_open": "BLOCKED",
+        "when_guided_rankings_open": "BLOCKED",
+        "when_how_it_works_open": "BLOCKED",
+        "when_exit_intent_open": "BLOCKED",
+        "when_comparison_report_open": "BLOCKED",
+        "after_user_clicked_guided_rankings": "PERMANENTLY_BLOCKED",
+        "23s_cooldown_after_exit_intent": "ENFORCED",
+        "implementation": "homeState overlay tracking + UniversalBumperEngine"
+      },
+      "requirements": {
+        "initial_10s_timer": "REQUIRED",
+        "3s_after_mouse_stops": "REQUIRED",
+        "home_state_required": "REQUIRED",
+        "not_dismissed": "REQUIRED",
+        "not_shown_yet": "REQUIRED"
+      },
+      "fixes_implemented": [
+        "Unified device detection",
+        "Overlay blocking integration",
+        "23s cooldown after Exit Intent",
+        "Permanent block after Guided Rankings clicked"
+      ]
+    }
+  },
+  "shared_features": {
+    "device_detection": "useUnifiedMobileDetection hook",
+    "overlay_blocking": "homeState.ts overlay tracking",
+    "state_management": "UniversalBumperStateManager",
+    "timing_engine": "UniversalBumperEngine",
+    "keyboard_shortcuts": {
+      "ExitIntent": "Ctrl+Shift+X",
+      "ProductBumper": "Ctrl+Shift+Q",
+      "Reset": "Ctrl+Shift+R",
+      "Debug": "Ctrl+Shift+D"
+    }
+  },
+  "verification_tests": {
+    "exit_intent_not_immediate": "PASSED",
+    "email_modal_blocks_bumpers": "PASSED",
+    "permanent_exit_intent_block": "PASSED",
+    "device_detection": "PASSED",
+    "timing_logic": "PASSED",
+    "mouse_leave_trigger": "VERIFIED",
+    "tab_switch_trigger": "VERIFIED"
+  },
+  "files_modified": [
+    "src/ppm-tool/components/overlays/ExitIntentBumper.tsx",
+    "src/ppm-tool/components/overlays/ProductBumper.tsx",
+    "src/ppm-tool/components/forms/EmailCaptureModal.tsx",
+    "src/ppm-tool/shared/engines/UniversalBumperEngine.ts",
+    "src/ppm-tool/shared/utils/unifiedBumperState.ts",
+    "src/ppm-tool/shared/contexts/GuidanceContext.tsx"
+  ]
+}
+

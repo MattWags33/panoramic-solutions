@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, ArrowRight } from 'lucide-react';
+import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
 
 interface ProductBumperProps {
   isVisible: boolean;
@@ -18,23 +19,12 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
   guidedButtonRef
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const { isTouchDevice } = useUnifiedMobileDetection();
   const [buttonPosition, setButtonPosition] = useState({ top: 0, left: 0, width: 0 });
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-  
-  // Check for mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Calculate button position when visible
@@ -131,8 +121,9 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
     return null;
   }
 
-  // Don't render anything on mobile
-  if (isMobile) {
+  // Don't render anything on touch devices (mobile/tablet)
+  // Touch-screen laptops are NOT blocked - only true mobile/tablet devices
+  if (isTouchDevice) {
     return null;
   }
 

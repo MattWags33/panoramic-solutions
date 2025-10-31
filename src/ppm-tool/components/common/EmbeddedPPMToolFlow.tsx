@@ -29,7 +29,9 @@ import { useDevelopmentKeyboards } from '@/ppm-tool/shared/hooks/useDevelopmentK
 import { 
   resetUnifiedBumperState, 
   recordFullGuidedRankingsClick, 
-  recordCriteriaSpecificGuidedRankingsClick 
+  recordCriteriaSpecificGuidedRankingsClick,
+  getUnifiedBumperState,
+  shouldShowProductBumper
 } from '@/ppm-tool/shared/utils/unifiedBumperState';
 import { hasCriteriaBeenAdjusted, hasMinimumCriteriaAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import { hasCompletedAnyGuidedRanking } from '@/ppm-tool/shared/utils/guidedRankingState';
@@ -258,6 +260,24 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     onTriggerProductBumper: triggerProductBumper,
     onTriggerExitIntentBumper: triggerExitIntentBumper
   });
+  
+  // Debug ProductBumper eligibility
+  useEffect(() => {
+    if (!isTouchDevice && !hasTriggeredProductBumper) {
+      const state = getUnifiedBumperState();
+      const canShow = shouldShowProductBumper();
+      console.log('🔍 ProductBumper eligibility check:', {
+        canShow,
+        dismissed: state.productBumperDismissed,
+        shown: state.productBumperShown,
+        clickedIntoGuided: state.hasClickedIntoGuidedRankings,
+        initialTimerComplete: state.initialTimerComplete,
+        mouseMovementTimerComplete: state.mouseMovementTimerComplete,
+        anyBumperOpen: state.isAnyBumperCurrentlyOpen,
+        guidedRankingsOpen: state.isGuidedRankingsCurrentlyOpen
+      });
+    }
+  }, [isTouchDevice, hasTriggeredProductBumper]);
   
   // Flag to keep tools in alphabetical order during guided animation sequence
   const [isAnimatingGuidedRankings, setIsAnimatingGuidedRankings] = useState(false);
@@ -868,12 +888,35 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     
     const adjustedCount = nonDefaultCount + guidedRankingAtDefaultCount;
     
+    // Detailed logging for debugging
+    console.log(`📊 Email Modal Check:`, {
+      totalCriteria: criteriaToCheck.length,
+      nonDefaultCount,
+      guidedRankingCount,
+      guidedRankingAtDefaultCount,
+      adjustedCount,
+      requiredCount: 3,
+      hasShownThisSession: hasShownEmailModalRef.current,
+      hasShownEver: hasShownEmailModalEverRef.current,
+      sessionStorageValue: typeof window !== 'undefined' && window.sessionStorage 
+        ? sessionStorage.getItem('ppm-email-modal-shown') 
+        : 'N/A',
+      criteriaBreakdown: criteriaToCheck.map(c => ({
+        id: c.id,
+        name: c.name,
+        rating: c.userRating,
+        isNonDefault: c.userRating !== 3,
+        wasGuidedRanked: guidedRankingCriteriaIds.includes(c.id),
+        counted: (c.userRating !== 3) || (guidedRankingCriteriaIds.includes(c.id) && c.userRating === 3)
+      }))
+    });
+    
     const shouldShowModal = 
       !hasShownEmailModalRef.current && // Haven't shown this session
       !hasShownEmailModalEverRef.current && // Haven't shown ever (permanent check)
       adjustedCount >= 3; // 3+ criteria adjusted from default (ANY method: sliders, guided, individual)
     
-    console.log(`📊 Adjusted criteria count: ${adjustedCount}/${criteriaToCheck.length} - Modal eligible: ${shouldShowModal} (non-default: ${nonDefaultCount}, guided ranking at default: ${guidedRankingAtDefaultCount}, total guided: ${guidedRankingCount})`);
+    console.log(`📊 Email Modal Decision: ${shouldShowModal ? '✅ SHOW' : '❌ BLOCK'} - Adjusted: ${adjustedCount}/3`);
     
     if (shouldShowModal) {
       // Mark as shown for this session AND permanently
@@ -937,6 +980,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
         // Safety timeout: Stop checking after 30 seconds
         setTimeout(() => {
           clearInterval(checkInterval);
+          console.log('⏰ Email modal check timeout - user did not return to main state');
         }, 30000);
       }
     } else {

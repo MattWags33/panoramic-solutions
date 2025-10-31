@@ -267,25 +267,62 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   }, [isOpen, onMethodologyFilter]);
 
   const handleClose = () => {
-    // FULL GUIDED MODE: Save partial answers but DO NOT trigger animation
-    // Animation should ONLY happen when handleSubmit is called (form completed)
-    if (!criterionId && Object.keys(answers).length > 0) {
-      console.log('📊 Full guided mode with partial answers - saving but NOT applying (no animation)');
+    // BOTH MODES: If there are answers, check if we should apply them with animation
+    if (Object.keys(answers).length > 0) {
+      console.log('📊 Checking for changes before closing:', { 
+        mode: criterionId ? 'single-criteria' : 'full-guided',
+        answersCount: Object.keys(answers).length 
+      });
+      
+      const rankings = calculateRankings();
       const personalizationData = extractPersonalizationData(answers);
       
-      // Save answers and personalization data for later completion
-      // But DO NOT call onUpdateRankings - that triggers animation
-      onSaveAnswers?.(answers, personalizationData);
+      // Check if rankings would actually change anything (not all defaults)
+      const hasMeaningfulChanges = Object.keys(rankings).some(criterionId => {
+        const criterion = criteria.find(c => c.id === criterionId);
+        return criterion && rankings[criterionId] !== criterion.userRating;
+      });
       
-      console.log('✅ Full guided mode - partial answers saved (will be applied when form is completed)');
-    } 
-    // CRITERIA-SPECIFIC MODE: Do NOT apply on close (only on Apply button)
-    else {
-      console.log('🚪 Individual criteria mode - modal closed without Apply, no rankings applied');
+      // ALSO check if calculations occurred (Q1+Q2, Q6+Q7, or single-question criteria)
+      // This ensures animation triggers even if calculated value equals current value
+      // because the user explicitly answered questions that calculate criteria
+      const hasScalabilityCalculation = answers['q1'] && answers['q2'];
+      const hasFlexibilityCalculation = answers['q6'] && answers['q7'];
+      const hasSingleQuestionAnswers = ['q3', 'q4', 'q5', 'q8', 'q9'].some(qId => answers[qId]);
+      const hasAnyCalculation = hasScalabilityCalculation || hasFlexibilityCalculation || hasSingleQuestionAnswers;
+      
+      // Trigger animation if values changed OR calculations occurred
+      if (hasMeaningfulChanges || hasAnyCalculation) {
+        console.log('✅ Rankings would change criteria or calculations occurred - triggering animation', {
+          hasMeaningfulChanges,
+          hasScalabilityCalculation,
+          hasFlexibilityCalculation,
+          hasSingleQuestionAnswers
+        });
+        // Save answers first
+        onSaveAnswers?.(answers, personalizationData);
+        
+        // Close modal first, then trigger animation after modal closes
+        resetFormState();
+        onClose();
+        
+        // Wait for modal to close before starting animation
+        setTimeout(() => {
+          onUpdateRankings(rankings);
+        }, isTouchDevice ? 100 : 500); // Mobile: 100ms, Desktop: 500ms (0.5 seconds delay)
+      } else {
+        // No meaningful changes, just save and close
+        console.log('⚠️ No meaningful changes from answers - saving but not applying');
+        onSaveAnswers?.(answers, personalizationData);
+        resetFormState();
+        onClose();
+      }
+    } else {
+      // No answers at all, just close
+      console.log('🚪 No answers provided - closing without applying');
+      resetFormState();
+      onClose();
     }
-    
-    resetFormState();
-    onClose();
   };
 
   useClickOutside(formRef, handleClose);
@@ -503,12 +540,6 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     const rankings = calculateRankings();
     const personalizationData = extractPersonalizationData(answers);
     
-    // Apply rankings to criteria but keep sliders unlocked
-    onUpdateRankings(rankings);
-    
-    // Save answers and personalization data
-    onSaveAnswers?.(answers, personalizationData);
-    
     // Mark that user has completed guided ranking (prevents ProductBumper from showing again)
     markGuidedRankingComplete();
     // NOTE: markGuidedRankingAsCompleted() is now called AFTER animation completes in handleUpdateRankings
@@ -531,17 +562,26 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     // Reset form state
     resetFormState();
     
-    // Close modal - delay on desktop to allow animation to complete
-    // On mobile, close immediately since there's no animation
+    // Close modal FIRST, then start animation after modal fully closes
+    // On mobile, close immediately and trigger animation immediately (no animation)
     if (isTouchDevice) {
       // Mobile: Close immediately (no animation)
       onClose();
-    } else {
-      // Desktop: Delay close to allow animation to complete (500ms animation + 100ms buffer)
+      // Trigger rankings immediately on mobile
       setTimeout(() => {
-        onClose();
-      }, 600);
+        onUpdateRankings(rankings);
+      }, 100); // Small delay to ensure modal closes
+    } else {
+      // Desktop: Close modal first, then wait for modal animation to complete before starting gooey
+      onClose();
+      // Wait for modal exit animation (300ms) + buffer before starting gooey animation
+      setTimeout(() => {
+        onUpdateRankings(rankings);
+      }, 400); // Modal exit is 300ms, add 100ms buffer
     }
+    
+    // Save answers and personalization data AFTER closing (don't delay for this)
+    onSaveAnswers?.(answers, personalizationData);
   };
 
   if (!isOpen) return null;

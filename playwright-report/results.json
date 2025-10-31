@@ -1,0 +1,617 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\playwright.config.ts",
+    "rootDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 5
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-report/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "iPhone 12",
+        "name": "iPhone 12",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/core-pages.spec.ts",
+          "**/mobile-behavior.spec.ts",
+          "**/responsive-design.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "iPhone 14",
+        "name": "iPhone 14",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/core-pages.spec.ts",
+          "**/mobile-behavior.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "Pixel 7",
+        "name": "Pixel 7",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/core-pages.spec.ts",
+          "**/mobile-behavior.spec.ts",
+          "**/responsive-design.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "Samsung Galaxy S23",
+        "name": "Samsung Galaxy S23",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/core-pages.spec.ts",
+          "**/mobile-behavior.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "iPad",
+        "name": "iPad",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/core-pages.spec.ts",
+          "**/responsive-design.spec.ts",
+          "**/interactive-elements.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "iPad Mini",
+        "name": "iPad Mini",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/core-pages.spec.ts",
+          "**/responsive-design.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "Desktop 1920x1080",
+        "name": "Desktop 1920x1080",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/responsive-design.spec.ts",
+          "**/interactive-elements.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "Desktop 1366x768",
+        "name": "Desktop 1366x768",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/responsive-design.spec.ts"
+        ],
+        "timeout": 120000
+      },
+      {
+        "outputDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "Accessibility Tests",
+        "name": "Accessibility Tests",
+        "testDir": "C:/Users/Parker Gawne/panoramic-solutions/panoramic-solutions/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/accessibility-performance.spec.ts"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 8,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "bumper-fixes-verification.spec.ts",
+      "file": "bumper-fixes-verification.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Bumper Fixes - Exit Intent Immediate Trigger Bug",
+          "file": "bumper-fixes-verification.spec.ts",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "CRITICAL: Exit Intent should NOT trigger immediately on page load",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4518,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts:56:21",
+                        "location": {
+                          "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts",
+                          "column": 21,
+                          "line": 56
+                        },
+                        "snippet": "  54 |     });\n  55 |     \n> 56 |     expect(canShow).toBe(true); // Should still be waiting for 2min\n     |                     ^\n  57 |     console.log('✅ PASS: 2-minute timer rule correctly preventing trigger');\n  58 |   });\n  59 | });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts",
+                            "column": 21,
+                            "line": 56
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  54 |     });\n  55 |     \n> 56 |     expect(canShow).toBe(true); // Should still be waiting for 2min\n     |                     ^\n  57 |     console.log('✅ PASS: 2-minute timer rule correctly preventing trigger');\n  58 |   });\n  59 | });\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts:56:21"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "🔍 Testing: Exit Intent should NOT trigger immediately\n"
+                        },
+                        {
+                          "text": "✅ PASS: Exit Intent correctly blocked - no immediate trigger\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-31T20:52:30.919Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\bumper-fixes-verification--d6fdc-er-immediately-on-page-load-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\bumper-fixes-verification--d6fdc-er-immediately-on-page-load-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\bumper-fixes-verification--d6fdc-er-immediately-on-page-load-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts",
+                        "column": 21,
+                        "line": 56
+                      }
+                    },
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 3305,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts:56:21",
+                        "location": {
+                          "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts",
+                          "column": 21,
+                          "line": 56
+                        },
+                        "snippet": "  54 |     });\n  55 |     \n> 56 |     expect(canShow).toBe(true); // Should still be waiting for 2min\n     |                     ^\n  57 |     console.log('✅ PASS: 2-minute timer rule correctly preventing trigger');\n  58 |   });\n  59 | });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts",
+                            "column": 21,
+                            "line": 56
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  54 |     });\n  55 |     \n> 56 |     expect(canShow).toBe(true); // Should still be waiting for 2min\n     |                     ^\n  57 |     console.log('✅ PASS: 2-minute timer rule correctly preventing trigger');\n  58 |   });\n  59 | });\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts:56:21"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "🔍 Testing: Exit Intent should NOT trigger immediately\n"
+                        },
+                        {
+                          "text": "✅ PASS: Exit Intent correctly blocked - no immediate trigger\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-10-31T20:52:37.136Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\bumper-fixes-verification--d6fdc-er-immediately-on-page-load-chromium-retry1\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\bumper-fixes-verification--d6fdc-er-immediately-on-page-load-chromium-retry1\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\bumper-fixes-verification--d6fdc-er-immediately-on-page-load-chromium-retry1\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\bumper-fixes-verification--d6fdc-er-immediately-on-page-load-chromium-retry1\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\bumper-fixes-verification.spec.ts",
+                        "column": 21,
+                        "line": 56
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "51d04d53da6deabf607c-8522895b31fddab157d9",
+              "file": "bumper-fixes-verification.spec.ts",
+              "line": 17,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Bumper Fixes - EmailCaptureModal Overlay Blocking",
+          "file": "bumper-fixes-verification.spec.ts",
+          "line": 61,
+          "column": 6,
+          "specs": [
+            {
+              "title": "EmailCaptureModal should block bumpers when open",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 20366,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📧 Testing: EmailCaptureModal blocks bumpers\n"
+                        },
+                        {
+                          "text": "⚠️ Report button not found or not visible yet\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-31T20:52:30.922Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "51d04d53da6deabf607c-755cb6e8052298c894e5",
+              "file": "bumper-fixes-verification.spec.ts",
+              "line": 63,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Bumper Fixes - Permanent Exit Intent Block After CR",
+          "file": "bumper-fixes-verification.spec.ts",
+          "line": 144,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Comparison Report closure should PERMANENTLY disable Exit Intent",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 6386,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🚫 Testing: Permanent Exit Intent block after CR closure\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-31T20:52:30.930Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "51d04d53da6deabf607c-7c90e3ed58e6c5f535e7",
+              "file": "bumper-fixes-verification.spec.ts",
+              "line": 146,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Bumper Fixes - Device Detection (Touch-Screen Laptops)",
+          "file": "bumper-fixes-verification.spec.ts",
+          "line": 235,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Touch-screen laptop should show bumpers (CRITICAL)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 2471,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "🖥️ Testing: Touch-screen laptop device detection\n"
+                        },
+                        {
+                          "text": "Device detection: {\n  width: \u001b[33m1920\u001b[39m,\n  maxTouchPoints: \u001b[33m0\u001b[39m,\n  userAgent: \u001b[32m'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.37 Safari/537.36'\u001b[39m\n}\n"
+                        },
+                        {
+                          "text": "✅ PASS: Touch-screen laptop correctly identified - bumpers ENABLED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-31T20:52:30.935Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "51d04d53da6deabf607c-f71a8c245077e8d107cf",
+              "file": "bumper-fixes-verification.spec.ts",
+              "line": 237,
+              "column": 7
+            },
+            {
+              "title": "Mobile device should NOT show bumpers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 2391,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "📱 Testing: Mobile device detection\n"
+                        },
+                        {
+                          "text": "Mobile detection: {\n  width: \u001b[33m375\u001b[39m,\n  maxTouchPoints: \u001b[33m0\u001b[39m,\n  userAgent: \u001b[32m'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.37 Safari/537.36'\u001b[39m\n}\n"
+                        },
+                        {
+                          "text": "✅ PASS: Mobile device correctly identified - bumpers DISABLED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-31T20:52:30.952Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "51d04d53da6deabf607c-c11370130339e6bc9d4e",
+              "file": "bumper-fixes-verification.spec.ts",
+              "line": 269,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-10-31T20:52:29.784Z",
+    "duration": 22268.001,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

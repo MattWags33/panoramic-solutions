@@ -307,29 +307,55 @@ export class UniversalBumperEngine {
   shouldShowExitIntentBumper(): boolean {
     // PRIORITY CHECK: Must be in home state (no overlays open)
     if (!shouldAllowBumpers()) {
+      console.log('🚫 Exit Intent blocked - not in home state (overlay open)');
       return false;
     }
     
     const state = stateManager.getState();
     const now = Date.now();
     
+    // PERMANENT BLOCK #1: If user opened and closed the Comparison Report, NEVER show Exit-Intent again
+    // This is a permanent block that persists across page refreshes (specification Row 4)
+    if (state.comparisonReportClosedAt) {
+      console.log('🚫 Exit Intent PERMANENTLY DISABLED - Comparison Report was closed (specification Row 4)');
+      return false;
+    }
+    
+    // PERMANENT BLOCK #2: If user clicked into Guided Rankings, never show Exit-Intent
+    if (state.hasClickedIntoGuidedRankings) {
+      console.log('🚫 Exit Intent PERMANENTLY DISABLED - user clicked into Guided Rankings');
+      return false;
+    }
+    
     // Never show if already dismissed
-    if (state.exitIntentDismissed) return false;
+    if (state.exitIntentDismissed) {
+      console.log('🚫 Exit Intent blocked - already dismissed');
+      return false;
+    }
     
     // Never show if already shown
-    if (state.exitIntentShown) return false;
+    if (state.exitIntentShown) {
+      console.log('🚫 Exit Intent blocked - already shown');
+      return false;
+    }
     
     // Never show if any bumper is currently open
-    if (state.isAnyBumperCurrentlyOpen) return false;
+    if (state.isAnyBumperCurrentlyOpen) {
+      console.log('🚫 Exit Intent blocked - another bumper is currently open');
+      return false;
+    }
     
     // Never show if Guided Rankings is CURRENTLY open (but allow after it closes)
-    if (state.isGuidedRankingsCurrentlyOpen) return false;
+    if (state.isGuidedRankingsCurrentlyOpen) {
+      console.log('🚫 Exit Intent blocked - Guided Rankings is currently open');
+      return false;
+    }
     
     // Never show if Comparison Report is CURRENTLY open
-    if (state.isComparisonReportCurrentlyOpen) return false;
-    
-    // If user opened and closed the Comparison Report, never show Exit-Intent
-    if (state.comparisonReportClosedAt) return false;
+    if (state.isComparisonReportCurrentlyOpen) {
+      console.log('🚫 Exit Intent blocked - Comparison Report is currently open');
+      return false;
+    }
     
     // Cross-bumper cooldown: if Product Bumper was recently dismissed, wait 23s
     if (state.productBumperDismissedAt) {

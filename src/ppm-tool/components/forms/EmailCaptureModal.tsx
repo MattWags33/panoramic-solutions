@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/ppm-tool/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,7 @@ import { useEmailReport } from '@/ppm-tool/shared/hooks/useEmailReport';
 import type { Tool, Criterion } from '@/ppm-tool/shared/types';
 import { useToast } from '@/hooks/use-toast';
 import { hasCriteriaBeenAdjusted, getCriteriaAdjustmentMessage, getCriteriaAdjustmentMessageStyles } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES } from '@/ppm-tool/shared/utils/homeState';
 
 interface EmailCaptureModalProps {
   isOpen: boolean;
@@ -351,6 +352,24 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
   const criteriaAdjusted = hasCriteriaBeenAdjusted(selectedCriteria);
   const reportMessage = getCriteriaAdjustmentMessage(selectedTools.length, criteriaAdjusted);
   const messageStyles = getCriteriaAdjustmentMessageStyles(criteriaAdjusted);
+  
+  // Register this modal as an overlay to block bumpers when open
+  useEffect(() => {
+    if (isOpen) {
+      console.log('📧 EmailCaptureModal opened - registering as overlay to block bumpers');
+      setOverlayOpen(OVERLAY_TYPES.COMPARISON_REPORT);
+    } else {
+      console.log('📧 EmailCaptureModal closed - removing overlay registration');
+      setOverlayClosed(OVERLAY_TYPES.COMPARISON_REPORT);
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (isOpen) {
+        setOverlayClosed(OVERLAY_TYPES.COMPARISON_REPORT);
+      }
+    };
+  }, [isOpen]);
   
   // REMOVED: useClickOutside(formRef, onClose);
   // Not needed - backdrop onClick handles outside clicks, and this was causing 
