@@ -160,23 +160,26 @@ export class UniversalBumperEngine {
       }
     };
     
-    // Exit intent detection with error handling
-    this.mouseLeaveHandler = (e: MouseEvent) => {
-      try {
-        this.handleMouseLeave(e);
-      } catch (error) {
-        // Silently handle mouse leave errors
-      }
-    };
+    // DISABLED: Exit intent detection is handled by useUnifiedExitIntent hook
+    // which includes proper criteria checking (3+ criteria adjusted requirement)
+    // Commented out to prevent duplicate triggers without criteria check
+    // this.mouseLeaveHandler = (e: MouseEvent) => {
+    //   try {
+    //     this.handleMouseLeave(e);
+    //   } catch (error) {
+    //     // Silently handle mouse leave errors
+    //   }
+    // };
     
-    // Tab visibility change with error handling
-    this.visibilityChangeHandler = () => {
-      try {
-        this.handleVisibilityChange();
-      } catch (error) {
-        // Silently handle visibility change errors
-      }
-    };
+    // DISABLED: Tab switch detection is handled by useUnifiedExitIntent hook
+    // which includes proper criteria checking (3+ criteria adjusted requirement)
+    // this.visibilityChangeHandler = () => {
+    //   try {
+    //     this.handleVisibilityChange();
+    //   } catch (error) {
+    //     // Silently handle visibility change errors
+    //   }
+    // };
     
     // Add event listeners with comprehensive error handling
     try {
@@ -185,17 +188,19 @@ export class UniversalBumperEngine {
       // Mousemove failed, continue without it
     }
     
-    try {
-      document.addEventListener('mouseleave', this.mouseLeaveHandler);
-    } catch (error) {
-      // Mouse leave failed, continue without it
-    }
+    // DISABLED: Let useUnifiedExitIntent hook handle mouse leave with criteria check
+    // try {
+    //   document.addEventListener('mouseleave', this.mouseLeaveHandler);
+    // } catch (error) {
+    //   // Mouse leave failed, continue without it
+    // }
     
-    try {
-      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
-    } catch (error) {
-      // Visibility change failed, continue without it
-    }
+    // DISABLED: Let useUnifiedExitIntent hook handle visibility change with criteria check
+    // try {
+    //   document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+    // } catch (error) {
+    //   // Visibility change failed, continue without it
+    // }
   }
   
   private handleMouseMove(e: MouseEvent): void {
@@ -226,16 +231,16 @@ export class UniversalBumperEngine {
   }
   
   private handleMouseLeave(e: MouseEvent): void {
-    // Only trigger on actual page leave (cursor near top edge)
-    if (e.clientY <= 10) {
-      this.checkExitIntentTrigger('mouse-leave');
-    }
+    // DISABLED: Mouse leave detection is handled by useUnifiedExitIntent hook
+    // which includes proper criteria checking (3+ criteria adjusted requirement)
+    // This prevents duplicate triggers without criteria validation
+    return;
   }
   
   private handleVisibilityChange(): void {
-    if (document.hidden) {
-      this.checkExitIntentTrigger('tab-switch');
-    }
+    // DISABLED: Tab switch detection is handled by useUnifiedExitIntent hook
+    // which includes proper criteria checking (3+ criteria adjusted requirement)
+    return;
   }
   
   private checkProductBumperTrigger(): void {
