@@ -12,7 +12,7 @@ import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES } from '@/ppm-tool/shar
 
 interface EmailCaptureModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (submitted?: boolean) => void;
   onSubmit: (email: string, firstName: string, lastName: string) => void;
   isLoading: boolean;
   selectedTools?: Tool[];
@@ -379,7 +379,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
     onSuccess: (response) => {
       console.log('Email sent successfully:', response);
       // Don't call onSubmit to avoid PDF generation - email is the new primary flow
-      onClose();
+      onClose(true); // Pass true to indicate email was successfully submitted
       // Show success toast notification
       toast({
         title: "Report Sent",
@@ -474,7 +474,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
         >
           <motion.div 
             className="fixed inset-0 bg-black/20" 
-            onClick={onClose}
+            // REMOVED: onClick={onClose} - Users must click X button to close
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -495,7 +495,7 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                 <p className="text-xs md:text-sm text-gray-500 mt-1">Get your personalized tool comparison analysis</p>
               </div>
               <motion.button
-                onClick={onClose}
+                onClick={() => onClose(false)} // Pass false - user closed without submitting
                 className="p-1.5 md:p-2 text-gray-400 hover:text-gray-600 rounded-lg"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -518,8 +518,8 @@ export const EmailCaptureModal: React.FC<EmailCaptureModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      // Close modal first
-                      onClose();
+                      // Close modal first (user clicked "Complete Guided Rankings" - not submitting)
+                      onClose(false);
                       // Then trigger guided rankings if callback is provided
                       if (onOpenGuidedRanking) {
                         onOpenGuidedRanking();

@@ -270,10 +270,12 @@ export class UniversalBumperStateManager {
     });
   }
   
-  recordComparisonReportClosed(): void {
+  recordComparisonReportClosed(submitted: boolean = false): void {
     const state = this.getState();
     this.setState({ 
-      comparisonReportClosedAt: new Date().toISOString(),
+      // Only set permanent block if form was submitted successfully
+      // If user just closes without submitting, allow Exit Intent to show again
+      comparisonReportClosedAt: submitted ? new Date().toISOString() : null,
       isComparisonReportCurrentlyOpen: false,
       // Reset Product Bumper eligibility if user never clicked GR
       productBumperShown: state.hasClickedIntoGuidedRankings ? state.productBumperShown : false,

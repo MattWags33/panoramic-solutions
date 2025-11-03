@@ -137,7 +137,7 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            // REMOVED: onClick={onClose} - Users must click X button to close
           />
           
           

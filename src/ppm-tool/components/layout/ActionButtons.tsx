@@ -432,8 +432,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
       <EmailCaptureModal
         isOpen={showEmailModal}
-        onClose={() => {
-          onComparisonReportClose();
+        onClose={(submitted = false) => {
+          onComparisonReportClose(submitted);
           setShowEmailModal(false);
         }}
         onSubmit={handleEmailSubmit}

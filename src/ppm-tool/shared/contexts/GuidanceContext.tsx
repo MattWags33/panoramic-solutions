@@ -43,7 +43,7 @@ interface GuidanceContextType {
   onGuidedRankingClick: () => void;
   onComparisonReportClick: () => void;
   onComparisonReportOpen: () => void;
-  onComparisonReportClose: () => void;
+  onComparisonReportClose: (submitted?: boolean) => void;
 }
 
 const GuidanceContext = createContext<GuidanceContextType | undefined>(undefined);
@@ -228,9 +228,9 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     setOverlayOpen(OVERLAY_TYPES.COMPARISON_REPORT);
   };
 
-  const onComparisonReportClose = () => {
-    console.log('📊 Comparison Report closed');
-    recordComparisonReportClosed();
+  const onComparisonReportClose = (submitted: boolean = false) => {
+    console.log(`📊 Comparison Report closed (submitted: ${submitted})`);
+    recordComparisonReportClosed(submitted);
     setOverlayClosed(OVERLAY_TYPES.COMPARISON_REPORT);
     
     // Reset Product Bumper eligibility when Report closes (if user never clicked GR)

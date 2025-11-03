@@ -229,7 +229,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            // REMOVED: onClick={onClose} - Users must click X button to close
             style={{
               top: 0,
               left: 0,
@@ -247,7 +247,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            // REMOVED: onClick={onClose} - Users must click X button to close
             style={{
               top: `calc(${emailButtonPosition.y} + ${emailButtonPosition.height})`,
               left: 0,
@@ -265,7 +265,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            // REMOVED: onClick={onClose} - Users must click X button to close
             style={{
               top: emailButtonPosition.y,
               left: 0,
@@ -283,7 +283,7 @@ export const ExitIntentBumper: React.FC<ExitIntentBumperProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            // REMOVED: onClick={onClose} - Users must click X button to close
             style={{
               top: emailButtonPosition.y,
               left: `calc(${emailButtonPosition.x} + ${emailButtonPosition.width})`,

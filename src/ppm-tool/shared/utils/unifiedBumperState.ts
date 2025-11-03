@@ -112,8 +112,8 @@ export function recordComparisonReportOpened(): void {
   stateManager.recordComparisonReportOpened();
 }
 
-export function recordComparisonReportClosed(): void {
-  stateManager.recordComparisonReportClosed();
+export function recordComparisonReportClosed(submitted: boolean = false): void {
+  stateManager.recordComparisonReportClosed(submitted);
 }
 
 export function recordMouseMovement(): void {

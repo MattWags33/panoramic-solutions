@@ -267,11 +267,23 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   }, [isOpen, onMethodologyFilter]);
 
   const handleClose = () => {
-    // BOTH MODES: If there are answers, check if we should apply them with animation
-    if (Object.keys(answers).length > 0) {
+    // Check if ANY questions were actually answered (not just if answers object has keys)
+    // Filter out empty/null/undefined values and check if any real answers exist
+    const hasAnyAnswers = Object.entries(answers).some(([key, value]) => {
+      // Only count actual question answers (q1-q9), not personalization answers
+      const isQuestionKey = /^q\d+$/.test(key);
+      if (!isQuestionKey) return false;
+      
+      // Value must be truthy (number for questions, non-empty string/array for personalization)
+      return value !== null && value !== undefined && value !== '';
+    });
+    
+    // BOTH MODES: If there are actual answers, check if we should apply them with animation
+    if (hasAnyAnswers) {
       console.log('📊 Checking for changes before closing:', { 
         mode: criterionId ? 'single-criteria' : 'full-guided',
-        answersCount: Object.keys(answers).length 
+        answersCount: Object.keys(answers).length,
+        hasAnyAnswers
       });
       
       const rankings = calculateRankings();
@@ -537,6 +549,18 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   }, [calculateRankings, isOpen, answers]);
 
   const handleSubmit = () => {
+    // Defensive check: Ensure at least one question was actually answered
+    const hasAnyAnswers = Object.entries(answers).some(([key, value]) => {
+      const isQuestionKey = /^q\d+$/.test(key);
+      if (!isQuestionKey) return false;
+      return value !== null && value !== undefined && value !== '';
+    });
+    
+    if (!hasAnyAnswers) {
+      console.log('⚠️ No answers provided - cannot submit without answers');
+      return; // Early return if no answers
+    }
+    
     const rankings = calculateRankings();
     const personalizationData = extractPersonalizationData(answers);
     
