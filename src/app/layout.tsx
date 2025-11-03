@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import { headers } from 'next/headers'
 import './globals.css'
 import { ClientProviders } from '@/components/providers/ClientProviders'
 import { Header } from '@/components/layout/Header'
@@ -18,14 +19,48 @@ const inter = Inter({
   preload: true,
 })
 
-export function generateMetadata(): Metadata {
+// Helper to get the base URL from request headers (runs at request time)
+async function getBaseUrl(): Promise<string> {
+  // Check for environment variable first (takes precedence)
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+  
+  // Get the request headers to determine the current domain
+  try {
+    const headersList = await headers();
+    const host = headersList.get('host') || '';
+    const protocol = headersList.get('x-forwarded-proto') || 'https';
+    
+    // Use the request host (works for both staging and production)
+    if (host) {
+      return `${protocol}://${host}`;
+    }
+  } catch (error) {
+    // Fallback if headers aren't available (build time)
+    console.warn('Could not read headers in root layout, using fallback URL');
+  }
+  
+  // Fallback for build time or when headers aren't available
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Default to production
+  return 'https://panoramic-solutions.com';
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl = await getBaseUrl();
+  
   return {
     ...generateSiteMetadata({
       title: 'Panoramic Solutions | SaaS Architecture & Digital Transformation',
       description: 'Transform your business with expert SaaS Architecture and Digital Transformation solutions. PMP® certified Solutions Architect Matt Wagner delivers measurable results for forward-thinking organizations.',
       keywords: 'SaaS Architecture, Digital Transformation, Project Management, Enterprise Automation, Matt Wagner, PMP, SAFe, Utah Consultant',
-      canonicalUrl: 'https://panoramic-solutions.com',
-    })
+      canonicalUrl: baseUrl,
+    }),
+    metadataBase: new URL(baseUrl), // Dynamic metadataBase for all child routes
   }
 }
 
