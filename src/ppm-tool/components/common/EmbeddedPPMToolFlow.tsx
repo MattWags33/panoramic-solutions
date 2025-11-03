@@ -252,11 +252,11 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     console.log(`🎯 Exit Intent Eligibility: ${adjustedCriteriaCount}/7 criteria adjusted - ${hasMinimumAdjusted ? '✅ ELIGIBLE' : '❌ NOT ELIGIBLE (need 3+)'}`);
   }, [adjustedCriteriaCount, hasMinimumAdjusted]);
   
-  // Unified exit intent detection (NOW with criteria state available)
+  // Unified exit intent detection (shows after 1 minute regardless of criteria count)
   const { hasTriggeredProductBumper, hasTriggeredExitIntent } = useUnifiedExitIntent({
     enabled: !isTouchDevice,
     isTouchDevice,
-    hasMinimumCriteriaAdjusted: hasMinimumAdjusted, // NEW: Exit Intent only shows if 3+ criteria adjusted
+    hasMinimumCriteriaAdjusted: true, // Always true - Exit Intent shows after 1 minute regardless of criteria
     onTriggerProductBumper: triggerProductBumper,
     onTriggerExitIntentBumper: triggerExitIntentBumper
   });

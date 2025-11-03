@@ -80,15 +80,15 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
       }
       
       // Check if Exit Intent should be shown (but not from mouse leave)
-      // MUST have 3+ criteria adjusted to show Exit Intent Bumper
-      if (!hasTriggeredExitIntent && hasMinimumCriteriaAdjusted && shouldShowExitIntentBumper()) {
+      // Shows after 1 minute regardless of criteria count
+      if (!hasTriggeredExitIntent && shouldShowExitIntentBumper()) {
         const state = getUnifiedBumperState();
         const toolOpenedAt = state.toolOpenedAt ? new Date(state.toolOpenedAt).getTime() : Date.now();
         const timeOnPage = Date.now() - toolOpenedAt;
         
-        // Only auto-trigger after 2 minutes (exit intent timer)
+        // Only auto-trigger after 1 minute (exit intent timer)
         if (timeOnPage >= EXIT_INTENT_TIMER_MS) {
-          console.log('🚪 Triggering Exit Intent Bumper via 2-minute timer (3+ criteria adjusted)');
+          console.log('🚪 Triggering Exit Intent Bumper via 1-minute timer');
           setHasTriggeredExitIntent(true);
           onTriggerExitIntentBumper?.('tab-switch'); // Use tab-switch as default for timer trigger
         }
@@ -103,15 +103,15 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
         clearInterval(checkTimersRef.current);
       }
     };
-  }, [enabled, isTouchDevice, hasMinimumCriteriaAdjusted, hasTriggeredProductBumper, hasTriggeredExitIntent, EXIT_INTENT_TIMER_MS, onTriggerProductBumper, onTriggerExitIntentBumper]);
+  }, [enabled, isTouchDevice, hasTriggeredProductBumper, hasTriggeredExitIntent, EXIT_INTENT_TIMER_MS, onTriggerProductBumper, onTriggerExitIntentBumper]);
   
   // Mouse leave detection for exit intent
   useEffect(() => {
     if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleMouseLeave = (e: MouseEvent) => {
-      // Only trigger exit intent if it should be shown AND 3+ criteria adjusted
-      if (!hasMinimumCriteriaAdjusted || !shouldShowExitIntentBumper()) {
+      // Only trigger exit intent if it should be shown (after 1 minute)
+      if (!shouldShowExitIntentBumper()) {
         return;
       }
       
@@ -137,7 +137,7 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
       ];
       
       if (conditions.some(condition => condition)) {
-        console.log('🚪 Triggering Exit Intent Bumper via mouse leave (3+ criteria adjusted)');
+        console.log('🚪 Triggering Exit Intent Bumper via mouse leave');
         setHasTriggeredExitIntent(true);
         onTriggerExitIntentBumper?.('mouse-leave');
       }
@@ -153,15 +153,15 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [enabled, hasMinimumCriteriaAdjusted, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
+  }, [enabled, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
   
   // Tab switch detection for exit intent
   useEffect(() => {
     if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleVisibilityChange = () => {
-      if (document.hidden && hasMinimumCriteriaAdjusted && shouldShowExitIntentBumper()) {
-        console.log('🚪 Triggering Exit Intent Bumper via tab switch (3+ criteria adjusted)');
+      if (document.hidden && shouldShowExitIntentBumper()) {
+        console.log('🚪 Triggering Exit Intent Bumper via tab switch');
         setHasTriggeredExitIntent(true);
         onTriggerExitIntentBumper?.('tab-switch');
       }
@@ -172,19 +172,13 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [enabled, hasMinimumCriteriaAdjusted, hasTriggeredExitIntent, isTouchDevice, onTriggerExitIntentBumper]);
+  }, [enabled, hasTriggeredExitIntent, isTouchDevice, onTriggerExitIntentBumper]);
   
-  // Mouse movement tracking for enhanced exit detection
+  // Mouse movement tracking for enhanced exit detection - IMPROVED TOP BAR DETECTION
   useEffect(() => {
     if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleMouseMove = (e: MouseEvent) => {
-      // Clear existing timeout
-      if (mouseLeaveTimeoutRef.current) {
-        clearTimeout(mouseLeaveTimeoutRef.current);
-      }
-      
-      // Update position tracking
       const currentTime = Date.now();
       const currentPos = { x: e.clientX, y: e.clientY, time: currentTime };
       const lastPos = lastMousePositionRef.current;
@@ -192,68 +186,218 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
       // Calculate movement velocity
       const timeDiff = currentTime - lastPos.time;
       const yMovement = timeDiff > 0 ? (currentPos.y - lastPos.y) / timeDiff : 0;
+      const xMovement = timeDiff > 0 ? (currentPos.x - lastPos.x) / timeDiff : 0;
+      
+      // Debug: Log mouse position every 500ms for testing
+      if (timeDiff > 500 || lastPos.time === 0) {
+        console.log('🖱️ [EXIT_INTENT_DEBUG] Mouse Position:', {
+          x: currentPos.x,
+          y: currentPos.y,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          yMovement: yMovement.toFixed(2),
+          xMovement: xMovement.toFixed(2),
+          timeSinceLastUpdate: timeDiff
+        });
+      }
       
       lastMousePositionRef.current = currentPos;
       
-      // Browser-specific thresholds
-      const topZone = browserInfo.isSafari ? 80 : 
-                     browserInfo.isFirefox ? 70 : 
-                     browserInfo.isEdge ? 65 : 60;  // Edge needs slightly different threshold
-      const cornerZone = browserInfo.isSafari ? 120 : 
-                        browserInfo.isFirefox ? 110 : 
-                        browserInfo.isEdge ? 105 : 100;  // Edge corner detection
-      const headerZone = window.innerWidth < 768 ? 144 : 152;
+      // Enhanced top bar detection zones
+      // Top bar zone: Entire top area (not just corners) - for tabs, bookmarks, address bar, etc.
+      const topBarHeight = browserInfo.isSafari ? 120 : 
+                           browserInfo.isFirefox ? 110 : 
+                           browserInfo.isEdge ? 105 : 100; // Increased detection zone
       
-      // Detection zones
+      const topRightCorner = browserInfo.isSafari ? 120 : 
+                             browserInfo.isFirefox ? 110 : 
+                             browserInfo.isEdge ? 105 : 100; // Top-right corner detection
+      
+      const topLeftCorner = browserInfo.isSafari ? 120 : 
+                            browserInfo.isFirefox ? 110 : 
+                            browserInfo.isEdge ? 105 : 100; // Top-left corner detection
+      
+      const headerZone = window.innerWidth < 768 ? 144 : 152; // Header within page
+      
+      // Detection zones - ENHANCED for entire top bar
       const zones = {
-        browserChrome: currentPos.y <= topZone,
-        topCorners: currentPos.y <= cornerZone && 
-                   (currentPos.x <= 150 || currentPos.x >= window.innerWidth - 150),
-        rapidUpward: yMovement < -0.5 && currentPos.y <= 200,
-        header: currentPos.y <= headerZone
+        // Top bar zone: Entire top area (for tabs, bookmarks, address bar, etc.)
+        topBar: currentPos.y <= topBarHeight,
+        
+        // Top-right corner zone (X button, close button)
+        topRightCorner: currentPos.y <= topRightCorner && 
+                       currentPos.x >= window.innerWidth - 100, // 100px from right edge
+        
+        // Top-left corner zone (menu, new tab, etc.)
+        topLeftCorner: currentPos.y <= topLeftCorner && 
+                      currentPos.x <= 100, // 100px from left edge
+        
+        // Rapid upward movement (moving toward top bar)
+        rapidUpward: yMovement < -0.3 && currentPos.y <= 200, // Less aggressive threshold
+        
+        // Header zone (within page content)
+        header: currentPos.y <= headerZone && currentPos.y > topBarHeight
       };
       
-      // Determine trigger zone and delay
+      // Debug: Log which zones are active
+      const activeZones = Object.entries(zones)
+        .filter(([_, active]) => active)
+        .map(([name, _]) => name);
+      
+      if (activeZones.length > 0) {
+        console.log('📍 [EXIT_INTENT_DEBUG] Active Zones:', {
+          zones: activeZones,
+          position: { x: currentPos.x, y: currentPos.y },
+          velocity: { y: yMovement.toFixed(2), x: xMovement.toFixed(2) }
+        });
+      }
+      
+      // Check timer requirement first
+      const state = getUnifiedBumperState();
+      const toolOpenedAt = state.toolOpenedAt ? new Date(state.toolOpenedAt).getTime() : Date.now();
+      const timeOnPage = Date.now() - toolOpenedAt;
+      const timeOnPageSeconds = Math.floor(timeOnPage / 1000);
+      const timerRequirementMet = timeOnPage >= EXIT_INTENT_TIMER_MS;
+      
+      // Debug: Log timer status
+      if (activeZones.length > 0 && timeDiff > 1000) {
+        console.log('⏱️ [EXIT_INTENT_DEBUG] Timer Check:', {
+          timeOnPageSeconds: `${timeOnPageSeconds}s`,
+          requiredSeconds: `${Math.floor(EXIT_INTENT_TIMER_MS / 1000)}s`,
+          timerMet: timerRequirementMet,
+          toolOpenedAt: state.toolOpenedAt || 'not set'
+        });
+      }
+      
+      // Check if should show (includes criteria check)
+      const shouldShow = shouldShowExitIntentBumper();
+      
+      // Debug: Log shouldShow result with reasons
+      if (activeZones.length > 0 && timeDiff > 1000) {
+        console.log('✅ [EXIT_INTENT_DEBUG] Should Show Check:', {
+          shouldShow,
+          timerMet: timerRequirementMet,
+          hasTriggeredExitIntent,
+          // Log why it might be blocked
+          blockedReasons: !shouldShow ? 'Check console logs above for blocking reasons' : 'None - should trigger'
+        });
+      }
+      
+      // Determine trigger zone and delay based on priority
       let delay = 0;
       let zone = '';
       
-      if (zones.browserChrome) {
+      // Priority 1: Top bar (entire top area) - fastest trigger
+      if (zones.topBar) {
+        delay = 300; // Reduced delay for top bar
+        zone = 'top-bar';
+      }
+      // Priority 2: Top-right corner (X button)
+      else if (zones.topRightCorner) {
+        delay = 400;
+        zone = 'top-right-corner';
+      }
+      // Priority 3: Top-left corner
+      else if (zones.topLeftCorner) {
         delay = 500;
-        zone = 'browser-chrome';
-      } else if (zones.topCorners) {
+        zone = 'top-left-corner';
+      }
+      // Priority 4: Rapid upward movement
+      else if (zones.rapidUpward) {
         delay = 600;
-        zone = 'top-corners';
-      } else if (zones.rapidUpward) {
-        delay = 700;
         zone = 'rapid-upward';
-      } else if (zones.header) {
+      }
+      // Priority 5: Header zone
+      else if (zones.header) {
         delay = 1000;
         zone = 'header';
       }
       
-      if (delay > 0 && hasMinimumCriteriaAdjusted && shouldShowExitIntentBumper()) {
+      // Clear existing timeout if mouse moves out of zones
+      if (delay === 0 && mouseLeaveTimeoutRef.current) {
+        console.log('🔄 [EXIT_INTENT_DEBUG] Clearing timeout - mouse moved out of trigger zones');
+        clearTimeout(mouseLeaveTimeoutRef.current);
+        mouseLeaveTimeoutRef.current = null;
+        return;
+      }
+      
+      // Only set timeout if in a trigger zone AND all conditions met (timer + shouldShow)
+      if (delay > 0 && timerRequirementMet && shouldShow && !hasTriggeredExitIntent) {
+        // Clear existing timeout before setting new one
+        if (mouseLeaveTimeoutRef.current) {
+          clearTimeout(mouseLeaveTimeoutRef.current);
+        }
+        
+        console.log(`⏳ [EXIT_INTENT_DEBUG] Setting trigger timeout:`, {
+          zone,
+          delayMs: delay,
+          willTriggerIn: `${delay}ms`,
+          conditionsMet: {
+            timerMet: true,
+            shouldShow: true,
+            notTriggered: !hasTriggeredExitIntent
+          }
+        });
+        
         mouseLeaveTimeoutRef.current = setTimeout(() => {
-          console.log(`🚪 Triggering Exit Intent Bumper via mouse movement (${zone}) (3+ criteria adjusted)`);
-          setHasTriggeredExitIntent(true);
-          onTriggerExitIntentBumper?.('mouse-leave');
+          // Double-check conditions before triggering
+          const finalCheck = shouldShowExitIntentBumper();
+          const finalState = getUnifiedBumperState();
+          const finalTimeOnPage = Date.now() - (finalState.toolOpenedAt ? new Date(finalState.toolOpenedAt).getTime() : Date.now());
+          
+          console.log(`🚪 [EXIT_INTENT_DEBUG] Trigger timeout fired:`, {
+            zone,
+            finalCheck,
+            finalTimeOnPageSeconds: Math.floor(finalTimeOnPage / 1000),
+            triggering: finalCheck && finalTimeOnPage >= EXIT_INTENT_TIMER_MS && !hasTriggeredExitIntent
+          });
+          
+          if (finalCheck && finalTimeOnPage >= EXIT_INTENT_TIMER_MS && !hasTriggeredExitIntent) {
+            console.log(`✅ [EXIT_INTENT_DEBUG] TRIGGERING Exit Intent Bumper via mouse movement (${zone})`);
+            setHasTriggeredExitIntent(true);
+            onTriggerExitIntentBumper?.('mouse-leave');
+          } else {
+            console.log(`❌ [EXIT_INTENT_DEBUG] Trigger blocked - conditions changed:`, {
+              finalCheck,
+              timerMet: finalTimeOnPage >= EXIT_INTENT_TIMER_MS,
+              notTriggered: !hasTriggeredExitIntent
+            });
+          }
+          
+          mouseLeaveTimeoutRef.current = null;
         }, delay);
+      } else if (delay > 0 && timeDiff > 1000) {
+        // Log why timeout wasn't set
+        console.log(`⚠️ [EXIT_INTENT_DEBUG] Not setting timeout - conditions not met:`, {
+          zone,
+          timerMet: timerRequirementMet,
+          shouldShow,
+          hasTriggeredExitIntent,
+          reason: !timerRequirementMet ? 'Timer not met (1 minute)' :
+                  !shouldShow ? 'shouldShowExitIntentBumper() returned false' :
+                  hasTriggeredExitIntent ? 'Already triggered' : 'Unknown'
+        });
       }
     };
     
     // Add event listener
     try {
       document.addEventListener('mousemove', handleMouseMove, { passive: true });
+      console.log('🎯 [EXIT_INTENT_DEBUG] Mouse movement listener attached');
     } catch (e) {
       document.addEventListener('mousemove', handleMouseMove);
+      console.log('🎯 [EXIT_INTENT_DEBUG] Mouse movement listener attached (fallback)');
     }
     
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       if (mouseLeaveTimeoutRef.current) {
         clearTimeout(mouseLeaveTimeoutRef.current);
+        mouseLeaveTimeoutRef.current = null;
       }
+      console.log('🧹 [EXIT_INTENT_DEBUG] Mouse movement listener removed');
     };
-  }, [enabled, hasMinimumCriteriaAdjusted, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper]);
+  }, [enabled, hasTriggeredExitIntent, isTouchDevice, browserInfo, onTriggerExitIntentBumper, EXIT_INTENT_TIMER_MS]);
   
   // Reset function for testing
   const reset = useCallback(() => {

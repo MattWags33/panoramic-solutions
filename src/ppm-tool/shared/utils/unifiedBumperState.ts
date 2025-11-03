@@ -22,7 +22,7 @@ export interface UnifiedBumperState extends BumperState {
 // Constants (kept for backwards compatibility)
 export const INITIAL_TIMER_MS = 10000; // 10 seconds
 export const MOUSE_MOVEMENT_TIMER_MS = 3000; // 3 seconds after mouse stops
-export const EXIT_INTENT_TIMER_MS = 120000; // 2 minutes for exit intent
+export const EXIT_INTENT_TIMER_MS = 60000; // 1 minute for exit intent
 export const POST_BUMPER_DELAY_MS = 23000; // 23 seconds after bumper closed
 
 /**
@@ -263,10 +263,13 @@ export function shouldShowExitIntentBumper(): boolean {
     if (sinceProductDismiss < POST_BUMPER_DELAY_MS) return false;
   }
   
-  // Must be at least 2 minutes since tool opened
+  // Must be at least 1 minute since tool opened (changed from 2 minutes)
   if (state.toolOpenedAt) {
     const timeSinceOpened = now - new Date(state.toolOpenedAt).getTime();
-    if (timeSinceOpened < EXIT_INTENT_TIMER_MS) return false;
+    if (timeSinceOpened < EXIT_INTENT_TIMER_MS) {
+      console.log(`⏱️ [EXIT_INTENT_DEBUG] Timer not met: ${Math.floor(timeSinceOpened / 1000)}s < ${Math.floor(EXIT_INTENT_TIMER_MS / 1000)}s`);
+      return false;
+    }
   }
   
   return true;

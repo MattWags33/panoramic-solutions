@@ -4,7 +4,7 @@
  * 
  * Requirements:
  * - No bumpers during guided rankings
- * - 2 minute timer starts after guided rankings complete + 10s delay
+ * - 1 minute timer starts after guided rankings complete + 10s delay
  * - 20s delay between bumpers
  * - Only one bumper can be shown at a time
  */
@@ -20,7 +20,7 @@ export interface BumperCoordinationState {
 const STORAGE_KEY = 'bumperCoordinationState';
 const GUIDED_RANKING_DELAY_MS = 10000; // 10 seconds after guided ranking completes
 const BUMPER_DELAY_MS = 20000; // 20 seconds between bumpers
-const EXIT_INTENT_TIMER_MS = 120000; // 2 minutes for exit intent
+const EXIT_INTENT_TIMER_MS = 60000; // 1 minute for exit intent (changed from 2 minutes)
 
 /**
  * Get the current bumper coordination state from localStorage
@@ -134,7 +134,7 @@ export function canShowExitIntentBumper(): boolean {
     const timerStart = new Date(state.exitIntentTimerStartedAt);
     const timeSinceTimer = Date.now() - timerStart.getTime();
     
-    // Must wait for the full exit intent timer (2 minutes) after guided ranking + 10s delay
+    // Must wait for the full exit intent timer (1 minute) after guided ranking + 10s delay
     return timeSinceTimer >= EXIT_INTENT_TIMER_MS;
   }
   

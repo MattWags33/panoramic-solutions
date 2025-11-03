@@ -449,18 +449,86 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     const rankings: { [key: string]: number } = {};
     const weights: { [key: string]: number } = {};
     
-    // Preserve existing values for all criteria (both single and full mode)
-    // Only update criteria that have answered questions (weights > 0)
-    criteria.forEach(criterion => {
-      // Always preserve current userRating value
-      rankings[criterion.id] = criterion.userRating;
-      weights[criterion.id] = 0;
-    });
-
     // Create a mapping from criteria names to IDs for easier lookup
     const criteriaNameToId: { [key: string]: string } = {};
     criteria.forEach(criterion => {
       criteriaNameToId[criterion.name] = criterion.id;
+    });
+
+    // If individual criterion mode (criterionId provided), only calculate that specific criterion
+    if (criterionId) {
+      const targetCriterion = criteria.find(c => c.id === criterionId);
+      if (!targetCriterion) {
+        // If criterion not found, return empty object (shouldn't happen)
+        return {};
+      }
+
+      // Initialize only the target criterion with its current value
+      rankings[criterionId] = targetCriterion.userRating;
+      weights[criterionId] = 0;
+
+      // Calculate Scalability using multiplication rule for Q1 and Q2
+      const scalabilityId = criteriaNameToId['Scalability'];
+      if (criterionId === scalabilityId && answers['q1'] && answers['q2']) {
+        const projectsQuestionValue = answers['q1'] as number;
+        const tasksQuestionValue = answers['q2'] as number;
+        
+        const projectRanges = [10, 29, 99, 499, 500];
+        const taskRanges = [20, 99, 499, 999, 1000];
+        
+        const projectsPerYear = projectRanges[projectsQuestionValue - 1] || 500;
+        const tasksPerProject = taskRanges[tasksQuestionValue - 1] || 1000;
+        const totalVolume = projectsPerYear * tasksPerProject;
+        
+        let scalabilityScore = 1;
+        if (totalVolume >= 200000) scalabilityScore = 5;
+        else if (totalVolume >= 30000) scalabilityScore = 4;
+        else if (totalVolume >= 5000) scalabilityScore = 3;
+        else if (totalVolume >= 500) scalabilityScore = 2;
+        
+        rankings[scalabilityId] = scalabilityScore;
+      }
+      // Handle Flexibility calculation (Q6 + Q7 / 2)
+      else if (criterionId === criteriaNameToId['Flexibility & Customization'] && answers['q6'] && answers['q7']) {
+        const processChanges = answers['q6'] as number;
+        const workflowAutomation = answers['q7'] as number;
+        const flexibilityAverage = (processChanges + workflowAutomation) / 2;
+        rankings[criterionId] = Math.ceil(flexibilityAverage);
+      }
+      // Handle other single-question criteria
+      else {
+        Object.entries(answers).forEach(([questionId, answer]) => {
+          const question = questions.find(q => q.id === questionId);
+          if (question && !question.isPersonalization && !Array.isArray(answer) && typeof answer === 'number') {
+            Object.entries(question.criteriaImpact).forEach(([criteriaName, weight]) => {
+              const criteriaIdFromQuestion = criteriaNameToId[criteriaName];
+              // Only process if this question affects the target criterion
+              if (criteriaIdFromQuestion === criterionId) {
+                if (weights[criterionId] === 0) {
+                  rankings[criterionId] = 0;
+                }
+                rankings[criterionId] += answer * weight;
+                weights[criterionId] += weight;
+              }
+            });
+          }
+        });
+
+        // Calculate weighted average if we have answers
+        if (weights[criterionId] > 0) {
+          rankings[criterionId] = Math.round(rankings[criterionId] / weights[criterionId]);
+          rankings[criterionId] = Math.max(1, Math.min(5, rankings[criterionId]));
+        }
+      }
+
+      // Return ONLY the target criterion - this preserves all other criteria
+      return { [criterionId]: rankings[criterionId] };
+    }
+
+    // Full mode: Calculate all criteria (preserve existing behavior)
+    criteria.forEach(criterion => {
+      rankings[criterion.id] = criterion.userRating;
+      weights[criterion.id] = 0;
     });
 
     // Calculate Scalability using multiplication rule for Q1 and Q2 with proper range mapping
@@ -498,27 +566,27 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
       if (question && !question.isPersonalization && !Array.isArray(answer) && typeof answer === 'number') {
         Object.entries(question.criteriaImpact).forEach(([criteriaName, weight]) => {
           // Map criteria names to actual IDs
-          const criteriaId = criteriaNameToId[criteriaName];
-          if (criteriaId && criteriaId !== scalabilityId) { // Skip scalability as it's calculated above
+          const criteriaIdFromQuestion = criteriaNameToId[criteriaName];
+          if (criteriaIdFromQuestion && criteriaIdFromQuestion !== scalabilityId) { // Skip scalability as it's calculated above
             // Reset to 0 for calculation on first answer for this criterion
-            if (weights[criteriaId] === 0) {
-              rankings[criteriaId] = 0;
+            if (weights[criteriaIdFromQuestion] === 0) {
+              rankings[criteriaIdFromQuestion] = 0;
             }
-            rankings[criteriaId] += answer * weight;
-            weights[criteriaId] += weight;
+            rankings[criteriaIdFromQuestion] += answer * weight;
+            weights[criteriaIdFromQuestion] += weight;
           }
         });
       }
     });
 
     // Calculate weighted averages for non-scalability criteria
-    Object.keys(rankings).forEach(criterionId => {
-      if (criterionId !== scalabilityId && weights[criterionId] > 0) {
+    Object.keys(rankings).forEach(criterionIdKey => {
+      if (criterionIdKey !== scalabilityId && weights[criterionIdKey] > 0) {
         // Calculate the value from answered questions
-        rankings[criterionId] = Math.round(rankings[criterionId] / weights[criterionId]);
-        rankings[criterionId] = Math.max(1, Math.min(5, rankings[criterionId]));
+        rankings[criterionIdKey] = Math.round(rankings[criterionIdKey] / weights[criterionIdKey]);
+        rankings[criterionIdKey] = Math.max(1, Math.min(5, rankings[criterionIdKey]));
       }
-      // If weights[criterionId] === 0, keep the default value of 3
+      // If weights[criterionIdKey] === 0, keep the default value of 3
     });
 
     // Handle flexibility calculation (Q6 + Q7 / 2) - rounds UP for in-between values
@@ -533,7 +601,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     // If Q6 or Q7 not answered, flexibility remains at default value of 3
 
     return rankings;
-  }, [criteria, answers]); // criterionId not needed in calculation
+  }, [criteria, answers, criterionId]); // Include criterionId in dependencies
 
   // Debounced real-time update effect to prevent infinite loops
   React.useEffect(() => {

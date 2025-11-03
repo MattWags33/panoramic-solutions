@@ -67,7 +67,7 @@ export function HeroSection() {
   const { ref } = useHeroAnimation()
 
   return (
-    <section ref={ref} className="relative h-[85vh] sm:h-screen lg:h-[85vh] xl:h-[80vh] flex items-center justify-center overflow-hidden pt-20 sm:pt-32 lg:pt-24">
+    <section ref={ref} className="relative h-[85vh] sm:h-screen lg:h-screen xl:h-[80vh] flex items-center justify-center overflow-hidden pt-20 sm:pt-32 lg:pt-24">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image

@@ -14,7 +14,7 @@ import { shouldAllowBumpers } from '../utils/homeState';
 const TIMING_CONSTANTS = {
   INITIAL_TIMER_MS: 10000, // 10 seconds
   MOUSE_MOVEMENT_TIMER_MS: 3000, // 3 seconds
-  EXIT_INTENT_TIMER_MS: 120000, // 2 minutes
+  EXIT_INTENT_TIMER_MS: 60000, // 1 minute (changed from 2 minutes)
   POST_BUMPER_DELAY_MS: 23000, // 23 seconds (cross-bumper cooldown)
 };
 
@@ -385,7 +385,7 @@ export class UniversalBumperEngine {
         return false;
       }
       
-      // Still respect 2min minimum since tool opened
+      // Still respect 1min minimum since tool opened
       if (state.toolOpenedAt) {
         const timeSinceOpened = now - new Date(state.toolOpenedAt).getTime();
         if (timeSinceOpened < TIMING_CONSTANTS.EXIT_INTENT_TIMER_MS) {
@@ -393,14 +393,14 @@ export class UniversalBumperEngine {
         }
       }
       
-      console.log('✅ Exit Intent eligible: Post-Guided-Rankings scenario (23s + 3s + 2min)');
+      console.log('✅ Exit Intent eligible: Post-Guided-Rankings scenario (23s + 3s + 1min)');
       return true;
     }
     
     // SCENARIO 2: Normal usage - user stays on page without GR or CR interaction (Table Row 5)
-    // Auto-trigger after 2min OR when user tries to leave
+    // Auto-trigger after 1min OR when user tries to leave
     if (!state.guidedRankingsClosedAt && !state.comparisonReportClosedAt) {
-      // Must be at least 2 minutes since tool opened
+      // Must be at least 1 minute since tool opened
       if (state.toolOpenedAt) {
         const timeSinceOpened = now - new Date(state.toolOpenedAt).getTime();
         if (timeSinceOpened < TIMING_CONSTANTS.EXIT_INTENT_TIMER_MS) {
@@ -408,7 +408,7 @@ export class UniversalBumperEngine {
         }
       }
       
-      console.log('✅ Exit Intent eligible: Normal usage (2min auto-trigger)');
+      console.log('✅ Exit Intent eligible: Normal usage (1min auto-trigger)');
       return true;
     }
     

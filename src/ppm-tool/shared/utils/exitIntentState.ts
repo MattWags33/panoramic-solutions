@@ -19,7 +19,7 @@ export interface ExitIntentState {
 }
 
 const STORAGE_KEY = 'exitIntentState';
-const MIN_TIME_ON_PAGE_MS = 120000; // Minimum 2 minutes before showing
+const MIN_TIME_ON_PAGE_MS = 60000; // Minimum 1 minute before showing (changed from 2 minutes)
 const MAX_SHOWS_PER_SESSION = 1; // Only show once per session
 
 /**
