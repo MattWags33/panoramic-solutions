@@ -110,16 +110,15 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
     if (!enabled || hasTriggeredExitIntent || isTouchDevice) return;
     
     const handleMouseLeave = (e: MouseEvent) => {
-      // Only trigger exit intent if it should be shown (after 1 minute)
-      if (!shouldShowExitIntentBumper()) {
-        return;
-      }
-      
-      // Get normalized coordinates
-      const x = e.clientX;
-      const y = e.clientY;
+      // KEY FIX: Get last known position BEFORE mouse left document
+      // This is critical because e.clientY might be unreliable when mouse is in browser chrome
+      const lastPos = lastMousePositionRef.current;
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
+      
+      // Use last known position (more reliable than e.clientY when mouse is in browser chrome)
+      const y = lastPos.y !== undefined ? lastPos.y : (e.clientY ?? 0);
+      const x = lastPos.x !== undefined ? lastPos.x : (e.clientX ?? 0);
       
       // Browser-specific adjustments
       let exitThreshold = 0;
@@ -129,17 +128,38 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
         exitThreshold = -2;
       }
       
-      // Exit detection conditions
+      // Exit detection conditions - CHECK LAST KNOWN POSITION
       const conditions = [
-        y <= exitThreshold, // Top exit
+        y <= exitThreshold || lastPos.y <= 100, // Top exit - check last position!
         (y <= 100 && (x <= 100 || x >= viewportWidth - 100)), // Corner exits
+        (lastPos.y <= 100 && (lastPos.x <= 100 || lastPos.x >= viewportWidth - 100)), // Corner exits using last position
         (y <= 150 && (x <= exitThreshold || x >= viewportWidth - exitThreshold)) // Side exits near top
       ];
       
+      // Debug logging - MOVED BEFORE shouldShow check to always see what's happening
+      console.log('🖱️ [EXIT_INTENT_DEBUG] Mouse Leave Event:', {
+        eventClientY: e.clientY,
+        eventClientX: e.clientX,
+        lastKnownY: lastPos.y,
+        lastKnownX: lastPos.x,
+        usingLastPosition: lastPos.y !== undefined,
+        conditionsMet: conditions.some(c => c),
+        viewportHeight,
+        shouldShow: shouldShowExitIntentBumper() // Check but log it
+      });
+      
+      // Only trigger exit intent if it should be shown (after 1 minute)
+      if (!shouldShowExitIntentBumper()) {
+        console.log('⏸️ [EXIT_INTENT_DEBUG] Mouse leave blocked - shouldShowExitIntentBumper() returned false');
+        return;
+      }
+      
       if (conditions.some(condition => condition)) {
-        console.log('🚪 Triggering Exit Intent Bumper via mouse leave');
+        console.log('🚪 Triggering Exit Intent Bumper via mouse leave (top edge detected)');
         setHasTriggeredExitIntent(true);
         onTriggerExitIntentBumper?.('mouse-leave');
+      } else {
+        console.log('⚠️ [EXIT_INTENT_DEBUG] Mouse leave conditions not met - not triggering');
       }
     };
     
