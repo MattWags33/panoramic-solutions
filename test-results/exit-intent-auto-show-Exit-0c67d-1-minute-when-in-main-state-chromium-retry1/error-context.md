@@ -1,0 +1,449 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - navigation [ref=e4]:
+        - link "Panoramic Solutions Logo Panoramic Solutions" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "Panoramic Solutions Logo" [ref=e7]
+          - generic [ref=e8]: Panoramic Solutions
+        - generic [ref=e9]:
+          - link "Home" [ref=e11] [cursor=pointer]:
+            - /url: /
+          - link "Offerings" [ref=e13] [cursor=pointer]:
+            - /url: /offerings
+          - button "Products" [ref=e15] [cursor=pointer]:
+            - generic [ref=e16]: Products
+            - img [ref=e17]
+          - link "About" [ref=e21] [cursor=pointer]:
+            - /url: /about
+          - link "Contact" [ref=e23] [cursor=pointer]:
+            - /url: /contact
+          - button "Book A Call" [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+            - text: Book A Call
+    - main [ref=e27]:
+      - main [ref=e28]:
+        - application "PPM Tool Finder" [ref=e29]:
+          - navigation "PPM Tool Navigation" [ref=e30]:
+            - generic [ref=e32]:
+              - generic [ref=e34]:
+                - button "Criteria + Tools" [ref=e35] [cursor=pointer]:
+                  - generic [ref=e36]: Criteria + Tools
+                - button "Chart Comparison" [ref=e38] [cursor=pointer]:
+                  - generic [ref=e39]: Chart Comparison
+              - img "PPM Tool Finder" [ref=e43]
+              - generic [ref=e44]:
+                - button "How It Works" [ref=e45] [cursor=pointer]:
+                  - img [ref=e46]
+                  - generic [ref=e49]: How It Works
+                - button "Get my Free Comparison Report" [ref=e50] [cursor=pointer]:
+                  - img [ref=e51]
+                  - generic [ref=e54]: Get my Free Comparison Report
+          - main [ref=e55]:
+            - generic [ref=e56]:
+              - generic:
+                - generic [ref=e59]:
+                  - generic [ref=e60]:
+                    - generic [ref=e61]:
+                      - img [ref=e62]
+                      - generic [ref=e63]:
+                        - heading "Rank Your Criteria" [level=2] [ref=e64]
+                        - generic [ref=e65]: 7 criteria
+                    - generic [ref=e66]:
+                      - button "Guided Rankings" [ref=e67] [cursor=pointer]:
+                        - img [ref=e68]
+                        - generic [ref=e70]: Guided Rankings
+                      - button "Criteria settings" [ref=e72] [cursor=pointer]:
+                        - img [ref=e73]
+                  - paragraph [ref=e78]: The better we understand your priorities, the better we can recommend the PPM tools that will set you up for success.
+                  - generic [ref=e80]:
+                    - generic [ref=e82]:
+                      - generic [ref=e84]:
+                        - heading "Scalability" [level=3] [ref=e85]
+                        - button "More information about Scalability" [ref=e87] [cursor=pointer]:
+                          - img [ref=e88]
+                        - button "Open guided ranking for Scalability" [ref=e92] [cursor=pointer]:
+                          - img [ref=e93]
+                      - generic [ref=e95]:
+                        - generic [ref=e96]:
+                          - slider [ref=e102]
+                          - generic [ref=e104]: "3"
+                        - generic [ref=e106]: Importance level
+                    - generic [ref=e108]:
+                      - generic [ref=e110]:
+                        - heading "Integrations & Extensibility" [level=3] [ref=e111]
+                        - button "More information about Integrations & Extensibility" [ref=e113] [cursor=pointer]:
+                          - img [ref=e114]
+                        - button "Open guided ranking for Integrations & Extensibility" [ref=e118] [cursor=pointer]:
+                          - img [ref=e119]
+                      - generic [ref=e121]:
+                        - generic [ref=e122]:
+                          - slider [ref=e128]
+                          - generic [ref=e130]: "3"
+                        - generic [ref=e132]: Importance level
+                    - generic [ref=e134]:
+                      - generic [ref=e136]:
+                        - heading "Ease of Use" [level=3] [ref=e137]
+                        - button "More information about Ease of Use" [ref=e139] [cursor=pointer]:
+                          - img [ref=e140]
+                        - button "Open guided ranking for Ease of Use" [ref=e144] [cursor=pointer]:
+                          - img [ref=e145]
+                      - generic [ref=e147]:
+                        - generic [ref=e148]:
+                          - slider [ref=e154]
+                          - generic [ref=e156]: "3"
+                        - generic [ref=e158]: Importance level
+                    - generic [ref=e160]:
+                      - generic [ref=e162]:
+                        - heading "Flexibility & Customization" [level=3] [ref=e163]
+                        - button "More information about Flexibility & Customization" [ref=e165] [cursor=pointer]:
+                          - img [ref=e166]
+                        - button "Open guided ranking for Flexibility & Customization" [ref=e170] [cursor=pointer]:
+                          - img [ref=e171]
+                      - generic [ref=e173]:
+                        - generic [ref=e174]:
+                          - slider [ref=e180]
+                          - generic [ref=e182]: "3"
+                        - generic [ref=e184]: Importance level
+                    - generic [ref=e186]:
+                      - generic [ref=e188]:
+                        - heading "Portfolio Management" [level=3] [ref=e189]
+                        - button "More information about Portfolio Management" [ref=e191] [cursor=pointer]:
+                          - img [ref=e192]
+                        - button "Open guided ranking for Portfolio Management" [ref=e196] [cursor=pointer]:
+                          - img [ref=e197]
+                      - generic [ref=e199]:
+                        - generic [ref=e200]:
+                          - slider [ref=e206]
+                          - generic [ref=e208]: "3"
+                        - generic [ref=e210]: Importance level
+                    - generic [ref=e212]:
+                      - generic [ref=e214]:
+                        - heading "Reporting & Analytics" [level=3] [ref=e215]
+                        - button "More information about Reporting & Analytics" [ref=e217] [cursor=pointer]:
+                          - img [ref=e218]
+                        - button "Open guided ranking for Reporting & Analytics" [ref=e222] [cursor=pointer]:
+                          - img [ref=e223]
+                      - generic [ref=e225]:
+                        - generic [ref=e226]:
+                          - slider [ref=e232]
+                          - generic [ref=e234]: "3"
+                        - generic [ref=e236]: Importance level
+                    - generic [ref=e238]:
+                      - generic [ref=e240]:
+                        - heading "Security & Compliance" [level=3] [ref=e241]
+                        - button "More information about Security & Compliance" [ref=e243] [cursor=pointer]:
+                          - img [ref=e244]
+                        - button "Open guided ranking for Security & Compliance" [ref=e248] [cursor=pointer]:
+                          - img [ref=e249]
+                      - generic [ref=e251]:
+                        - generic [ref=e252]:
+                          - slider [ref=e258]
+                          - generic [ref=e260]: "3"
+                        - generic [ref=e262]: Importance level
+                    - status [ref=e263]
+                - generic [ref=e265]:
+                  - generic [ref=e266]:
+                    - generic [ref=e267]:
+                      - img [ref=e268]
+                      - generic [ref=e271]:
+                        - heading "Tools & Recommendations" [level=2] [ref=e272]
+                        - generic [ref=e273]: 11 tools analyzed
+                    - button "Filter settings" [ref=e276] [cursor=pointer]:
+                      - img [ref=e277]
+                  - paragraph [ref=e282]: Explore the best‑fit PPM tools that align with your goals. Picking the right tool now sets the stage for smoother adoption and long‑term success.
+                  - generic [ref=e286]:
+                    - generic [ref=e289] [cursor=pointer]:
+                      - generic [ref=e291]:
+                        - generic [ref=e292]:
+                          - generic [ref=e293]:
+                            - generic [ref=e294]: Adobe Workfront
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e296]:
+                              - generic [ref=e297]: N/A
+                              - img [ref=e298]
+                              - generic [ref=e301]: Match Score
+                          - generic [ref=e302]:
+                            - generic [ref=e303]: Continuous Improvement
+                            - generic [ref=e304]: Waterfall
+                        - button "Compare" [ref=e306]:
+                          - img
+                          - text: Compare
+                      - generic [ref=e307]:
+                        - img [ref=e308]
+                        - text: View Details
+                    - generic [ref=e312] [cursor=pointer]:
+                      - generic [ref=e314]:
+                        - generic [ref=e315]:
+                          - generic [ref=e316]:
+                            - generic [ref=e317]: Airtable
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e319]:
+                              - generic [ref=e320]: N/A
+                              - img [ref=e321]
+                              - generic [ref=e324]: Match Score
+                          - generic [ref=e325]:
+                            - generic [ref=e326]: Agile
+                            - generic [ref=e327]: Continuous Improvement
+                            - generic [ref=e328]: Waterfall
+                        - generic [ref=e329]:
+                          - link "Try Free" [ref=e330]:
+                            - /url: https://airtable.com/signup?_gl=1*7li2z1*_gcl_au*MjQzMjA4MDQxLjE3NTQwODU1OTU.*_ga*MTQ1MzI0NTk3LjE3NTQwODU1OTU.*_ga_VJY8J9RFZM*czE3NTQwODU1OTQkbzEkZzEkdDE3NTQwODU4NTMkajM2JGwwJGgw
+                            - img
+                            - generic [ref=e331]: Try Free
+                          - button "Compare" [ref=e332]:
+                            - img
+                            - text: Compare
+                      - generic [ref=e333]:
+                        - img [ref=e334]
+                        - text: View Details
+                    - generic [ref=e338] [cursor=pointer]:
+                      - generic [ref=e340]:
+                        - generic [ref=e341]:
+                          - generic [ref=e342]:
+                            - generic [ref=e343]: Asana
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e345]:
+                              - generic [ref=e346]: N/A
+                              - img [ref=e347]
+                              - generic [ref=e350]: Match Score
+                          - generic [ref=e352]: Waterfall
+                        - generic [ref=e353]:
+                          - link "Try Free" [ref=e354]:
+                            - /url: https://asana.com/pricing#signup
+                            - img
+                            - generic [ref=e355]: Try Free
+                          - button "Compare" [ref=e356]:
+                            - img
+                            - text: Compare
+                      - generic [ref=e357]:
+                        - img [ref=e358]
+                        - text: View Details
+                    - generic [ref=e362] [cursor=pointer]:
+                      - generic [ref=e364]:
+                        - generic [ref=e365]:
+                          - generic [ref=e366]:
+                            - generic [ref=e367]: Azure DevOps
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e369]:
+                              - generic [ref=e370]: N/A
+                              - img [ref=e371]
+                              - generic [ref=e374]: Match Score
+                          - generic [ref=e375]:
+                            - generic [ref=e376]: Agile
+                            - generic [ref=e377]: Continuous Improvement
+                        - generic [ref=e378]:
+                          - link "Try Free" [ref=e379]:
+                            - /url: https://go.microsoft.com/fwlink/?linkid=2227353&clcid=0x40a&l=es-es
+                            - img
+                            - generic [ref=e380]: Try Free
+                          - button "Compare" [ref=e381]:
+                            - img
+                            - text: Compare
+                      - generic [ref=e382]:
+                        - img [ref=e383]
+                        - text: View Details
+                    - generic [ref=e387] [cursor=pointer]:
+                      - generic [ref=e389]:
+                        - generic [ref=e390]:
+                          - generic [ref=e391]:
+                            - generic [ref=e392]: ClickUp
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e394]:
+                              - generic [ref=e395]: N/A
+                              - img [ref=e396]
+                              - generic [ref=e399]: Match Score
+                          - generic [ref=e400]:
+                            - generic [ref=e401]: Agile
+                            - generic [ref=e402]: Continuous Improvement
+                            - generic [ref=e403]: Waterfall
+                        - generic [ref=e404]:
+                          - link "Try Free" [ref=e405]:
+                            - /url: https://clickup.com/lp?utm_source=google&utm_medium=cpc&utm_campaign=gs_cpc_arlv_nnc_brand_trial_all-devices_troas_lp_x_all-departments_x_brand&utm_content=all-countries_kw-target_text_all-industries_all-features_all-use-cases_clickup_trial_broad&utm_term=clickup%20trial&utm_creative=651395804801_BrandChampion-03072023_rsa&utm_custom1=&utm_custom2=&utm_lptheme=&utm_lpmod=&utm_mt=b&gad_source=1&gad_campaignid=19826757985&gbraid=0AAAAACR5vIL4cH-uF4FtwbdbBQWPZclm0&gclid=EAIaIQobChMIkM-Gy8_qjgMVg5xaBR2cQQpKEAAYASAAEgLudPD_BwE
+                            - img
+                            - generic [ref=e406]: Try Free
+                          - button "Compare" [ref=e407]:
+                            - img
+                            - text: Compare
+                      - generic [ref=e408]:
+                        - img [ref=e409]
+                        - text: View Details
+                    - generic [ref=e413] [cursor=pointer]:
+                      - generic [ref=e415]:
+                        - generic [ref=e416]:
+                          - generic [ref=e417]:
+                            - generic [ref=e418]: Jira
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e420]:
+                              - generic [ref=e421]: N/A
+                              - img [ref=e422]
+                              - generic [ref=e425]: Match Score
+                          - generic [ref=e426]:
+                            - generic [ref=e427]: Agile
+                            - generic [ref=e428]: Continuous Improvement
+                        - generic [ref=e429]:
+                          - link "Try Free" [ref=e430]:
+                            - /url: https://www.atlassian.com/try/cloud/signup?bundle=jira-software&edition=free&skipBundles=true
+                            - img
+                            - generic [ref=e431]: Try Free
+                          - button "Compare" [ref=e432]:
+                            - img
+                            - text: Compare
+                      - generic [ref=e433]:
+                        - img [ref=e434]
+                        - text: View Details
+                    - generic [ref=e438] [cursor=pointer]:
+                      - generic [ref=e440]:
+                        - generic [ref=e441]:
+                          - generic [ref=e442]:
+                            - generic [ref=e443]: Microsoft Planner Premium
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e445]:
+                              - generic [ref=e446]: N/A
+                              - img [ref=e447]
+                              - generic [ref=e450]: Match Score
+                          - generic [ref=e451]:
+                            - generic [ref=e452]: Continuous Improvement
+                            - generic [ref=e453]: Waterfall
+                        - button "Compare" [ref=e455]:
+                          - img
+                          - text: Compare
+                      - generic [ref=e456]:
+                        - img [ref=e457]
+                        - text: View Details
+                    - generic [ref=e461] [cursor=pointer]:
+                      - generic [ref=e463]:
+                        - generic [ref=e464]:
+                          - generic [ref=e465]:
+                            - generic [ref=e466]: Microsoft Project
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e468]:
+                              - generic [ref=e469]: N/A
+                              - img [ref=e470]
+                              - generic [ref=e473]: Match Score
+                          - generic [ref=e475]: Waterfall
+                        - button "Compare" [ref=e477]:
+                          - img
+                          - text: Compare
+                      - generic [ref=e478]:
+                        - img [ref=e479]
+                        - text: View Details
+                    - generic [ref=e483] [cursor=pointer]:
+                      - generic [ref=e485]:
+                        - generic [ref=e486]:
+                          - generic [ref=e487]:
+                            - generic [ref=e488]: Monday.com
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e490]:
+                              - generic [ref=e491]: N/A
+                              - img [ref=e492]
+                              - generic [ref=e495]: Match Score
+                          - generic [ref=e496]:
+                            - generic [ref=e497]: Continuous Improvement
+                            - generic [ref=e498]: Waterfall
+                        - generic [ref=e499]:
+                          - link "Try Free" [ref=e500]:
+                            - /url: https://auth.monday.com/users/sign_up_new?origin=hp_fullbg_page_header
+                            - img
+                            - generic [ref=e501]: Try Free
+                          - button "Compare" [ref=e502]:
+                            - img
+                            - text: Compare
+                      - generic [ref=e503]:
+                        - img [ref=e504]
+                        - text: View Details
+                    - generic [ref=e508] [cursor=pointer]:
+                      - generic [ref=e510]:
+                        - generic [ref=e511]:
+                          - generic [ref=e512]:
+                            - generic [ref=e513]: Planview
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e515]:
+                              - generic [ref=e516]: N/A
+                              - img [ref=e517]
+                              - generic [ref=e520]: Match Score
+                          - generic [ref=e521]:
+                            - generic [ref=e522]: Agile
+                            - generic [ref=e523]: Continuous Improvement
+                            - generic [ref=e524]: Waterfall
+                        - generic [ref=e525]:
+                          - link "Try Free" [ref=e526]:
+                            - /url: https://www.planview.com/products-solutions/products/projectplace/enterprise-trial/
+                            - img
+                            - generic [ref=e527]: Try Free
+                          - button "Compare" [ref=e528]:
+                            - img
+                            - text: Compare
+                      - generic [ref=e529]:
+                        - img [ref=e530]
+                        - text: View Details
+                    - generic [ref=e534] [cursor=pointer]:
+                      - generic [ref=e536]:
+                        - generic [ref=e537]:
+                          - generic [ref=e538]:
+                            - generic [ref=e539]: Smartsheet
+                            - generic "Match Score Information - Not yet ranked, tap to learn more" [ref=e541]:
+                              - generic [ref=e542]: N/A
+                              - img [ref=e543]
+                              - generic [ref=e546]: Match Score
+                          - generic [ref=e547]:
+                            - generic [ref=e548]: Continuous Improvement
+                            - generic [ref=e549]: Waterfall
+                        - generic [ref=e550]:
+                          - link "Try Free" [ref=e551]:
+                            - /url: https://www.smartsheet.com/try-it?srsltid=AfmBOor4RqT116TFY_48lksZ95POoe3B_Yh4UG0yOSkM36A8sDl_p8SD
+                            - img
+                            - generic [ref=e552]: Try Free
+                          - button "Compare" [ref=e553]:
+                            - img
+                            - text: Compare
+                      - generic [ref=e554]:
+                        - img [ref=e555]
+                        - text: View Details
+        - dialog [ref=e558]:
+          - generic [ref=e559]:
+            - generic [ref=e561]:
+              - generic [ref=e562]:
+                - heading "Get Better Results!" [level=2] [ref=e563]
+                - paragraph [ref=e564]: Why guided ranking works better
+              - button "Close guided ranking suggestion" [ref=e565] [cursor=pointer]:
+                - img [ref=e566]
+            - generic [ref=e569]:
+              - paragraph [ref=e570]: Guided rankings use our research-backed framework to produce more accurate rankings and tool matches.
+              - button "Use Guided Rankings" [ref=e571] [cursor=pointer]:
+                - img [ref=e572]
+                - text: Use Guided Rankings
+                - img [ref=e574]
+        - generic [ref=e578]:
+          - img [ref=e579]
+          - generic [ref=e582]:
+            - text: "Disclaimer: The recommendations and match scores provided are for informational purposes only and do not constitute professional advice."
+            - generic [ref=e583]: Click or hover for additional details
+    - contentinfo [ref=e584]:
+      - generic [ref=e585]:
+        - generic [ref=e586]:
+          - generic [ref=e587]:
+            - generic [ref=e588]:
+              - img "Panoramic Solutions Logo" [ref=e590]
+              - generic [ref=e591]: Panoramic Solutions
+            - generic [ref=e592]: End-to-end excellence in software development, SaaS architecture, and project management solutions.
+            - generic [ref=e593]:
+              - paragraph [ref=e594]: Get in touch
+              - paragraph [ref=e595]: Salt Lake City, Utah
+          - generic [ref=e596]:
+            - generic [ref=e597]: Quick Links
+            - generic [ref=e598]:
+              - link "Home" [ref=e600] [cursor=pointer]:
+                - /url: /
+              - link "Offerings" [ref=e602] [cursor=pointer]:
+                - /url: /offerings
+              - link "About" [ref=e604] [cursor=pointer]:
+                - /url: /about
+              - link "Contact" [ref=e606] [cursor=pointer]:
+                - /url: /contact
+          - generic [ref=e607]:
+            - generic [ref=e608]: Products
+            - generic [ref=e609]:
+              - link "PPM Tool Finder" [ref=e611] [cursor=pointer]:
+                - /url: /ppm-tool
+              - paragraph [ref=e613]: Discover the perfect project management tool for your organization with our interactive comparison platform.
+        - generic [ref=e615]: © 2025 Panoramic Solutions. All rights reserved.
+  - region "Notifications (F8)":
+    - list
+  - button "Open Next.js Dev Tools" [ref=e621] [cursor=pointer]:
+    - img [ref=e622]
+  - alert [ref=e625]
+```

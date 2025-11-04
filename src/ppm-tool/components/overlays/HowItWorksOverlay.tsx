@@ -209,7 +209,7 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                   <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                     <div className="flex-1 text-sm text-gray-700">
                       <p className="text-sm md:text-base mb-4 text-gray-600 leading-relaxed">
-                        Our guided method ensures your rankings follow the same research-backed framework we use to evaluate tools.
+                      Guided rankings use our research-backed framework to produce more accurate rankings and tool matches.
                       </p>
                       <p className="font-semibold mb-3 text-sm md:text-base text-gray-900">Criteria That Is Analyzed:</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4">

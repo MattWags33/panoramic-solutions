@@ -191,7 +191,7 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
               {/* Content - Professional styling */}
               <div className="p-4">
                 <p className="text-sm text-gray-600 mb-4">
-                  Our guided method ensures your rankings follow the same research-backed framework we use to evaluate tools.
+                Guided rankings use our research-backed framework to produce more accurate rankings and tool matches.
                 </p>
 
                 <button

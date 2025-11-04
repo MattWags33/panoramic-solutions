@@ -319,14 +319,11 @@ export class UniversalBumperEngine {
     const state = stateManager.getState();
     const now = Date.now();
     
-    // PERMANENT BLOCK #1: If user opened and closed the Comparison Report, NEVER show Exit-Intent again
-    // This is a permanent block that persists across page refreshes (specification Row 4)
-    if (state.comparisonReportClosedAt) {
-      console.log('🚫 Exit Intent PERMANENTLY DISABLED - Comparison Report was closed (specification Row 4)');
-      return false;
-    }
+    // REMOVED: Permanent block based on comparisonReportClosedAt
+    // Exit Intent blocking is now based ONLY on WHEN the button was clicked (comparisonReportOpenedAt timing)
+    // Closing the modal does NOT block Exit Intent - only clicking the button before 1 minute blocks it
     
-    // PERMANENT BLOCK #2: If user clicked into Guided Rankings, never show Exit-Intent
+    // PERMANENT BLOCK: If user clicked into Guided Rankings, never show Exit-Intent
     if (state.hasClickedIntoGuidedRankings) {
       console.log('🚫 Exit Intent PERMANENTLY DISABLED - user clicked into Guided Rankings');
       return false;

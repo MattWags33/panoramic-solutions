@@ -13,6 +13,7 @@ import {
   getUnifiedBumperState,
   getUnifiedBumperTimingConstants
 } from '../utils/unifiedBumperState';
+import { shouldAllowBumpers } from '../utils/homeState';
 
 interface UseUnifiedExitIntentOptions {
   enabled?: boolean;
@@ -79,19 +80,55 @@ export function useUnifiedExitIntent(options: UseUnifiedExitIntentOptions = {}) 
         return; // Don't check for exit intent if we're showing product bumper
       }
       
-      // Check if Exit Intent should be shown (but not from mouse leave)
-      // Shows after 1 minute regardless of criteria count
-      if (!hasTriggeredExitIntent && shouldShowExitIntentBumper()) {
+      // SIMPLIFIED: Simple 1-minute auto-show for Exit Intent
+      // Shows automatically after 1 minute if in home state and button wasn't clicked before 1min
+      if (!hasTriggeredExitIntent) {
         const state = getUnifiedBumperState();
+        const now = Date.now();
         const toolOpenedAt = state.toolOpenedAt ? new Date(state.toolOpenedAt).getTime() : Date.now();
-        const timeOnPage = Date.now() - toolOpenedAt;
+        const timeOnPage = now - toolOpenedAt;
         
-        // Only auto-trigger after 1 minute (exit intent timer)
-        if (timeOnPage >= EXIT_INTENT_TIMER_MS) {
-          console.log('🚪 Triggering Exit Intent Bumper via 1-minute timer');
-          setHasTriggeredExitIntent(true);
-          onTriggerExitIntentBumper?.('tab-switch'); // Use tab-switch as default for timer trigger
+        // Must be at least 1 minute
+        if (timeOnPage < EXIT_INTENT_TIMER_MS) {
+          return;
         }
+        
+        // Must be in home state (main state)
+        if (!shouldAllowBumpers()) {
+          return;
+        }
+        
+        // Check if user clicked "Get My Free Comparison Report" button before 1 minute
+        if (state.comparisonReportOpenedAt) {
+          const reportOpenedAt = new Date(state.comparisonReportOpenedAt).getTime();
+          const timeWhenReportOpened = reportOpenedAt - toolOpenedAt;
+          
+          // If they clicked the button before 1 minute passed, don't show Exit Intent
+          if (timeWhenReportOpened < EXIT_INTENT_TIMER_MS) {
+            console.log('🚫 Exit Intent blocked - user clicked button before 1 minute');
+            return;
+          }
+        }
+        
+        // Check other basic blocks (already dismissed/shown)
+        if (state.exitIntentDismissed || state.exitIntentShown) {
+          return;
+        }
+        
+        // Check if already showing
+        if (state.isAnyBumperCurrentlyOpen) {
+          return;
+        }
+        
+        // Also check shouldShowExitIntentBumper for any other blocks
+        if (!shouldShowExitIntentBumper()) {
+          return;
+        }
+        
+        // Show Exit Intent automatically after 1 minute
+        console.log('✅ Auto-showing Exit Intent Bumper after 1 minute');
+        setHasTriggeredExitIntent(true);
+        onTriggerExitIntentBumper?.('tab-switch');
       }
     };
     

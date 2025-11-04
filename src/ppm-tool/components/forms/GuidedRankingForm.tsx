@@ -753,7 +753,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
               <div className="flex items-center justify-between flex-1 min-w-0">
                 <div className="flex-1 min-w-0 pr-4">
                   <h3 className="text-base md:text-lg font-semibold text-gray-900">Guided Rankings</h3>
-                  <p className="text-xs md:text-sm text-gray-500">Our guided method ensures your rankings follow the same research-backed framework we use to evaluate tools.</p>
+                  <p className="text-xs md:text-sm text-gray-500">Guided rankings use our research-backed framework to produce more accurate rankings and tool matches.</p>
                 </div>
                 <div className="text-xs md:text-sm text-gray-600 flex-shrink-0 text-center leading-tight">
                   <div>Question</div>

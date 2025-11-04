@@ -246,37 +246,37 @@
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
     "version": "1.56.1",
-    "workers": 1,
+    "workers": 8,
     "webServer": null
   },
   "suites": [
     {
-      "title": "exit-intent-bumper-comprehensive.spec.ts",
-      "file": "exit-intent-bumper-comprehensive.spec.ts",
+      "title": "exit-intent-auto-show.spec.ts",
+      "file": "exit-intent-auto-show.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Exit Intent Bumper - Comprehensive Test Suite",
-          "file": "exit-intent-bumper-comprehensive.spec.ts",
-          "line": 82,
+          "title": "Exit Intent Bumper - Simplified Auto-Show",
+          "file": "exit-intent-auto-show.spec.ts",
+          "line": 129,
           "column": 6,
           "specs": [],
           "suites": [
             {
-              "title": "Scenario 1: Timer Requirement (1 Minute)",
-              "file": "exit-intent-bumper-comprehensive.spec.ts",
-              "line": 99,
+              "title": "Auto-Show After 1 Minute",
+              "file": "exit-intent-auto-show.spec.ts",
+              "line": 145,
               "column": 8,
               "specs": [
                 {
-                  "title": "Should NOT trigger before 1 minute passes",
+                  "title": "Should auto-show after 1 minute when in main state",
                   "ok": false,
                   "tags": [],
                   "tests": [
                     {
-                      "timeout": 90000,
+                      "timeout": 120000,
                       "annotations": [],
                       "expectedStatus": "passed",
                       "projectId": "chromium",
@@ -286,25 +286,25 @@
                           "workerIndex": 0,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 36564,
+                          "duration": 19228,
                           "error": {
-                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m",
-                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts:130:32",
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts:201:23",
                             "location": {
-                              "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts",
-                              "column": 32,
-                              "line": 130
+                              "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts",
+                              "column": 23,
+                              "line": 201
                             },
-                            "snippet": "  128 |       // Verify debug logs show timer check\n  129 |       const timerLogs = logs.filter(log => log.includes('Timer Check'));\n> 130 |       expect(timerLogs.length).toBeGreaterThan(0);\n      |                                ^\n  131 |       console.log(`✅ PASS: Found ${timerLogs.length} timer check logs`);\n  132 |     });\n  133 |     "
+                            "snippet": "  199 |       }\n  200 |       \n> 201 |       expect(visible).toBe(true);\n      |                       ^\n  202 |       console.log('✅ PASS: Exit Intent auto-showed after 1 minute');\n  203 |     });\n  204 |     "
                           },
                           "errors": [
                             {
                               "location": {
-                                "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts",
-                                "column": 32,
-                                "line": 130
+                                "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts",
+                                "column": 23,
+                                "line": 201
                               },
-                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m0\u001b[39m\nReceived:   \u001b[31m0\u001b[39m\n\n  128 |       // Verify debug logs show timer check\n  129 |       const timerLogs = logs.filter(log => log.includes('Timer Check'));\n> 130 |       expect(timerLogs.length).toBeGreaterThan(0);\n      |                                ^\n  131 |       console.log(`✅ PASS: Found ${timerLogs.length} timer check logs`);\n  132 |     });\n  133 |     \n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts:130:32"
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  199 |       }\n  200 |       \n> 201 |       expect(visible).toBe(true);\n      |                       ^\n  202 |       console.log('✅ PASS: Exit Intent auto-showed after 1 minute');\n  203 |     });\n  204 |     \n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts:201:23"
                             }
                           ],
                           "stdout": [
@@ -312,81 +312,71 @@
                               "text": "🧹 Reset state - fresh test starting\n"
                             },
                             {
-                              "text": "📋 Test: Exit Intent should NOT trigger before 1 minute\n"
+                              "text": "📋 Test: Exit Intent should auto-show after 1 minute\n"
                             },
                             {
-                              "text": "📊 Adjusting 3 criteria sliders...\n"
+                              "text": "⏳ Waiting 1s: After setting toolOpenedAt\n"
                             },
                             {
-                              "text": "✅ Adjusted 0 criteria\n"
+                              "text": "⏳ Waiting 5s: Waiting for interval check to trigger\n"
                             },
                             {
-                              "text": "⏳ Waiting 2s: After criteria adjustment\n"
+                              "text": "Current state: {\n  toolOpenedAt: \u001b[32m'2025-11-04T02:39:54.203Z'\u001b[39m,\n  initialTimerComplete: \u001b[33mtrue\u001b[39m,\n  mouseStoppedAt: \u001b[1mnull\u001b[22m,\n  mouseMovementTimerComplete: \u001b[33mtrue\u001b[39m,\n  hasClickedIntoGuidedRankings: \u001b[33mfalse\u001b[39m,\n  hasClickedIntoComparisonReport: \u001b[33mfalse\u001b[39m,\n  productBumperShown: \u001b[33mtrue\u001b[39m,\n  productBumperDismissed: \u001b[33mfalse\u001b[39m,\n  exitIntentShown: \u001b[33mfalse\u001b[39m,\n  exitIntentDismissed: \u001b[33mfalse\u001b[39m,\n  isAnyBumperCurrentlyOpen: \u001b[33mtrue\u001b[39m,\n  isGuidedRankingsCurrentlyOpen: \u001b[33mfalse\u001b[39m,\n  isComparisonReportCurrentlyOpen: \u001b[33mfalse\u001b[39m,\n  comparisonReportOpenedAt: \u001b[1mnull\u001b[22m,\n  comparisonReportClosedAt: \u001b[1mnull\u001b[22m,\n  stateVersion: \u001b[32m'2.0.0'\u001b[39m,\n  lastUpdated: \u001b[32m'2025-11-04T02:41:03.302Z'\u001b[39m,\n  sessionId: \u001b[32m'test_1762224054208'\u001b[39m\n}\n"
                             },
                             {
-                              "text": "⏳ Waiting 2s: Mouse in top bar zone\n"
-                            },
-                            {
-                              "text": "⏳ Waiting 30s: Waiting 30 seconds (less than 1 minute)\n"
-                            },
-                            {
-                              "text": "✅ PASS: Exit Intent correctly blocked - timer not met\n"
+                              "text": "shouldShowExitIntentBumper: \u001b[33mfalse\u001b[39m\n"
                             }
                           ],
-                          "stderr": [
-                            {
-                              "text": "⚠️ Only 0 sliders found, adjusting all available\n"
-                            }
-                          ],
+                          "stderr": [],
                           "retry": 0,
-                          "startTime": "2025-11-03T21:29:25.092Z",
+                          "startTime": "2025-11-04T02:40:51.891Z",
                           "annotations": [],
                           "attachments": [
                             {
                               "name": "screenshot",
                               "contentType": "image/png",
-                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-bumper-compreh-dd8d0-gger-before-1-minute-passes-chromium\\test-failed-1.png"
+                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-auto-show-Exit-0c67d-1-minute-when-in-main-state-chromium\\test-failed-1.png"
                             },
                             {
                               "name": "video",
                               "contentType": "video/webm",
-                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-bumper-compreh-dd8d0-gger-before-1-minute-passes-chromium\\video.webm"
+                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-auto-show-Exit-0c67d-1-minute-when-in-main-state-chromium\\video.webm"
                             },
                             {
                               "name": "error-context",
                               "contentType": "text/markdown",
-                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-bumper-compreh-dd8d0-gger-before-1-minute-passes-chromium\\error-context.md"
+                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-auto-show-Exit-0c67d-1-minute-when-in-main-state-chromium\\error-context.md"
                             }
                           ],
                           "errorLocation": {
-                            "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts",
-                            "column": 32,
-                            "line": 130
+                            "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts",
+                            "column": 23,
+                            "line": 201
                           }
                         },
                         {
                           "workerIndex": 1,
                           "parallelIndex": 0,
                           "status": "failed",
-                          "duration": 5805,
+                          "duration": 19495,
                           "error": {
-                            "message": "Error: page.waitForTimeout: Target page, context or browser has been closed",
-                            "stack": "Error: page.waitForTimeout: Target page, context or browser has been closed\n    at waitWithLog (C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts:25:14)\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts:117:13",
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts:201:23",
                             "location": {
-                              "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts",
-                              "column": 14,
-                              "line": 25
+                              "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts",
+                              "column": 23,
+                              "line": 201
                             },
-                            "snippet": "  23 | async function waitWithLog(page: any, seconds: number, reason: string) {\n  24 |   console.log(`⏳ Waiting ${seconds}s: ${reason}`);\n> 25 |   await page.waitForTimeout(seconds * 1000);\n     |              ^\n  26 | }\n  27 |\n  28 | // Helper function to get bumper state from page"
+                            "snippet": "  199 |       }\n  200 |       \n> 201 |       expect(visible).toBe(true);\n      |                       ^\n  202 |       console.log('✅ PASS: Exit Intent auto-showed after 1 minute');\n  203 |     });\n  204 |     "
                           },
                           "errors": [
                             {
                               "location": {
-                                "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts",
-                                "column": 14,
-                                "line": 25
+                                "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts",
+                                "column": 23,
+                                "line": 201
                               },
-                              "message": "Error: page.waitForTimeout: Target page, context or browser has been closed\n\n  23 | async function waitWithLog(page: any, seconds: number, reason: string) {\n  24 |   console.log(`⏳ Waiting ${seconds}s: ${reason}`);\n> 25 |   await page.waitForTimeout(seconds * 1000);\n     |              ^\n  26 | }\n  27 |\n  28 | // Helper function to get bumper state from page\n    at waitWithLog (C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts:25:14)\n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts:117:13"
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  199 |       }\n  200 |       \n> 201 |       expect(visible).toBe(true);\n      |                       ^\n  202 |       console.log('✅ PASS: Exit Intent auto-showed after 1 minute');\n  203 |     });\n  204 |     \n    at C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts:201:23"
                             }
                           ],
                           "stdout": [
@@ -394,57 +384,60 @@
                               "text": "🧹 Reset state - fresh test starting\n"
                             },
                             {
-                              "text": "📋 Test: Exit Intent should NOT trigger before 1 minute\n"
+                              "text": "📋 Test: Exit Intent should auto-show after 1 minute\n"
                             },
                             {
-                              "text": "📊 Adjusting 3 criteria sliders...\n"
+                              "text": "⏳ Waiting 1s: After setting toolOpenedAt\n"
                             },
                             {
-                              "text": "✅ Adjusted 0 criteria\n"
+                              "text": "⏳ Waiting 5s: Waiting for interval check to trigger\n"
                             },
                             {
-                              "text": "⏳ Waiting 2s: After criteria adjustment\n"
+                              "text": "Current state: {\n  toolOpenedAt: \u001b[32m'2025-11-04T02:40:15.260Z'\u001b[39m,\n  initialTimerComplete: \u001b[33mtrue\u001b[39m,\n  mouseStoppedAt: \u001b[1mnull\u001b[22m,\n  mouseMovementTimerComplete: \u001b[33mtrue\u001b[39m,\n  hasClickedIntoGuidedRankings: \u001b[33mfalse\u001b[39m,\n  hasClickedIntoComparisonReport: \u001b[33mfalse\u001b[39m,\n  productBumperShown: \u001b[33mtrue\u001b[39m,\n  productBumperDismissed: \u001b[33mfalse\u001b[39m,\n  exitIntentShown: \u001b[33mfalse\u001b[39m,\n  exitIntentDismissed: \u001b[33mfalse\u001b[39m,\n  isAnyBumperCurrentlyOpen: \u001b[33mtrue\u001b[39m,\n  isGuidedRankingsCurrentlyOpen: \u001b[33mfalse\u001b[39m,\n  isComparisonReportCurrentlyOpen: \u001b[33mfalse\u001b[39m,\n  comparisonReportOpenedAt: \u001b[1mnull\u001b[22m,\n  comparisonReportClosedAt: \u001b[1mnull\u001b[22m,\n  stateVersion: \u001b[32m'2.0.0'\u001b[39m,\n  lastUpdated: \u001b[32m'2025-11-04T02:41:24.326Z'\u001b[39m,\n  sessionId: \u001b[32m'test_1762224075265'\u001b[39m\n}\n"
                             },
                             {
-                              "text": "⏳ Waiting 2s: Mouse in top bar zone\n"
-                            },
-                            {
-                              "text": "⏳ Waiting 30s: Waiting 30 seconds (less than 1 minute)\n"
+                              "text": "shouldShowExitIntentBumper: \u001b[33mfalse\u001b[39m\n"
                             }
                           ],
-                          "stderr": [
-                            {
-                              "text": "⚠️ Only 0 sliders found, adjusting all available\n"
-                            }
-                          ],
+                          "stderr": [],
                           "retry": 1,
-                          "startTime": "2025-11-03T21:30:03.394Z",
+                          "startTime": "2025-11-04T02:41:12.530Z",
                           "annotations": [],
                           "attachments": [
                             {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-auto-show-Exit-0c67d-1-minute-when-in-main-state-chromium-retry1\\test-failed-1.png"
+                            },
+                            {
                               "name": "video",
                               "contentType": "video/webm",
-                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-bumper-compreh-dd8d0-gger-before-1-minute-passes-chromium-retry1\\video.webm"
+                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-auto-show-Exit-0c67d-1-minute-when-in-main-state-chromium-retry1\\video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-auto-show-Exit-0c67d-1-minute-when-in-main-state-chromium-retry1\\error-context.md"
                             },
                             {
                               "name": "trace",
                               "contentType": "application/zip",
-                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-bumper-compreh-dd8d0-gger-before-1-minute-passes-chromium-retry1\\trace.zip"
+                              "path": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\test-results\\exit-intent-auto-show-Exit-0c67d-1-minute-when-in-main-state-chromium-retry1\\trace.zip"
                             }
                           ],
                           "errorLocation": {
-                            "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-bumper-comprehensive.spec.ts",
-                            "column": 14,
-                            "line": 25
+                            "file": "C:\\Users\\Parker Gawne\\panoramic-solutions\\panoramic-solutions\\e2e\\exit-intent-auto-show.spec.ts",
+                            "column": 23,
+                            "line": 201
                           }
                         }
                       ],
                       "status": "unexpected"
                     }
                   ],
-                  "id": "c30ad002847376d3c986-107c1489c6372e48cff9",
-                  "file": "exit-intent-bumper-comprehensive.spec.ts",
-                  "line": 101,
+                  "id": "763b5368cb54a7a962f5-1d0dab0220d60fba8def",
+                  "file": "exit-intent-auto-show.spec.ts",
+                  "line": 147,
                   "column": 9
                 }
               ]
@@ -456,8 +449,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-11-03T21:29:24.093Z",
-    "duration": 45509.007,
+    "startTime": "2025-11-04T02:40:50.830Z",
+    "duration": 41771.236,
     "expected": 0,
     "skipped": 0,
     "unexpected": 1,
