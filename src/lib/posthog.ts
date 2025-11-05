@@ -68,31 +68,76 @@ export const trackNewVisitor = (properties?: Record<string, any>) => {
 
 /**
  * Track new active user (made a single action)
+ * Special handling: If user starts on "how it works", first action doesn't count
  */
 export const trackNewActive = (action: string, properties?: Record<string, any>) => {
   // Always include attribution data
   const attribution = getAttribution() || {};
   
-  posthog.capture('New_Active', {
-    action,
-    timestamp: Date.now(),
-    ...attribution,
-    ...properties
-  });
+  try {
+    posthog.capture('New_Active', {
+      action,
+      timestamp: Date.now(),
+      ...attribution,
+      ...properties
+    });
+  } catch (error) {
+    console.warn('PostHog tracking failed (trackNewActive):', error);
+  }
 };
 
 /**
- * Track new ranking submittal
+ * Track new manual ranking (slider movement)
+ * Fires ONCE when user first moves any slider
  */
-export const trackNewRankingSubmittal = (properties?: Record<string, any>) => {
-  // Always include attribution data
+export const trackNewManualRanking = (properties?: Record<string, any>) => {
   const attribution = getAttribution() || {};
   
-  posthog.capture('New_Ranking_Submittal', {
-    timestamp: Date.now(),
-    ...attribution,
-    ...properties
-  });
+  try {
+    posthog.capture('New_Manual_Ranking', {
+      timestamp: Date.now(),
+      ...attribution,
+      ...properties
+    });
+  } catch (error) {
+    console.warn('PostHog tracking failed (trackNewManualRanking):', error);
+  }
+};
+
+/**
+ * Track new partial ranking (guided ranking question answered)
+ * Fires ONCE when user first answers any guided ranking question
+ */
+export const trackNewPartialRanking = (properties?: Record<string, any>) => {
+  const attribution = getAttribution() || {};
+  
+  try {
+    posthog.capture('New_Partial_Ranking', {
+      timestamp: Date.now(),
+      ...attribution,
+      ...properties
+    });
+  } catch (error) {
+    console.warn('PostHog tracking failed (trackNewPartialRanking):', error);
+  }
+};
+
+/**
+ * Track new full ranking submittal
+ * Fires ONCE when user completes entire guided ranking OR all partial rankings are complete
+ */
+export const trackNewFullRankingSubmittal = (properties?: Record<string, any>) => {
+  const attribution = getAttribution() || {};
+  
+  try {
+    posthog.capture('New_Full_Ranking_Submittal', {
+      timestamp: Date.now(),
+      ...attribution,
+      ...properties
+    });
+  } catch (error) {
+    console.warn('PostHog tracking failed (trackNewFullRankingSubmittal):', error);
+  }
 };
 
 /**
@@ -102,11 +147,85 @@ export const trackNewReportSent = (properties?: Record<string, any>) => {
   // Always include attribution data
   const attribution = getAttribution() || {};
   
-  posthog.capture('New_Report_Sent', {
-    timestamp: Date.now(),
-    ...attribution,
-    ...properties
-  });
+  try {
+    posthog.capture('New_Report_Sent', {
+      timestamp: Date.now(),
+      ...attribution,
+      ...properties
+    });
+  } catch (error) {
+    console.warn('PostHog tracking failed (trackNewReportSent):', error);
+  }
+};
+
+/**
+ * Track tool "Try Free" click (HIGHEST INTENT - MONETIZATION KEY)
+ */
+export const trackToolTryFreeClick = (properties: {
+  tool_id: string;
+  tool_name: string;
+  position?: number;
+  match_score?: number;
+  criteria_rankings?: Record<string, number>;
+  firmographics?: Record<string, any>;
+}) => {
+  const attribution = getAttribution() || {};
+  
+  try {
+    posthog.capture('Tool_Try_Free_Click', {
+      timestamp: Date.now(),
+      ...attribution,
+      ...properties
+    });
+  } catch (error) {
+    console.warn('PostHog tracking failed (trackToolTryFreeClick):', error);
+  }
+};
+
+/**
+ * Track tool "Add to Compare" click
+ */
+export const trackToolAddToCompareClick = (properties: {
+  tool_id: string;
+  tool_name: string;
+  position?: number;
+  match_score?: number;
+  comparing_with?: string[];
+}) => {
+  const attribution = getAttribution() || {};
+  
+  try {
+    posthog.capture('Tool_Add_To_Compare_Click', {
+      timestamp: Date.now(),
+      ...attribution,
+      ...properties
+    });
+  } catch (error) {
+    console.warn('PostHog tracking failed (trackToolAddToCompareClick):', error);
+  }
+};
+
+/**
+ * Track tool "View Details" click
+ */
+export const trackToolViewDetailsClick = (properties: {
+  tool_id: string;
+  tool_name: string;
+  position?: number;
+  match_score?: number;
+  expanded?: boolean;
+}) => {
+  const attribution = getAttribution() || {};
+  
+  try {
+    posthog.capture('Tool_View_Details_Click', {
+      timestamp: Date.now(),
+      ...attribution,
+      ...properties
+    });
+  } catch (error) {
+    console.warn('PostHog tracking failed (trackToolViewDetailsClick):', error);
+  }
 };
 
 // State Management for Core Metrics
@@ -114,9 +233,12 @@ export const trackNewReportSent = (properties?: Record<string, any>) => {
 const STORAGE_KEYS = {
   VISITOR_TRACKED: 'posthog_visitor_tracked',
   ACTIVE_TRACKED: 'posthog_active_tracked',
-  RANKING_TRACKED: 'posthog_ranking_tracked',
+  MANUAL_RANKING_TRACKED: 'posthog_manual_ranking_tracked', // NEW: First slider move
+  PARTIAL_RANKING_TRACKED: 'posthog_partial_ranking_tracked', // NEW: First question answered
+  FULL_RANKING_TRACKED: 'posthog_full_ranking_tracked', // NEW: All questions completed
   REPORT_TRACKED: 'posthog_report_tracked',
-  SESSION_ID: 'posthog_session_id'
+  SESSION_ID: 'posthog_session_id',
+  LANDING_PATH: 'posthog_landing_path' // NEW: Initial landing URL
 };
 
 /**
@@ -139,6 +261,7 @@ export const checkAndTrackNewVisitor = (properties?: Record<string, any>) => {
 
 /**
  * Check if this is a new active user and track if so
+ * Special handling: If user starts on "how it works" and action is closing it, don't count
  */
 export const checkAndTrackNewActive = (action: string, properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
@@ -147,6 +270,16 @@ export const checkAndTrackNewActive = (action: string, properties?: Record<strin
   const hasTracked = localStorage.getItem(STORAGE_KEYS.ACTIVE_TRACKED);
   
   if (!hasTracked) {
+    // Check if user landed on "how it works"
+    const landingPath = localStorage.getItem(STORAGE_KEYS.LANDING_PATH);
+    const isHowItWorksStart = landingPath?.includes('section=how-it-works');
+    
+    // If they started on "how it works" and this action is closing it, skip
+    if (isHowItWorksStart && action === 'how_it_works_close') {
+      return false; // Don't count closing modal as active
+    }
+    
+    // Otherwise, track as active
     trackNewActive(action, properties);
     localStorage.setItem(STORAGE_KEYS.ACTIVE_TRACKED, 'true');
     return true;
@@ -156,17 +289,56 @@ export const checkAndTrackNewActive = (action: string, properties?: Record<strin
 };
 
 /**
- * Check if this is a new ranking submittal and track if so
+ * Check if this is a new manual ranking and track if so
+ * Fires ONCE when user first moves any slider
  */
-export const checkAndTrackNewRankingSubmittal = (properties?: Record<string, any>) => {
+export const checkAndTrackNewManualRanking = (properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
   if (typeof window === 'undefined') return false;
   
-  const hasTracked = localStorage.getItem(STORAGE_KEYS.RANKING_TRACKED);
+  const hasTracked = localStorage.getItem(STORAGE_KEYS.MANUAL_RANKING_TRACKED);
   
   if (!hasTracked) {
-    trackNewRankingSubmittal(properties);
-    localStorage.setItem(STORAGE_KEYS.RANKING_TRACKED, 'true');
+    trackNewManualRanking(properties);
+    localStorage.setItem(STORAGE_KEYS.MANUAL_RANKING_TRACKED, 'true');
+    return true;
+  }
+  
+  return false;
+};
+
+/**
+ * Check if this is a new partial ranking and track if so
+ * Fires ONCE when user first answers any guided ranking question
+ */
+export const checkAndTrackNewPartialRanking = (properties?: Record<string, any>) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
+  const hasTracked = localStorage.getItem(STORAGE_KEYS.PARTIAL_RANKING_TRACKED);
+  
+  if (!hasTracked) {
+    trackNewPartialRanking(properties);
+    localStorage.setItem(STORAGE_KEYS.PARTIAL_RANKING_TRACKED, 'true');
+    return true;
+  }
+  
+  return false;
+};
+
+/**
+ * Check if this is a new full ranking submittal and track if so
+ * Fires ONCE when user completes entire guided ranking OR all partial rankings are complete
+ */
+export const checkAndTrackNewFullRankingSubmittal = (properties?: Record<string, any>) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
+  const hasTracked = localStorage.getItem(STORAGE_KEYS.FULL_RANKING_TRACKED);
+  
+  if (!hasTracked) {
+    trackNewFullRankingSubmittal(properties);
+    localStorage.setItem(STORAGE_KEYS.FULL_RANKING_TRACKED, 'true');
     return true;
   }
   
@@ -217,19 +389,40 @@ export const resetTrackingState = () => {
   
   localStorage.removeItem(STORAGE_KEYS.VISITOR_TRACKED);
   localStorage.removeItem(STORAGE_KEYS.ACTIVE_TRACKED);
-  localStorage.removeItem(STORAGE_KEYS.RANKING_TRACKED);
+  localStorage.removeItem(STORAGE_KEYS.MANUAL_RANKING_TRACKED);
+  localStorage.removeItem(STORAGE_KEYS.PARTIAL_RANKING_TRACKED);
+  localStorage.removeItem(STORAGE_KEYS.FULL_RANKING_TRACKED);
   localStorage.removeItem(STORAGE_KEYS.REPORT_TRACKED);
   localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+  localStorage.removeItem(STORAGE_KEYS.LANDING_PATH);
 };
 
 // Make tracking functions available globally for debugging in development
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  (window as any).checkAndTrackNewActive = checkAndTrackNewActive;
-  (window as any).checkAndTrackNewVisitor = checkAndTrackNewVisitor;
-  (window as any).checkAndTrackNewRankingSubmittal = checkAndTrackNewRankingSubmittal;
-  (window as any).checkAndTrackNewReportSent = checkAndTrackNewReportSent;
-  (window as any).resetTrackingState = resetTrackingState;
-  (window as any).trackNewActive = trackNewActive;
-  (window as any).trackNewVisitor = trackNewVisitor;
-  // Reduced logging
+  (window as any).posthog_debug = {
+    // Check and track functions (one-time events)
+    checkAndTrackNewVisitor,
+    checkAndTrackNewActive,
+    checkAndTrackNewManualRanking,
+    checkAndTrackNewPartialRanking,
+    checkAndTrackNewFullRankingSubmittal,
+    checkAndTrackNewReportSent,
+    
+    // Direct tracking functions
+    trackNewVisitor,
+    trackNewActive,
+    trackNewManualRanking,
+    trackNewPartialRanking,
+    trackNewFullRankingSubmittal,
+    trackNewReportSent,
+    trackToolTryFreeClick,
+    trackToolAddToCompareClick,
+    trackToolViewDetailsClick,
+    
+    // Utilities
+    resetTrackingState,
+    getSessionId
+  };
+  
+  console.log('🎯 PostHog Debug: Access tracking functions via window.posthog_debug');
 }

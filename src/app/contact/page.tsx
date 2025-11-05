@@ -28,7 +28,7 @@ export default function ContactPage() {
     company: '',
     message: '',
   });
-  const { trackForm, trackClick, capture, checkAndTrackVisitor, checkAndTrackActive, trackRanking } = usePostHog();
+  const { trackForm, trackClick, capture, checkAndTrackVisitor, checkAndTrackActive } = usePostHog();
 
   // Track new visitor and active user on page load
   useEffect(() => {
@@ -116,13 +116,6 @@ export default function ContactPage() {
         message_length: formData.message.length,
         submission_time: Date.now(),
         submission_id: result.submissionId
-      });
-
-      // Track new ranking submittal
-      trackRanking({
-        form_type: 'contact_inquiry',
-        company: formData.company,
-        message_length: formData.message.length
       });
 
       // Success - show success page

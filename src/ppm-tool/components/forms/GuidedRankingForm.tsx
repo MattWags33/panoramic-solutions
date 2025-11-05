@@ -8,9 +8,10 @@ import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMob
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/ppm-tool/components/ui/button';
 import { Slider } from '@/ppm-tool/components/ui/slider';
-import { checkAndTrackNewRankingSubmittal, checkAndTrackNewActive } from '@/lib/posthog';
+import { checkAndTrackNewActive, checkAndTrackNewPartialRanking, checkAndTrackNewFullRankingSubmittal } from '@/lib/posthog';
 import { markGuidedRankingComplete } from '@/ppm-tool/shared/utils/productBumperState';
 import { markGuidedRankingAsCompleted } from '@/ppm-tool/shared/utils/guidedRankingState';
+import { analytics } from '@/lib/analytics';
 
 interface GuidedRankingFormProps {
   isOpen: boolean;
@@ -347,6 +348,9 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
         hasInitialAnswers: !!initialAnswers && Object.keys(initialAnswers).length > 0 
       });
       
+      // Initialize start time for completion tracking
+      (window as any)._guidedRankingStartTime = Date.now();
+      
       // Only reset if we don't have initial answers to load
       if (!initialAnswers || Object.keys(initialAnswers).length === 0) {
         console.log('📝 Resetting form state (no saved answers)');
@@ -374,6 +378,20 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
       console.warn('Failed to track guided ranking interaction:', error);
     }
     
+    // Track New_Partial_Ranking in PostHog (ONCE per user)
+    try {
+      checkAndTrackNewPartialRanking({
+        question_id: questionId,
+        question_text: question?.text || '',
+        question_number: currentStep + 1,
+        answer: value,
+        affects_criteria: question?.isPersonalization ? 'personalization' : Object.keys(question?.criteriaImpact || {}).join(', '),
+        total_questions: relevantQuestions.length
+      });
+    } catch (error) {
+      console.warn('Failed to track partial ranking:', error);
+    }
+    
     if (question?.isMultiSelect) {
       // For multi-select, toggle values in an array
       setAnswers(prev => {
@@ -382,11 +400,31 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
           ? currentValues.filter((v: number) => v !== value)
           : [...currentValues, value];
         
+        // Track answer in Supabase analytics
+        analytics.trackGuidedRankingAnswer({
+          questionId,
+          questionText: question?.text || '',
+          answer: newValues,
+          affectsCriteria: question?.isPersonalization ? 'personalization' : Object.keys(question?.criteriaImpact || {}).join(', '),
+          isComplete: false
+        });
+        
         return { ...prev, [questionId]: newValues };
       });
     } else {
       // For single-select, just set the value
-      setAnswers(prev => ({ ...prev, [questionId]: value }));
+      setAnswers(prev => {
+        // Track answer in Supabase analytics
+        analytics.trackGuidedRankingAnswer({
+          questionId,
+          questionText: question?.text || '',
+          answer: value,
+          affectsCriteria: question?.isPersonalization ? 'personalization' : Object.keys(question?.criteriaImpact || {}).join(', '),
+          isComplete: false
+        });
+        
+        return { ...prev, [questionId]: value };
+      });
     }
   };
 
@@ -637,18 +675,36 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     // NOTE: markGuidedRankingAsCompleted() is now called AFTER animation completes in handleUpdateRankings
     console.log('✅ Guided ranking completed - ProductBumper will no longer show');
     
-    // Track PostHog New_Ranking_Submittal event (once per session)
+    // Track PostHog New_Full_Ranking_Submittal event (once per session)
     try {
-      checkAndTrackNewRankingSubmittal({
+      checkAndTrackNewFullRankingSubmittal({
+        completion_method: 'full_form_submit',
         ranking_type: 'guided',
-        questions_answered: Object.keys(answers).length,
+        total_questions_answered: Object.keys(answers).length,
+        criteria_affected: Object.keys(rankings),
         has_personalization: Object.keys(personalizationData).length > 0,
-        criteria_count: criteria.length,
-        completion_time: Date.now()
+        firmographics: personalizationData,
+        time_to_complete_seconds: Math.round((Date.now() - (window as any)._guidedRankingStartTime) / 1000) || 0
       });
+      
+      // Store start time for next session
+      (window as any)._guidedRankingStartTime = Date.now();
     } catch (posthogError) {
-      console.warn('Failed to track PostHog ranking event:', posthogError);
+      console.warn('Failed to track PostHog full ranking event:', posthogError);
       // Don't fail the form submission for PostHog tracking issues
+    }
+    
+    // Track in Supabase analytics
+    try {
+      analytics.trackGuidedRankingAnswer({
+        questionId: 'complete',
+        questionText: 'Guided Ranking Complete',
+        answer: rankings,
+        affectsCriteria: 'all',
+        isComplete: true
+      });
+    } catch (analyticsError) {
+      console.warn('Failed to track Supabase analytics:', analyticsError);
     }
     
     // Reset form state
@@ -674,6 +730,34 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     
     // Save answers and personalization data AFTER closing (don't delay for this)
     onSaveAnswers?.(answers, personalizationData);
+    
+    // Track guided ranking completion in Supabase (fire-and-forget)
+    // Track each answer individually for granular analysis
+    Object.entries(answers).forEach(([questionId, answer]) => {
+      const question = questions.find(q => q.id === questionId);
+      if (question) {
+        analytics.trackGuidedRankingAnswer({
+          questionId: questionId,
+          questionText: question.text,
+          answer: answer,
+          affectsCriteria: Object.keys(question.criteriaImpact).join(', '),
+          isComplete: false // Individual answer
+        });
+      }
+    });
+    
+    // Track final completion event with all data
+    analytics.trackGuidedRankingAnswer({
+      questionId: 'completion',
+      questionText: 'Guided Ranking Complete',
+      answer: {
+        all_answers: answers,
+        personalization: personalizationData,
+        rankings: rankings,
+        questions_answered: Object.keys(answers).length
+      },
+      isComplete: true
+    });
   };
 
   if (!isOpen) return null;

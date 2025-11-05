@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Tool, Criterion } from '../types';
 import { PPMEmailTemplateGenerator } from '../utils/emailTemplateGenerator';
 import { checkAndTrackNewReportSent } from '@/lib/posthog';
+import { analytics } from '@/lib/analytics';
+import { calculateScore } from '../utils/toolRating';
 
 interface UseEmailReportOptions {
   onSuccess?: (response: any) => void;
@@ -152,6 +154,46 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
       } catch (posthogError) {
         console.warn('Failed to track PostHog report event:', posthogError);
         // Don't fail the email send for PostHog tracking issues
+      }
+      
+      // Track Supabase report sent (CONVERSION EVENT - fire-and-forget)
+      try {
+        // Build criteria rankings object
+        const criteriaRankings = data.selectedCriteria.reduce((acc, criterion) => {
+          acc[criterion.id] = criterion.userRating;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        // Build match scores array
+        const matchScores = data.selectedTools.map((tool, index) => ({
+          toolId: tool.id,
+          toolName: tool.name,
+          score: calculateScore(tool, data.selectedCriteria),
+          rank: index + 1
+        }));
+        
+        // Extract firmographics from personalization data
+        const firmographics = personalizationData ? {
+          departments: personalizationData.departments || [],
+          methodologies: personalizationData.methodologies || [],
+          user_count: personalizationData.user_count || null,
+          project_volume: guidedRankingAnswers?.q1 || null,
+          tasks_per_project: guidedRankingAnswers?.q2 || null,
+          expertise_level: guidedRankingAnswers?.q3 || null
+        } : {};
+        
+        analytics.trackReportSent({
+          email: data.userEmail,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          tools: data.selectedTools.map(t => ({ id: t.id, name: t.name, score: calculateScore(t, data.selectedCriteria) })),
+          criteria: criteriaRankings,
+          matchScores: matchScores,
+          firmographics: firmographics
+        });
+      } catch (analyticsError) {
+        console.warn('Failed to track Supabase report event:', analyticsError);
+        // Don't fail the email send for analytics tracking issues
       }
       
       setProgress('Complete!');

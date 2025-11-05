@@ -14,7 +14,8 @@ import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMob
 import { useClickOutside } from '@/ppm-tool/shared/hooks/useClickOutside';
 
 import { useGuidance } from '@/ppm-tool/shared/contexts/GuidanceContext';
-import { checkAndTrackNewActive } from '@/lib/posthog';
+import { checkAndTrackNewActive, checkAndTrackNewManualRanking } from '@/lib/posthog';
+import { analytics } from '@/lib/analytics';
 
 interface CriteriaSectionProps {
   criteria: Criterion[];
@@ -123,6 +124,29 @@ export const CriteriaSection: React.FC<CriteriaSectionProps> = ({
             : c
         );
         onCriteriaChangeRef.current(updatedCriteria);
+        
+        // Track criteria ranking change in Supabase (fire-and-forget)
+        analytics.trackCriteriaRanking({
+          criteriaId: criterion.id,
+          criteriaName: criterion.name,
+          score: value[0],
+          isManual: true
+        });
+        
+        // Track New_Manual_Ranking in PostHog (ONCE per user)
+        checkAndTrackNewManualRanking({
+          criteria_id: criterion.id,
+          criteria_name: criterion.name,
+          score: value[0],
+          interaction_type: 'slider_movement'
+        });
+        
+        // Track as active user (meaningful action)
+        checkAndTrackNewActive('slider_moved', {
+          criteria_id: criterion.id,
+          criteria_name: criterion.name,
+          score: value[0]
+        });
       };
     });
     return callbacks;

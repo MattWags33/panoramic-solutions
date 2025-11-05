@@ -7,11 +7,18 @@ import {
   trackToolUsage,
   trackNewVisitor,
   trackNewActive,
-  trackNewRankingSubmittal,
+  trackNewManualRanking,
+  trackNewPartialRanking,
+  trackNewFullRankingSubmittal,
   trackNewReportSent,
+  trackToolTryFreeClick,
+  trackToolAddToCompareClick,
+  trackToolViewDetailsClick,
   checkAndTrackNewVisitor,
   checkAndTrackNewActive,
-  checkAndTrackNewRankingSubmittal,
+  checkAndTrackNewManualRanking,
+  checkAndTrackNewPartialRanking,
+  checkAndTrackNewFullRankingSubmittal,
   checkAndTrackNewReportSent,
   getSessionId,
   resetTrackingState
@@ -67,12 +74,52 @@ export const usePostHog = () => {
     trackNewActive(action, properties);
   }, []);
 
-  const trackRanking = useCallback((properties?: Record<string, any>) => {
-    trackNewRankingSubmittal(properties);
+  const trackManualRanking = useCallback((properties?: Record<string, any>) => {
+    trackNewManualRanking(properties);
+  }, []);
+
+  const trackPartialRanking = useCallback((properties?: Record<string, any>) => {
+    trackNewPartialRanking(properties);
+  }, []);
+
+  const trackFullRanking = useCallback((properties?: Record<string, any>) => {
+    trackNewFullRankingSubmittal(properties);
   }, []);
 
   const trackReport = useCallback((properties?: Record<string, any>) => {
     trackNewReportSent(properties);
+  }, []);
+
+  // Tool click tracking (monetization)
+  const trackTryFree = useCallback((properties: {
+    tool_id: string;
+    tool_name: string;
+    position?: number;
+    match_score?: number;
+    criteria_rankings?: Record<string, number>;
+    firmographics?: Record<string, any>;
+  }) => {
+    trackToolTryFreeClick(properties);
+  }, []);
+
+  const trackAddToCompare = useCallback((properties: {
+    tool_id: string;
+    tool_name: string;
+    position?: number;
+    match_score?: number;
+    comparing_with?: string[];
+  }) => {
+    trackToolAddToCompareClick(properties);
+  }, []);
+
+  const trackViewDetails = useCallback((properties: {
+    tool_id: string;
+    tool_name: string;
+    position?: number;
+    match_score?: number;
+    expanded?: boolean;
+  }) => {
+    trackToolViewDetailsClick(properties);
   }, []);
 
   // Automatic tracking utilities
@@ -84,8 +131,16 @@ export const usePostHog = () => {
     return checkAndTrackNewActive(action, properties);
   }, []);
 
-  const checkAndTrackRanking = useCallback((properties?: Record<string, any>) => {
-    return checkAndTrackNewRankingSubmittal(properties);
+  const checkAndTrackManualRanking = useCallback((properties?: Record<string, any>) => {
+    return checkAndTrackNewManualRanking(properties);
+  }, []);
+
+  const checkAndTrackPartialRanking = useCallback((properties?: Record<string, any>) => {
+    return checkAndTrackNewPartialRanking(properties);
+  }, []);
+
+  const checkAndTrackFullRanking = useCallback((properties?: Record<string, any>) => {
+    return checkAndTrackNewFullRankingSubmittal(properties);
   }, []);
 
   const checkAndTrackReport = useCallback((properties?: Record<string, any>) => {
@@ -113,13 +168,22 @@ export const usePostHog = () => {
     // Core metrics
     trackVisitor,
     trackActive,
-    trackRanking,
+    trackManualRanking,
+    trackPartialRanking,
+    trackFullRanking,
     trackReport,
-    // Session-aware tracking utilities
+    // Tool click tracking (monetization)
+    trackTryFree,
+    trackAddToCompare,
+    trackViewDetails,
+    // Session-aware tracking utilities (one-time events)
     checkAndTrackVisitor,
     checkAndTrackActive,
-    checkAndTrackRanking,
+    checkAndTrackManualRanking,
+    checkAndTrackPartialRanking,
+    checkAndTrackFullRanking,
     checkAndTrackReport,
+    // Utilities
     getSession,
     resetState,
   };

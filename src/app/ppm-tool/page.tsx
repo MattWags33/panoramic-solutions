@@ -10,6 +10,7 @@ import { HowItWorksOverlay } from '@/ppm-tool/components/overlays/HowItWorksOver
 import { usePostHog } from '@/hooks/usePostHog';
 import { setOverlayOpen, setOverlayClosed, OVERLAY_TYPES, addDevelopmentKeyboardShortcuts } from '@/ppm-tool/shared/utils/homeState';
 import { LegalDisclaimer } from '@/ppm-tool/components/common/LegalDisclaimer';
+import { analytics } from '@/lib/analytics';
 
 export default function PPMToolPage() {
   const router = useRouter();
@@ -22,6 +23,24 @@ export default function PPMToolPage() {
   
   // Note: Bumper management is handled internally by EmbeddedPPMToolFlow
   // No need for duplicate state management at this level
+
+  // Initialize analytics tracking (fire-and-forget)
+  useEffect(() => {
+    // Store landing path for "how it works" detection
+    if (typeof window !== 'undefined') {
+      const landingPath = window.location.pathname + window.location.search;
+      localStorage.setItem('posthog_landing_path', landingPath);
+    }
+    
+    // Track page view in Supabase
+    analytics.trackPageView({
+      path: window.location.pathname,
+      referrer: document.referrer || undefined,
+      utmSource: searchParams?.get('utm_source') || undefined,
+      utmMedium: searchParams?.get('utm_medium') || undefined,
+      utmCampaign: searchParams?.get('utm_campaign') || undefined,
+    });
+  }, []); // Run once on mount
 
   // Check URL parameters on mount and when they change
   useEffect(() => {
@@ -67,6 +86,14 @@ export default function PPMToolPage() {
   const handleGetStarted = () => {
     trackClick('get_started_button', { location: 'how_it_works_overlay' });
     trackTool('ppm_tool', 'started_guided_flow', { source: 'how_it_works' });
+    
+    // Track as active user (meaningful action)
+    checkAndTrackActive('guided_ranking_clicked', {
+      page: 'ppm_tool',
+      interaction_type: 'button_click',
+      source: 'how_it_works_overlay'
+    });
+    
     setShowHowItWorks(false);
     setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
     setShowGuidedRanking(true); // Directly open guided ranking
@@ -75,6 +102,14 @@ export default function PPMToolPage() {
   const handleManualRanking = () => {
     trackClick('manual_ranking_button', { location: 'how_it_works_overlay' });
     trackTool('ppm_tool', 'started_manual_flow', { source: 'how_it_works' });
+    
+    // Track as active user (meaningful action)
+    checkAndTrackActive('manual_ranking_clicked', {
+      page: 'ppm_tool',
+      interaction_type: 'button_click',
+      source: 'how_it_works_overlay'
+    });
+    
     setShowHowItWorks(false);
     setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
     // Go directly to manual tool selection
@@ -118,6 +153,13 @@ export default function PPMToolPage() {
   };
 
   const handleCloseHowItWorks = () => {
+    // Track closing of "how it works" - but don't count as active yet if user started here
+    // Next meaningful action (clicking button, moving slider) will count as active
+    checkAndTrackActive('how_it_works_close', {
+      page: 'ppm_tool',
+      interaction_type: 'close_modal'
+    });
+    
     setShowHowItWorks(false);
     setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
     

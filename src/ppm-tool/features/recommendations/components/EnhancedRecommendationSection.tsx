@@ -16,6 +16,8 @@ import { useShuffleAnimation, useToolOrderShuffle } from '@/ppm-tool/hooks/useSh
 import { ShuffleContainer } from '@/ppm-tool/components/animations/ShuffleContainer';
 import { AnimatedToolCard } from '@/ppm-tool/components/animations/AnimatedToolCard';
 import { checkAndTrackNewActive } from '@/lib/posthog';
+import { trackToolTryFreeClick, trackToolAddToCompareClick, trackToolViewDetailsClick } from '@/lib/posthog';
+import { analytics } from '@/lib/analytics';
 
 
 interface RecommendationSectionProps {
@@ -288,33 +290,103 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                    </div>
                  </div>
 
-                 {/* Enhanced Action Buttons - Mobile Optimized */}
-                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                   {hasFreeTrial(tool.name) && (
-                     <MobileTooltip 
-                       content={<p>Start a free trial of {tool.name}</p>}
-                       side="top"
-                       align="center"
-                     >
-                       <Button size="sm" className="flex-1 sm:flex-initial bg-alpine-blue-500 hover:bg-alpine-blue-600" asChild>
-                         <a 
-                           href={getTrialUrl(tool.name)} 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           className="flex items-center justify-center space-x-2"
-                         >
-                           <ExternalLink className="w-4 h-4" />
-                           <span>Try Free Trial</span>
-                         </a>
-                       </Button>
-                     </MobileTooltip>
-                   )}
-                   
-                   <Button variant="outline" size="sm" className="flex-1 sm:flex-initial border-alpine-blue-200 text-alpine-blue-600 hover:bg-alpine-blue-50">
-                     <Star className="w-4 h-4 mr-2" />
-                     Add to Compare
-                   </Button>
-                 </div>
+                {/* Enhanced Action Buttons - Mobile Optimized */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  {hasFreeTrial(tool.name) && (
+                    <MobileTooltip 
+                      content={<p>Start a free trial of {tool.name}</p>}
+                      side="top"
+                      align="center"
+                    >
+                      <Button size="sm" className="flex-1 sm:flex-initial bg-alpine-blue-500 hover:bg-alpine-blue-600" asChild>
+                        <a 
+                          href={getTrialUrl(tool.name)} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center space-x-2"
+                          onClick={() => {
+                            // Calculate match score
+                            const matchScore = calculateToolScore(tool);
+                            
+                            // Track Try Free click in Supabase (MONETIZATION KEY)
+                            analytics.trackToolClick({
+                              toolId: tool.id,
+                              toolName: tool.name,
+                              actionType: 'try_free',
+                              position: index + 1,
+                              matchScore: matchScore,
+                              context: {
+                                criteria_count: selectedCriteria.length,
+                                meets_requirements: getCriteriaMatchCount(tool, selectedCriteria)
+                              }
+                            });
+                            
+                            // Track in PostHog (HIGHEST INTENT - MONETIZATION KEY)
+                            trackToolTryFreeClick({
+                              tool_id: tool.id,
+                              tool_name: tool.name,
+                              position: index + 1,
+                              match_score: matchScore,
+                              criteria_rankings: selectedCriteria.reduce((acc, c) => ({...acc, [c.id]: c.userRating}), {})
+                            });
+                            
+                            // Track as active user
+                            checkAndTrackNewActive('try_free_clicked', {
+                              tool_id: tool.id,
+                              tool_name: tool.name,
+                              position: index + 1
+                            });
+                          }}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          <span>Try Free Trial</span>
+                        </a>
+                      </Button>
+                    </MobileTooltip>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 sm:flex-initial border-alpine-blue-200 text-alpine-blue-600 hover:bg-alpine-blue-50"
+                    onClick={() => {
+                      // Calculate match score
+                      const matchScore = calculateToolScore(tool);
+                      
+                      // Track Add to Compare click in Supabase (MONETIZATION KEY)
+                      analytics.trackToolClick({
+                        toolId: tool.id,
+                        toolName: tool.name,
+                        actionType: 'add_to_compare',
+                        position: index + 1,
+                        matchScore: matchScore,
+                        context: {
+                          criteria_count: selectedCriteria.length,
+                          meets_requirements: getCriteriaMatchCount(tool, selectedCriteria)
+                        }
+                      });
+                      
+                      // Track in PostHog (EVALUATION MODE)
+                      trackToolAddToCompareClick({
+                        tool_id: tool.id,
+                        tool_name: tool.name,
+                        position: index + 1,
+                        match_score: matchScore,
+                        comparing_with: sortedTools.slice(0, 3).map(t => t.name).filter(n => n !== tool.name)
+                      });
+                      
+                      // Track as active user
+                      checkAndTrackNewActive('add_to_compare_clicked', {
+                        tool_id: tool.id,
+                        tool_name: tool.name,
+                        position: index + 1
+                      });
+                    }}
+                  >
+                    <Star className="w-4 h-4 mr-2" />
+                    Add to Compare
+                  </Button>
+                </div>
 
                  {/* Detailed Breakdown */}
                  <Accordion type="single" collapsible>
@@ -322,6 +394,9 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                     <AccordionTrigger 
                       className="text-sm font-medium text-alpine-blue-600 hover:text-alpine-blue-800 hover:bg-alpine-blue-50 rounded-lg px-3 py-2"
                       onClick={() => {
+                        // Calculate match score
+                        const matchScore = calculateToolScore(tool);
+                        
                         // Track tool details expansion for New_Active metric
                         try {
                           checkAndTrackNewActive('Active-details', {
@@ -333,6 +408,28 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                         } catch (error) {
                           console.warn('Failed to track tool details expansion:', error);
                         }
+                        
+                        // Track View Details click in Supabase (MONETIZATION KEY)
+                        analytics.trackToolClick({
+                          toolId: tool.id,
+                          toolName: tool.name,
+                          actionType: 'view_details',
+                          position: index + 1,
+                          matchScore: matchScore,
+                          context: {
+                            criteria_count: selectedCriteria.length,
+                            meets_requirements: getCriteriaMatchCount(tool, selectedCriteria)
+                          }
+                        });
+                        
+                        // Track in PostHog (INTEREST SIGNAL)
+                        trackToolViewDetailsClick({
+                          tool_id: tool.id,
+                          tool_name: tool.name,
+                          position: index + 1,
+                          match_score: matchScore,
+                          expanded: true
+                        });
                       }}
                     >
                       View Detailed Breakdown

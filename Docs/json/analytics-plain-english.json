@@ -1,0 +1,378 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-05T00:00:00Z",
+  "type": "ARCHITECTURE",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "audience": "Non-technical stakeholders",
+    "description": "Plain English explanation of the analytics system and how it captures great data"
+  },
+  "executive_summary": {
+    "what_we_built": "A sophisticated analytics system that tracks every user interaction in your PPM tool, storing rich data in a format that software companies will pay for.",
+    "why_its_valuable": "We capture 'buyer intent' data - showing which users are seriously considering which tools, what features they care about, and their company profile. This is gold for software vendors.",
+    "key_innovation": "Data is stored in JSON format, making it instantly analyzable by AI (LLMs) for quality checks and insights extraction.",
+    "zero_disruption": "100% additive - no changes to existing UI or functionality. Just tracking what users do."
+  },
+  "plain_english_architecture": {
+    "the_big_picture": "Think of it like a security camera system for your app. Every meaningful action gets recorded, but users don't notice anything different. The footage (data) is organized in a way that makes it easy to search and analyze later.",
+    "how_it_works": {
+      "step_1_user_arrives": {
+        "what_happens": "When someone visits your PPM tool, we give them a unique ID (like a visitor badge)",
+        "where_stored": "In their browser's localStorage as 'analytics_session_id'",
+        "why_important": "This ID lets us track everything they do in one session, even if they refresh the page"
+      },
+      "step_2_user_interacts": {
+        "what_happens": "Every time they move a slider, answer a question, or click a button, we record it",
+        "where_stored": "In a Supabase database table called 'visitor_sessions'",
+        "data_format": "JSON (JavaScript Object Notation) - like a smart spreadsheet that computers can read easily",
+        "example": "If they set 'Ease of Use' to 5 and 'Scalability' to 3, we store: {\"ease_of_use\": 5, \"scalability\": 3}"
+      },
+      "step_3_capturing_intent": {
+        "what_happens": "When they click 'Try Free' or 'Add to Compare', we know they're serious",
+        "why_valuable": "These are 'high-intent' actions - they're not just browsing, they want to use the tool",
+        "what_we_track": "Which tool, where it was ranked, their match score, what criteria mattered to them",
+        "monetization": "Software companies pay premium prices for these leads"
+      },
+      "step_4_conversion": {
+        "what_happens": "If they send the email report, we now have their contact info + full behavior history",
+        "complete_picture": "Name, email, company profile, which tools they liked, why they liked them, what actions they took",
+        "vendor_value": "This is a qualified lead with rich context - not just 'someone downloaded a whitepaper'"
+      }
+    }
+  },
+  "what_makes_this_data_great": {
+    "buyer_intent_signals": {
+      "description": "We don't just track that someone visited - we track WHAT they want and HOW SERIOUS they are",
+      "examples": [
+        {
+          "scenario": "User sets Scalability=5, Integration=5, clicks Try Free for Monday.com",
+          "insight": "High-intent enterprise lead who needs integrations",
+          "vendor_value": "Monday.com would pay $50-100 for this lead"
+        },
+        {
+          "scenario": "User from 500+ person company clicks Try Free, Add to Compare, then sends report",
+          "insight": "Hot enterprise lead actively evaluating - highest intent",
+          "vendor_value": "Enterprise SaaS companies pay $200-500 for these"
+        }
+      ]
+    },
+    "firmographic_data": {
+      "description": "Company profile data that qualifies the lead",
+      "captured_from": "Guided ranking questions (Q10, Q11, Q12)",
+      "includes": [
+        "Company size (number of users)",
+        "Departments using the tool (IT, PMO, Operations, etc.)",
+        "Project management methodologies (Agile, Waterfall, Hybrid)",
+        "Project volume annually",
+        "Technical expertise level"
+      ],
+      "why_valuable": "Vendors can segment by company size and industry to find their ideal customers"
+    },
+    "competitive_intelligence": {
+      "description": "Which tools are winning and losing, and why",
+      "examples": [
+        {
+          "scenario": "Users always view Asana and Monday.com together, but click Try Free on Monday.com more",
+          "insight": "Monday.com is beating Asana in your audience",
+          "vendor_value": "Both companies want to know this - Asana needs to improve, Monday.com can charge more"
+        },
+        {
+          "scenario": "Tool X ranks highly but gets few Try Free clicks",
+          "insight": "Good on paper, but users don't trust it enough to try",
+          "vendor_value": "Tool X needs better trust signals (reviews, case studies)"
+        }
+      ]
+    },
+    "feature_gap_analysis": {
+      "description": "Where tools fall short of what users need",
+      "how_it_works": "Compare user requirements (criteria rankings) to tool ratings",
+      "example": "Many users want Scalability=5 but Tool X only has 3 - common gap",
+      "vendor_value": "Product roadmap insights - what features to build next"
+    },
+    "near_miss_analysis": {
+      "description": "Users who almost chose a tool but went with a competitor",
+      "example": "User had Tool X ranked #2 with 85 match score, but chose Tool Y with 88 score",
+      "vendor_value": "Tool X was SO CLOSE - what would have pushed them over? What does Tool Y have that they don't?"
+    }
+  },
+  "json_first_design": {
+    "why_json": {
+      "reason_1": "AI/LLMs can read JSON natively - instant analysis",
+      "reason_2": "Flexible structure - we can add new questions without database changes",
+      "reason_3": "One field contains entire context - no joining 10 tables",
+      "reason_4": "Easy to export for data partners"
+    },
+    "example_json_blob": {
+      "description": "Here's what one user session looks like",
+      "sample": {
+        "session_id": "abc-123-def-456",
+        "email": "john@acme-corp.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "criteria_rankings": {
+          "ease_of_use": 5,
+          "scalability": 4,
+          "integration": 5,
+          "reporting": 3
+        },
+        "guided_ranking_answers": {
+          "q1_project_volume": 4,
+          "q10_user_count": 5,
+          "q11_departments": ["IT", "PMO", "Operations"],
+          "q12_methodologies": ["Agile", "Hybrid"]
+        },
+        "firmographics": {
+          "company_size": "500+ employees",
+          "departments": ["IT", "PMO"],
+          "methodologies": ["Agile", "Hybrid"],
+          "project_volume": "100-499 projects/year"
+        },
+        "tools_clicked": {
+          "monday": {
+            "try_free": 2,
+            "add_to_compare": 1,
+            "view_details": 1
+          },
+          "asana": {
+            "view_details": 1
+          }
+        },
+        "match_scores": [
+          {
+            "tool_name": "Monday.com",
+            "score": 88,
+            "rank": 1
+          },
+          {
+            "tool_name": "Asana",
+            "score": 85,
+            "rank": 2
+          }
+        ],
+        "has_sent_report": true,
+        "is_active": true,
+        "has_full_ranking": true
+      },
+      "llm_analysis": "Feed this JSON to ChatGPT and ask: 'Is this a qualified lead for Monday.com?' Answer: YES - enterprise user, high-intent clicks, perfect match score.",
+      "export_example": "SELECT jsonb_pretty(row_to_json(vs.*)::jsonb) FROM analytics.visitor_sessions vs WHERE email = 'john@acme-corp.com';"
+    }
+  },
+  "how_frontend_captures_data": {
+    "zero_disruption_approach": "We added tracking calls AFTER existing code - like adding a reporter who takes notes without interrupting the meeting",
+    "fire_and_forget": "Tracking never blocks the UI - if tracking fails, the app still works perfectly",
+    "files_touched": [
+      {
+        "file": "src/lib/analytics.ts",
+        "status": "NEW",
+        "what_it_does": "Central analytics service - all tracking goes through here",
+        "safety": "Every tracking call wrapped in try/catch - errors can't break the app"
+      },
+      {
+        "file": "src/app/ppm-tool/page.tsx",
+        "what_changed": "Added ONE line on page load to track visit",
+        "risk": "None - runs once when page loads, doesn't touch existing state"
+      },
+      {
+        "file": "CriteriaSection.tsx (slider component)",
+        "what_changed": "Added tracking call AFTER slider value updates",
+        "when_it_fires": "Every time user moves a slider",
+        "risk": "None - tracking happens after slider already updated"
+      },
+      {
+        "file": "GuidedRankingForm.tsx",
+        "what_changed": "Added tracking call AFTER form submits successfully",
+        "when_it_fires": "When user completes guided ranking",
+        "risk": "None - tracking happens after form closes"
+      },
+      {
+        "file": "EnhancedRecommendationSection.tsx (tool cards)",
+        "what_changed": "Added tracking to Try Free, Add to Compare, View Details buttons",
+        "when_it_fires": "When user clicks these buttons",
+        "risk": "None - tracking is fire-and-forget alongside existing click handlers"
+      },
+      {
+        "file": "useEmailReport.ts (email hook)",
+        "what_changed": "Added tracking AFTER email sends successfully",
+        "when_it_fires": "When report is sent",
+        "risk": "None - tracking after success, wrapped in try/catch"
+      }
+    ]
+  },
+  "how_backend_stores_data": {
+    "database": "Supabase (PostgreSQL 15.8) - battle-tested, scalable, free tier generous",
+    "schema_approach": "Private 'analytics' schema - no direct frontend access",
+    "security_model": "RPC functions only - frontend calls functions, functions update tables",
+    "why_secure": "Even if someone hacks the frontend, they can't read other users' data directly",
+    "key_tables": [
+      {
+        "table": "visitor_sessions",
+        "what_it_stores": "Everything about one user's journey",
+        "row_count_estimate": "1 row per unique visitor",
+        "size_estimate": "~5KB per row (with all JSON)",
+        "example_query": "Show me all users who sent a report in the last 7 days",
+        "performance": "Fast - indexed on session_id, email, dates"
+      },
+      {
+        "table": "events",
+        "what_it_stores": "Raw log of every action",
+        "row_count_estimate": "10-50 rows per session (lots of actions)",
+        "use_case": "Detailed behavioral analysis, funnel debugging",
+        "example": "Show me the exact sequence of actions before someone sent a report"
+      },
+      {
+        "table": "tool_clicks",
+        "what_it_stores": "MONETIZATION - Try Free, Add to Compare, View Details",
+        "row_count_estimate": "1-10 rows per session (high-intent users only)",
+        "vendor_access": "Future: Vendors can query their own tool's clicks",
+        "price_per_click": "Try Free = $50-100, Add to Compare = $20-50"
+      },
+      {
+        "table": "tool_impressions",
+        "what_it_stores": "Every time a tool is shown in results",
+        "use_case": "Visibility analysis - how often does Tool X appear in top 3?",
+        "vendor_value": "Medium - good for brand awareness tracking"
+      }
+    ]
+  },
+  "monetization_strategy": {
+    "pricing_tiers": [
+      {
+        "tier": "Basic Analytics Package",
+        "price": "$500-1000/month per vendor",
+        "includes": [
+          "Monthly impression count (how often tool appears in results)",
+          "Average match score (how well tool fits users)",
+          "Basic demographic data (aggregated, no PII)"
+        ]
+      },
+      {
+        "tier": "Engagement Insights",
+        "price": "$1500-3000/month per vendor",
+        "includes": [
+          "All Basic features",
+          "View Details click count and trends",
+          "Add to Compare frequency",
+          "Competitive positioning (compared against which tools)",
+          "Feature gap analysis (where tool falls short)"
+        ]
+      },
+      {
+        "tier": "Premium Lead Generation",
+        "price": "$50-100 per Try Free click",
+        "includes": [
+          "Full contact info (name, email)",
+          "Complete firmographic profile",
+          "Criteria rankings and match score",
+          "Competitive context (what other tools they viewed)",
+          "Real-time Slack/email alert when lead arrives"
+        ]
+      },
+      {
+        "tier": "Enterprise Package",
+        "price": "$5000-10000/month + leads",
+        "includes": [
+          "All Premium features",
+          "Direct API access to your tool's data",
+          "Custom dashboard with live analytics",
+          "Weekly insights reports (generated by AI)",
+          "Priority feature roadmap influence"
+        ]
+      }
+    ],
+    "revenue_projection": {
+      "assumptions": "10 vendors × $2000/month avg + 100 leads/month × $75 avg",
+      "monthly_revenue": "$27,500",
+      "annual_revenue": "$330,000",
+      "gross_margin": "95% (minimal server costs)"
+    }
+  },
+  "data_quality_assurance": {
+    "llm_testing": {
+      "how_it_works": "Export session data as JSON, feed to ChatGPT/Claude, ask 'Does this look real?'",
+      "catches": [
+        "Bot traffic (too fast, unrealistic patterns)",
+        "Test data (all default values)",
+        "Incomplete sessions (started but abandoned)",
+        "Data quality issues (missing fields, malformed JSON)"
+      ],
+      "sample_prompt": "Analyze this user session data. Is this a real person? Is the data complete? Does their behavior make sense? Assign a quality score 0-100 and explain.",
+      "automation": "Future: Run this on all sessions nightly, flag suspicious ones"
+    },
+    "validation_rules": [
+      "Session must have at least 1 interaction to be 'active'",
+      "Criteria rankings must be 1-5 (validated in RPC function)",
+      "Email must be valid format (checked before storage)",
+      "Tool clicks must reference real tools (foreign key constraint)",
+      "Timestamps must be sequential (created_at < updated_at)"
+    ]
+  },
+  "privacy_and_compliance": {
+    "gdpr_compliance": {
+      "consent": "Email only stored after user explicitly submits report form",
+      "right_to_erasure": "Future: Add /api/delete-my-data endpoint",
+      "data_minimization": "Only collect what's needed for analytics",
+      "transparency": "Add privacy policy explaining data usage"
+    },
+    "vendor_data_access": {
+      "isolation": "Vendors only see data for their own tool",
+      "anonymization": "Can offer anonymized data for lower price",
+      "no_pii_option": "Basic tier has no contact info, just aggregate metrics"
+    }
+  },
+  "why_this_will_work": {
+    "reason_1": "Vendor-grade data - We capture everything software companies need to make decisions",
+    "reason_2": "JSON-first design - Instantly analyzable by AI for quality and insights",
+    "reason_3": "Zero disruption - We didn't break anything, just added tracking",
+    "reason_4": "High intent signals - Not just traffic, but actual buying behavior",
+    "reason_5": "Complete context - Every lead comes with full story of what they want and why",
+    "reason_6": "Scalable - Same code handles 10 users or 10,000,000",
+    "reason_7": "Competitive advantage - Most PPM comparison tools don't have this level of data"
+  },
+  "next_steps": [
+    {
+      "priority": "P0 - IMMEDIATE",
+      "task": "Test the system end-to-end",
+      "how": "1) Load the tool, 2) Move sliders, 3) Complete guided ranking, 4) Click Try Free, 5) Send report",
+      "verification": "Check Supabase analytics.visitor_sessions table for your session_id"
+    },
+    {
+      "priority": "P0 - IMMEDIATE",
+      "task": "Deploy to production",
+      "blocker": "None - code is ready, database is set up"
+    },
+    {
+      "priority": "P1 - WEEK 1",
+      "task": "Run LLM data quality test",
+      "how": "Export 10 sessions, feed to ChatGPT, verify data looks good"
+    },
+    {
+      "priority": "P1 - WEEK 1",
+      "task": "Set up monitoring",
+      "tools": "Sentry for errors, Supabase dashboard for row counts",
+      "alerts": "Slack alert if no new sessions for 24 hours"
+    },
+    {
+      "priority": "P2 - MONTH 1",
+      "task": "Build vendor dashboard MVP",
+      "features": ["Login", "View your tool's analytics", "Export CSV", "Try Free leads list"]
+    },
+    {
+      "priority": "P2 - MONTH 1",
+      "task": "Reach out to first 3 vendors",
+      "pitch": "Free beta access for feedback, then convert to paid"
+    },
+    {
+      "priority": "P3 - MONTH 2",
+      "task": "Automate LLM insights reports",
+      "example": "Weekly email to vendors: 'Here's what users want this week that you don't have'"
+    },
+    {
+      "priority": "P3 - MONTH 3",
+      "task": "API access for enterprise vendors",
+      "authentication": "API keys per vendor",
+      "rate_limiting": "1000 requests/day"
+    }
+  ]
+}
+

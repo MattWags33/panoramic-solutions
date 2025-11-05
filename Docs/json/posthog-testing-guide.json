@@ -1,0 +1,550 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-05T12:00:00Z",
+  "type": "CHECKLIST",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "description": "PostHog Analytics Testing and Validation Guide - Complete test scenarios for Thursday sync"
+  },
+  "testing_setup": {
+    "preparation": [
+      {
+        "step": 1,
+        "action": "Open browser dev tools (F12)",
+        "reason": "Monitor console logs and network requests"
+      },
+      {
+        "step": 2,
+        "action": "Open PostHog dashboard (https://us.posthog.com)",
+        "reason": "View live events as they fire"
+      },
+      {
+        "step": 3,
+        "action": "Reset tracking state",
+        "command": "window.posthog_debug.resetTrackingState()",
+        "reason": "Clear all localStorage flags for fresh test"
+      },
+      {
+        "step": 4,
+        "action": "Clear browser cache and cookies",
+        "reason": "Simulate new visitor"
+      }
+    ],
+    "monitoring_tools": {
+      "browser_console": {
+        "location": "Dev Tools > Console",
+        "what_to_watch": [
+          "🎯 PostHog Debug: messages",
+          "📊 Analytics initialized: messages",
+          "PostHog tracking failed: warnings (should NOT appear)"
+        ]
+      },
+      "network_tab": {
+        "location": "Dev Tools > Network",
+        "what_to_watch": [
+          "Requests to us.i.posthog.com (should be 200 OK)",
+          "Batch event submissions"
+        ]
+      },
+      "posthog_live_events": {
+        "location": "PostHog Dashboard > Events > Live",
+        "what_to_watch": "Events appearing in real-time as you test"
+      },
+      "local_storage": {
+        "location": "Dev Tools > Application > Local Storage",
+        "what_to_watch": [
+          "posthog_visitor_tracked",
+          "posthog_active_tracked",
+          "posthog_manual_ranking_tracked",
+          "posthog_partial_ranking_tracked",
+          "posthog_full_ranking_tracked",
+          "posthog_report_tracked",
+          "posthog_session_id",
+          "posthog_landing_path"
+        ]
+      }
+    }
+  },
+  "test_scenarios": {
+    "scenario_1_new_visitor": {
+      "name": "Test 1: New Visitor Tracking",
+      "priority": "CRITICAL",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Navigate to http://localhost:3000/ppm-tool",
+          "expected_event": "New_Visitor",
+          "expected_properties": {
+            "timestamp": "should be recent Unix timestamp",
+            "user_agent": "should match browser",
+            "referrer": "may be empty for direct visit"
+          },
+          "verification": [
+            "Check PostHog Live Events for 'New_Visitor' event",
+            "Check localStorage for 'posthog_visitor_tracked' = 'true'",
+            "Check console for '📊 Analytics initialized' message"
+          ]
+        }
+      ],
+      "success_criteria": [
+        "✅ New_Visitor event fires exactly once",
+        "✅ localStorage flag is set",
+        "✅ Event appears in PostHog dashboard within 5 seconds",
+        "✅ Properties are populated correctly"
+      ]
+    },
+    "scenario_2_normal_active_user": {
+      "name": "Test 2: New Active (Normal Flow)",
+      "priority": "CRITICAL",
+      "prerequisite": "Complete Test 1 first",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Move any criteria slider",
+          "expected_events": [
+            "New_Active (action: slider_moved)",
+            "New_Manual_Ranking"
+          ],
+          "expected_properties": {
+            "New_Active": {
+              "action": "slider_moved",
+              "criteria_id": "should be criterion ID",
+              "score": "1-5"
+            },
+            "New_Manual_Ranking": {
+              "criteria_id": "should match",
+              "criteria_name": "human-readable name",
+              "score": "1-5"
+            }
+          },
+          "verification": [
+            "Check PostHog for TWO events: New_Active AND New_Manual_Ranking",
+            "Check localStorage for 'posthog_active_tracked' = 'true'",
+            "Check localStorage for 'posthog_manual_ranking_tracked' = 'true'"
+          ]
+        },
+        {
+          "step": 2,
+          "action": "Move another slider",
+          "expected_events": "NONE (already tracked)",
+          "verification": [
+            "NO new New_Active event",
+            "NO new New_Manual_Ranking event",
+            "Supabase analytics still fires (every slider move)"
+          ]
+        }
+      ],
+      "success_criteria": [
+        "✅ New_Active fires ONCE on first slider move",
+        "✅ New_Manual_Ranking fires ONCE on first slider move",
+        "✅ Subsequent slider moves do NOT fire PostHog events",
+        "✅ Both localStorage flags are set"
+      ]
+    },
+    "scenario_3_how_it_works_edge_case": {
+      "name": "Test 3: 'How It Works' Landing Page Edge Case",
+      "priority": "CRITICAL",
+      "note": "This is Matt's special requirement",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Clear all tracking state (window.posthog_debug.resetTrackingState())",
+          "expected_result": "All localStorage flags cleared"
+        },
+        {
+          "step": 2,
+          "action": "Navigate to http://localhost:3000/ppm-tool?overlay=how-it-works",
+          "expected_events": ["New_Visitor"],
+          "verification": [
+            "New_Visitor fires (normal)",
+            "localStorage 'posthog_landing_path' = '/ppm-tool?overlay=how-it-works'"
+          ]
+        },
+        {
+          "step": 3,
+          "action": "Click X to close 'How It Works' modal",
+          "expected_events": "NONE (this is the key test)",
+          "verification": [
+            "NO New_Active event should fire",
+            "Console should NOT show any errors",
+            "localStorage 'posthog_active_tracked' should still be null/undefined"
+          ]
+        },
+        {
+          "step": 4,
+          "action": "NOW click 'Guided Ranking' button",
+          "expected_events": ["New_Active (action: guided_ranking_clicked)"],
+          "verification": [
+            "NOW New_Active fires",
+            "localStorage 'posthog_active_tracked' = 'true'",
+            "Event has action: 'guided_ranking_clicked'"
+          ]
+        }
+      ],
+      "success_criteria": [
+        "✅ Closing 'How It Works' modal does NOT fire New_Active",
+        "✅ Next meaningful action (button click) DOES fire New_Active",
+        "✅ Landing path is correctly stored and checked",
+        "✅ No errors in console"
+      ]
+    },
+    "scenario_4_guided_ranking_partial": {
+      "name": "Test 4: Partial Guided Ranking",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Click 'Guided Ranking' button",
+          "expected_events": ["New_Active (if not already active)"]
+        },
+        {
+          "step": 2,
+          "action": "Answer first question (q1)",
+          "expected_events": [
+            "New_Active (if not already active)",
+            "New_Partial_Ranking"
+          ],
+          "expected_properties": {
+            "New_Partial_Ranking": {
+              "question_id": "q1",
+              "question_text": "should have full question",
+              "question_number": 1,
+              "answer": "selected value",
+              "affects_criteria": "should be criterion name",
+              "total_questions": 12
+            }
+          },
+          "verification": [
+            "New_Partial_Ranking fires with correct properties",
+            "localStorage 'posthog_partial_ranking_tracked' = 'true'",
+            "Supabase analytics also fired (separate tracking)"
+          ]
+        },
+        {
+          "step": 3,
+          "action": "Answer second question (q2)",
+          "expected_events": "NONE (already tracked partial)",
+          "verification": [
+            "NO new New_Partial_Ranking event",
+            "Supabase analytics still fires (every answer)"
+          ]
+        }
+      ],
+      "success_criteria": [
+        "✅ New_Partial_Ranking fires ONCE on first question answer",
+        "✅ Subsequent answers do NOT fire PostHog event",
+        "✅ Properties include question details and affects_criteria",
+        "✅ localStorage flag is set"
+      ]
+    },
+    "scenario_5_full_ranking_submittal": {
+      "name": "Test 5: Full Ranking Submittal",
+      "priority": "HIGH",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Complete all 12 guided ranking questions",
+          "expected_events": "New_Partial_Ranking (if not already fired)"
+        },
+        {
+          "step": 2,
+          "action": "Click submit/done button",
+          "expected_events": ["New_Full_Ranking_Submittal"],
+          "expected_properties": {
+            "completion_method": "full_form_submit",
+            "ranking_type": "guided",
+            "total_questions_answered": 12,
+            "criteria_affected": "should be array of criterion IDs",
+            "has_personalization": true,
+            "firmographics": "should include company_size, departments, methodologies",
+            "time_to_complete_seconds": "should be reasonable (e.g., 60-300)"
+          },
+          "verification": [
+            "New_Full_Ranking_Submittal fires with complete properties",
+            "localStorage 'posthog_full_ranking_tracked' = 'true'",
+            "Firmographics object is populated",
+            "Time tracking is reasonable"
+          ]
+        }
+      ],
+      "success_criteria": [
+        "✅ New_Full_Ranking_Submittal fires ONCE on form submit",
+        "✅ All properties are correctly populated",
+        "✅ Firmographics data is included",
+        "✅ Time to complete is tracked"
+      ]
+    },
+    "scenario_6_tool_click_tracking": {
+      "name": "Test 6: Tool Click Events (MONETIZATION)",
+      "priority": "CRITICAL",
+      "note": "These are the $$$$ events",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Scroll to recommendations section",
+          "expected_result": "Tools are displayed with Try Free buttons"
+        },
+        {
+          "step": 2,
+          "action": "Click 'Try Free' button on top tool",
+          "expected_events": [
+            "Tool_Try_Free_Click",
+            "New_Active (if not already active)"
+          ],
+          "expected_properties": {
+            "tool_id": "should be tool UUID",
+            "tool_name": "should be tool name (e.g., 'Monday.com')",
+            "position": 1,
+            "match_score": "should be 0-10 range",
+            "criteria_rankings": "should be object with user's rankings"
+          },
+          "verification": [
+            "Tool_Try_Free_Click fires EVERY TIME (not one-time event)",
+            "Event includes tool name, position, and match score",
+            "Opens external URL in new tab"
+          ]
+        },
+        {
+          "step": 3,
+          "action": "Click 'Try Free' on SAME tool again",
+          "expected_events": ["Tool_Try_Free_Click (fires again)"],
+          "verification": "Event fires again - NOT a one-time event"
+        },
+        {
+          "step": 4,
+          "action": "Click 'Add to Compare' on second tool",
+          "expected_events": ["Tool_Add_To_Compare_Click"],
+          "expected_properties": {
+            "tool_id": "second tool UUID",
+            "tool_name": "second tool name",
+            "position": 2,
+            "match_score": "0-10",
+            "comparing_with": "array of other tool names"
+          }
+        },
+        {
+          "step": 5,
+          "action": "Click 'View Detailed Breakdown' accordion",
+          "expected_events": ["Tool_View_Details_Click"],
+          "expected_properties": {
+            "tool_id": "tool UUID",
+            "tool_name": "tool name",
+            "position": "rank number",
+            "match_score": "0-10",
+            "expanded": true
+          }
+        }
+      },
+      "success_criteria": [
+        "✅ Tool_Try_Free_Click fires EVERY time (repeatable event)",
+        "✅ Tool_Add_To_Compare_Click fires on every compare click",
+        "✅ Tool_View_Details_Click fires on accordion expansion",
+        "✅ All events include tool context (name, position, score)",
+        "✅ Supabase analytics also fires for each click"
+      ]
+    },
+    "scenario_7_report_sent": {
+      "name": "Test 7: Report Sent (CONVERSION)",
+      "priority": "HIGH",
+      "status": "TODO",
+      "note": "Report tracking not yet implemented in useEmailReport.ts",
+      "steps": [
+        {
+          "step": 1,
+          "action": "Enter email and send report",
+          "expected_events": ["New_Report_Sent"],
+          "expected_properties": {
+            "email": "user's email",
+            "first_name": "user's first name (if provided)",
+            "tools_sent": "array of tool names",
+            "criteria_rankings": "final rankings",
+            "match_scores": "tool scores"
+          }
+        }
+      ],
+      "success_criteria": [
+        "✅ New_Report_Sent fires ONCE per session",
+        "✅ Email and contact info included",
+        "✅ Tool recommendations and scores included"
+      ]
+    }
+  },
+  "regression_tests": {
+    "test_duplicate_events": {
+      "description": "Verify one-time events don't fire twice",
+      "steps": [
+        "Reset tracking state",
+        "Perform action that should fire one-time event",
+        "Perform SAME action again",
+        "Verify event only appears ONCE in PostHog"
+      ]
+    },
+    "test_error_handling": {
+      "description": "Verify tracking failures don't break UI",
+      "steps": [
+        "Block PostHog in browser (ad blocker or network settings)",
+        "Perform actions that should fire events",
+        "Verify UI still works normally",
+        "Verify console shows warnings (not errors)",
+        "Verify app doesn't crash"
+      ]
+    },
+    "test_session_persistence": {
+      "description": "Verify session ID persists across page reloads",
+      "steps": [
+        "Check localStorage for 'posthog_session_id'",
+        "Note the session ID value",
+        "Reload page (F5)",
+        "Check localStorage again",
+        "Verify session ID is SAME"
+      ]
+    }
+  },
+  "validation_queries": {
+    "posthog_dashboard_queries": [
+      {
+        "query": "Total New_Visitor events today",
+        "location": "PostHog > Events > Filter by 'New_Visitor'",
+        "expected": "Should match number of fresh test sessions"
+      },
+      {
+        "query": "Funnel: New_Visitor → New_Active → New_Full_Ranking_Submittal",
+        "location": "PostHog > Funnels",
+        "expected": "Should show drop-off at each step"
+      },
+      {
+        "query": "Tool_Try_Free_Click events by tool_name",
+        "location": "PostHog > Insights > Breakdown by tool_name",
+        "expected": "Should show distribution of clicks per tool"
+      }
+    ],
+    "browser_console_checks": [
+      {
+        "check": "window.posthog",
+        "expected": "Should return PostHog instance object"
+      },
+      {
+        "check": "window.posthog_debug",
+        "expected": "Should return debug functions object (development only)"
+      },
+      {
+        "check": "localStorage.getItem('posthog_session_id')",
+        "expected": "Should return UUID string"
+      }
+    ]
+  },
+  "debugging_tips": {
+    "event_not_firing": {
+      "possible_causes": [
+        "localStorage flag already set (one-time event)",
+        "PostHog blocked by ad blocker",
+        "Network request failed (check Network tab)",
+        "Environment variable missing (NEXT_PUBLIC_POSTHOG_KEY)",
+        "Event is inside try/catch and silently failing"
+      ],
+      "solutions": [
+        "Reset tracking state: window.posthog_debug.resetTrackingState()",
+        "Disable ad blocker",
+        "Check Network tab for 200 OK responses to us.i.posthog.com",
+        "Verify .env.local has PostHog credentials",
+        "Check console for warning messages"
+      ]
+    },
+    "event_firing_multiple_times": {
+      "possible_causes": [
+        "Event is repeatable (monetization events are intentional)",
+        "localStorage flag not being set",
+        "Multiple event handlers registered"
+      ],
+      "solutions": [
+        "Check if event should be one-time or repeatable",
+        "Verify localStorage flag is being set in checkAndTrack functions",
+        "Check for duplicate useEffect hooks"
+      ]
+    },
+    "properties_missing": {
+      "possible_causes": [
+        "Property is optional and wasn't passed",
+        "Data not available at time of tracking",
+        "TypeScript type mismatch"
+      ],
+      "solutions": [
+        "Check event spec for required vs optional properties",
+        "Add console.log before tracking call to verify data",
+        "Check TypeScript errors in IDE"
+      ]
+    }
+  },
+  "sign_off_checklist": {
+    "before_thursday_sync": [
+      {
+        "item": "All 6 core metrics fire correctly",
+        "status": "TODO",
+        "verification": "Run Tests 1-5, 7"
+      },
+      {
+        "item": "'How It Works' edge case handled",
+        "status": "TODO",
+        "verification": "Run Test 3"
+      },
+      {
+        "item": "Monetization events fire on every click",
+        "status": "TODO",
+        "verification": "Run Test 6"
+      },
+      {
+        "item": "One-time events only fire once",
+        "status": "TODO",
+        "verification": "Regression test: duplicate events"
+      },
+      {
+        "item": "Tracking failures don't break UI",
+        "status": "TODO",
+        "verification": "Regression test: error handling"
+      },
+      {
+        "item": "Session ID persists across reloads",
+        "status": "TODO",
+        "verification": "Regression test: session persistence"
+      },
+      {
+        "item": "PostHog dashboard shows all events",
+        "status": "TODO",
+        "verification": "Check PostHog Live Events"
+      },
+      {
+        "item": "Documentation complete (this file + 2 others)",
+        "status": "COMPLETE",
+        "verification": "Files exist in Docs/json/"
+      }
+    ]
+  },
+  "testing_report_template": {
+    "format": "Copy this to create test report",
+    "template": {
+      "test_date": "YYYY-MM-DD",
+      "tester": "Name",
+      "environment": "local | staging | production",
+      "results": {
+        "scenario_1_new_visitor": "PASS | FAIL | NOTES",
+        "scenario_2_normal_active_user": "PASS | FAIL | NOTES",
+        "scenario_3_how_it_works_edge_case": "PASS | FAIL | NOTES",
+        "scenario_4_guided_ranking_partial": "PASS | FAIL | NOTES",
+        "scenario_5_full_ranking_submittal": "PASS | FAIL | NOTES",
+        "scenario_6_tool_click_tracking": "PASS | FAIL | NOTES",
+        "scenario_7_report_sent": "TODO | PASS | FAIL | NOTES"
+      },
+      "regression_tests": {
+        "test_duplicate_events": "PASS | FAIL | NOTES",
+        "test_error_handling": "PASS | FAIL | NOTES",
+        "test_session_persistence": "PASS | FAIL | NOTES"
+      },
+      "issues_found": [],
+      "overall_status": "PASS | FAIL | PARTIAL",
+      "ready_for_production": "YES | NO | WITH_NOTES"
+    }
+  }
+}
+
