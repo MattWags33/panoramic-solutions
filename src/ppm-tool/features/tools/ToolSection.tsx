@@ -292,6 +292,7 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
         criteriaAdjusted={criteriaAdjusted}
         onOpenGuidedRanking={onOpenGuidedRanking}
         onNavigateToCriteria={onNavigateToCriteria}
+        position={index + 1} // Add position for analytics (1-based indexing)
       />
     </AnimatedToolCard>
   );

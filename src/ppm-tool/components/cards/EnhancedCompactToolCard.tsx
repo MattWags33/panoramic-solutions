@@ -10,6 +10,8 @@ import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
 import { MobileTooltip } from '@/ppm-tool/components/ui/MobileTooltip';
 import { getMatchScoreTooltipContent } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
+import { analytics } from '@/lib/analytics';
+import { trackToolTryFreeClick, trackToolAddToCompareClick, trackToolViewDetailsClick } from '@/lib/posthog';
 
 interface EnhancedCompactToolCardProps {
   tool: Tool;
@@ -22,6 +24,7 @@ interface EnhancedCompactToolCardProps {
   criteriaAdjusted?: boolean;
   onOpenGuidedRanking?: () => void;
   onNavigateToCriteria?: () => void;
+  position?: number; // Position in results for analytics
 }
 
 // Helper function to get tool rating for a criterion
@@ -125,15 +128,99 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
   isCompared = false,
   criteriaAdjusted = true,
   onOpenGuidedRanking,
-  onNavigateToCriteria
+  onNavigateToCriteria,
+  position
 }) => {
   const matchDisplay = getMatchScoreDisplay(matchScore);
   const { isTouchDevice } = useUnifiedMobileDetection();
+
+  // Enhanced tracking handlers
+  const handleTryFreeClick = async (event: React.MouseEvent) => {
+    try {
+      // Track in both PostHog and analytics database
+      trackToolTryFreeClick({
+        tool_id: tool.id,
+        tool_name: tool.name,
+        position: position,
+        match_score: matchScore
+      });
+
+      await analytics.trackToolClick({
+        toolId: tool.id,
+        toolName: tool.name,
+        actionType: 'try_free',
+        position: position,
+        matchScore: matchScore,
+        context: { criteria_adjusted: criteriaAdjusted }
+      });
+    } catch (error) {
+      console.warn('Failed to track try free click:', error);
+    }
+  };
+
+  const handleCompareClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    try {
+      // Track in both PostHog and analytics database
+      trackToolAddToCompareClick({
+        tool_id: tool.id,
+        tool_name: tool.name,
+        position: position,
+        match_score: matchScore
+      });
+
+      await analytics.trackToolClick({
+        toolId: tool.id,
+        toolName: tool.name,
+        actionType: 'add_to_compare',
+        position: position,
+        matchScore: matchScore,
+        context: { 
+          criteria_adjusted: criteriaAdjusted,
+          currently_compared: isCompared
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to track compare click:', error);
+    }
+
+    // Call the original handler
+    onCompare?.(event);
+  };
+
+  const handleViewDetailsClick = async () => {
+    try {
+      // Track in both PostHog and analytics database
+      trackToolViewDetailsClick({
+        tool_id: tool.id,
+        tool_name: tool.name,
+        position: position,
+        match_score: matchScore,
+        expanded: !isExpanded
+      });
+
+      await analytics.trackToolClick({
+        toolId: tool.id,
+        toolName: tool.name,
+        actionType: 'view_details',
+        position: position,
+        matchScore: matchScore,
+        context: { 
+          criteria_adjusted: criteriaAdjusted,
+          expanding: !isExpanded
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to track view details click:', error);
+    }
+
+    // Call the original handler
+    onToggleExpand();
+  };
   
   return (
     <Card 
       className="border border-gray-200 hover:border-alpine-blue-300 cursor-pointer !bg-white shadow-none rounded-xl transition-colors duration-200"
-      onClick={onToggleExpand}
+      onClick={handleViewDetailsClick}
       style={{ overflow: 'visible' }}
     >
       <CardHeader className="px-3 md:px-6 py-2.5 md:py-2.5">
@@ -231,6 +318,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 justify-center"
+                  onClick={handleTryFreeClick}
                 >
                   <ExternalLink className="w-3 h-3" />
                   <span className="hidden sm:inline">Try Free</span>
@@ -247,7 +335,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
                   ? "bg-alpine-blue-100 text-alpine-blue-700 hover:bg-alpine-blue-200" 
                   : "bg-gray-100 hover:bg-gray-200 text-gray-700"
               )}
-              onClick={onCompare}
+              onClick={handleCompareClick}
             >
               <Star className={cn(
                 "w-3 h-3 mr-1",
@@ -295,7 +383,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
       {/* Toggle button - ALWAYS rendered, positioned outside collapsing content to prevent bobbling */}
       <div 
         className="cursor-pointer px-4 md:px-6 py-2 md:py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors border-t border-gray-200 flex items-center justify-center gap-2 text-xs md:text-sm font-medium text-alpine-blue-500 rounded-b-xl"
-        onClick={onToggleExpand}
+        onClick={handleViewDetailsClick}
       >
         {isExpanded ? (
           <>

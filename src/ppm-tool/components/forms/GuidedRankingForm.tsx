@@ -212,6 +212,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
   const [answers, setAnswers] = React.useState<Record<string, QuestionAnswer>>(initialAnswers || {});
   const [currentStep, setCurrentStep] = React.useState(0);
   const [otherAnswers, setOtherAnswers] = React.useState<Record<string, string>>({});
+  const [loadingAnswers, setLoadingAnswers] = React.useState(false);
 
   const formRef = React.useRef<HTMLDivElement>(null);
   const { isTouchDevice } = useUnifiedMobileDetection();
@@ -251,6 +252,49 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     setOtherAnswers({});
     setCurrentStep(0);
   }, []);
+
+  // Load answers from database
+  const loadAnswersFromDatabase = React.useCallback(async () => {
+    setLoadingAnswers(true);
+    try {
+      const userAnalytics = await analytics.getSessionData();
+      if (userAnalytics && userAnalytics.question_responses) {
+        const questionResponses = userAnalytics.question_responses;
+        const loadedAnswers: Record<string, QuestionAnswer> = {};
+        
+        // Group responses by question
+        questionResponses.forEach((response: any) => {
+          const questionKey = `q${response.question_order}`;
+          const question = relevantQuestions.find(q => q.id === questionKey);
+          
+          if (question?.isMultiSelect) {
+            // For multi-select questions, collect all values into an array
+            if (!loadedAnswers[questionKey]) {
+              loadedAnswers[questionKey] = [];
+            }
+            if (response.choice_value) {
+              (loadedAnswers[questionKey] as number[]).push(parseInt(response.choice_value));
+            }
+          } else {
+            // For single-select questions, use the choice value or response text
+            loadedAnswers[questionKey] = response.choice_value ? 
+              parseInt(response.choice_value) : response.response_text;
+          }
+        });
+        
+        if (Object.keys(loadedAnswers).length > 0) {
+          console.log('📂 Loaded answers from database:', Object.keys(loadedAnswers).length, 'questions');
+          setAnswers(loadedAnswers);
+          setLoadingAnswers(false);
+          return loadedAnswers;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load answers from database:', error);
+    }
+    setLoadingAnswers(false);
+    return null;
+  }, [relevantQuestions]);
 
   // Track if we've cleared filters to avoid unnecessary calls
   const hasOpenedRef = React.useRef(false);
@@ -340,7 +384,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
 
   useClickOutside(formRef, handleClose);
 
-  // Load initial answers when form opens (only reset if no initial answers provided)
+  // Load initial answers when form opens (database first, then localStorage fallback)
   React.useEffect(() => {
     if (isOpen) {
       console.log('🔍 GuidedRankingForm opened:', { 
@@ -351,14 +395,24 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
       // Initialize start time for completion tracking
       (window as any)._guidedRankingStartTime = Date.now();
       
-      // Only reset if we don't have initial answers to load
-      if (!initialAnswers || Object.keys(initialAnswers).length === 0) {
-        console.log('📝 Resetting form state (no saved answers)');
-        resetFormState();
-      } else {
-        console.log('📂 Loading saved answers:', Object.keys(initialAnswers).length, 'questions');
-        setAnswers(initialAnswers);
-      }
+      // Try loading from database first
+      const loadInitialData = async () => {
+        const databaseAnswers = await loadAnswersFromDatabase();
+        
+        if (!databaseAnswers || Object.keys(databaseAnswers).length === 0) {
+          // Fall back to initialAnswers (localStorage) if database has no data
+          if (initialAnswers && Object.keys(initialAnswers).length > 0) {
+            console.log('📂 Loading saved answers from localStorage fallback:', Object.keys(initialAnswers).length, 'questions');
+            setAnswers(initialAnswers);
+          } else {
+            console.log('📝 Resetting form state (no saved answers in database or localStorage)');
+            resetFormState();
+          }
+        }
+        // If database had answers, they're already set by loadAnswersFromDatabase
+      };
+      
+      loadInitialData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, criterionId]); // initialAnswers and resetFormState intentionally omitted to prevent loops
@@ -403,6 +457,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
         // Track answer in Supabase analytics
         analytics.trackGuidedRankingAnswer({
           questionId,
+          questionOrder: (question?.id.match(/\d+/) ? parseInt(question.id.match(/\d+/)![0]) : currentStep + 1),
           questionText: question?.text || '',
           answer: newValues,
           affectsCriteria: question?.isPersonalization ? 'personalization' : Object.keys(question?.criteriaImpact || {}).join(', '),
@@ -417,6 +472,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
         // Track answer in Supabase analytics
         analytics.trackGuidedRankingAnswer({
           questionId,
+          questionOrder: (question?.id.match(/\d+/) ? parseInt(question.id.match(/\d+/)![0]) : currentStep + 1),
           questionText: question?.text || '',
           answer: value,
           affectsCriteria: question?.isPersonalization ? 'personalization' : Object.keys(question?.criteriaImpact || {}).join(', '),
@@ -698,6 +754,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     try {
       analytics.trackGuidedRankingAnswer({
         questionId: 'complete',
+        questionOrder: questions.length, // Final completion event
         questionText: 'Guided Ranking Complete',
         answer: rankings,
         affectsCriteria: 'all',
@@ -734,10 +791,12 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     // Track guided ranking completion in Supabase (fire-and-forget)
     // Track each answer individually for granular analysis
     Object.entries(answers).forEach(([questionId, answer]) => {
-      const question = questions.find(q => q.id === questionId);
+      const questionIndex = questions.findIndex(q => q.id === questionId);
+      const question = questionIndex >= 0 ? questions[questionIndex] : null;
       if (question) {
         analytics.trackGuidedRankingAnswer({
           questionId: questionId,
+          questionOrder: questionIndex + 1, // 1-based order
           questionText: question.text,
           answer: answer,
           affectsCriteria: Object.keys(question.criteriaImpact).join(', '),
@@ -749,6 +808,7 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
     // Track final completion event with all data
     analytics.trackGuidedRankingAnswer({
       questionId: 'completion',
+      questionOrder: questions.length, // Final completion event
       questionText: 'Guided Ranking Complete',
       answer: {
         all_answers: answers,

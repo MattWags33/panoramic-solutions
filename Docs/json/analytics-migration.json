@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-08T22:00:00Z",
+  "type": "MIGRATION",
+  "metadata": {
+    "project": "PPM Tool Finder",
+    "maintainer": "Parker Gawne", 
+    "mcp_compatible": true,
+    "purpose": "Migration from monolithic visitor_sessions to relational analytics schema"
+  },
+  "migration_summary": {
+    "status": "COMPLETED",
+    "migration_date": "2025-11-08T22:00:00Z",
+    "approach": "Multi-phase migration with data preservation",
+    "total_migrations_applied": 4,
+    "data_loss": "NONE - All historical data preserved"
+  },
+  "migrations_applied": {
+    "1_create_questions_schema": {
+      "id": "create_questions_schema",
+      "phase": "STRUCTURE",
+      "status": "COMPLETED",
+      "applied_at": "2025-11-08T22:00:00Z", 
+      "description": "Created core tables: questions, question_choices, users",
+      "changes": [
+        "CREATE TABLE analytics.questions - Dynamic question management",
+        "CREATE TABLE analytics.question_choices - Answer options",
+        "CREATE TABLE analytics.users - Replaces visitor_sessions with better structure"
+      ],
+      "verification_query": "SELECT COUNT(*) FROM analytics.questions",
+      "rollback_available": true
+    },
+    "2_create_junction_tables": {
+      "id": "create_junction_tables", 
+      "phase": "RELATIONSHIPS",
+      "status": "COMPLETED",
+      "applied_at": "2025-11-08T22:00:00Z",
+      "description": "Created junction tables for many-to-many relationships",
+      "changes": [
+        "CREATE TABLE analytics.user_question_responses - User answers to questions",
+        "CREATE TABLE analytics.user_criteria_responses - User criteria ratings", 
+        "CREATE TABLE analytics.user_tool_actions - Tool interaction tracking"
+      ],
+      "verification_query": "SELECT table_name FROM information_schema.tables WHERE table_schema = 'analytics'",
+      "rollback_available": true
+    },
+    "3_create_rollup_views_and_recommendations": {
+      "id": "create_rollup_views_and_recommendations",
+      "phase": "ANALYTICS",
+      "status": "COMPLETED", 
+      "applied_at": "2025-11-08T22:00:00Z",
+      "description": "Created aggregation views and recommendations tracking",
+      "changes": [
+        "CREATE TABLE analytics.recommendations - Email report tracking",
+        "CREATE VIEW analytics.tool_action_rollups - Tool performance metrics",
+        "CREATE VIEW analytics.question_response_rollups - Question analytics",
+        "CREATE VIEW analytics.question_choice_rollups - Choice selection analytics",
+        "CREATE VIEW analytics.criteria_response_rollups - Criteria importance metrics",
+        "CREATE VIEW analytics.user_activity_rollups - User engagement summaries"
+      ],
+      "verification_query": "SELECT viewname FROM pg_views WHERE schemaname = 'analytics'",
+      "rollback_available": false
+    },
+    "4_populate_guided_ranking_questions": {
+      "id": "populate_guided_ranking_questions",
+      "phase": "DATA_SEEDING",
+      "status": "COMPLETED",
+      "applied_at": "2025-11-08T22:00:00Z", 
+      "description": "Populated questions and choices for existing guided ranking system",
+      "changes": [
+        "INSERT 12 guided ranking questions (Q1-Q12)",
+        "INSERT scale choices (1-5) for questions 1-10",
+        "INSERT department choices for question 11", 
+        "INSERT methodology choices for question 12"
+      ],
+      "verification_query": "SELECT question_order, question_text FROM analytics.questions ORDER BY question_order",
+      "rollback_available": true
+    },
+    "5_migrate_visitor_sessions_data": {
+      "id": "migrate_visitor_sessions_data",
+      "phase": "DATA_MIGRATION", 
+      "status": "COMPLETED",
+      "applied_at": "2025-11-08T22:00:00Z",
+      "description": "Migrated all existing visitor_sessions data to new relational structure",
+      "changes": [
+        "Created migration function migrate_visitor_sessions_to_new_structure()",
+        "Migrated all visitor sessions to analytics.users table",
+        "Parsed guided_ranking_answers JSON into user_question_responses",
+        "Parsed criteria_rankings JSON into user_criteria_responses", 
+        "Created recommendations records for users who sent email reports"
+      ],
+      "verification_query": "SELECT migrate_visitor_sessions_to_new_structure()",
+      "rollback_available": false
+    }
+  },
+  "data_transformation": {
+    "visitor_sessions_to_users": {
+      "description": "Moved core session data to analytics.users with improved structure",
+      "field_mappings": {
+        "session_id": "session_id - Direct mapping",
+        "ip_address": "ip_address - Direct mapping",
+        "user_agent": "user_agent - Direct mapping", 
+        "email": "email - Direct mapping",
+        "first_seen_at": "first_seen_at - Direct mapping",
+        "last_seen_at": "last_seen_at - Direct mapping",
+        "total_page_views": "total_page_views - Direct mapping",
+        "has_manual_ranking": "has_manual_ranking - Direct mapping",
+        "has_sent_report": "has_sent_report - Direct mapping"
+      },
+      "new_fields": [
+        "total_time_on_tool - New metric for engagement tracking"
+      ]
+    },
+    "guided_ranking_answers_breakdown": {
+      "description": "Parsed JSON guided ranking answers into relational structure", 
+      "transformation": [
+        "Q1-Q10: Scale questions (1-5) -> user_question_responses with question_choice_id",
+        "Q11: Department arrays -> Multiple user_question_responses records", 
+        "Q12: Methodology arrays -> Multiple user_question_responses records"
+      ],
+      "benefits": [
+        "Can change question wording without losing historical responses",
+        "Can add/remove answer choices dynamically",
+        "Better analytics on response patterns"
+      ]
+    },
+    "criteria_rankings_breakdown": {
+      "description": "Parsed JSON criteria rankings into user_criteria_responses",
+      "transformation": [
+        "criteria_rankings JSON object -> Individual records per criteria rating"
+      ],
+      "benefits": [
+        "Can add new criteria without affecting historical data",
+        "Better criteria importance analysis", 
+        "Cleaner match score calculation tracking"
+      ]
+    }
+  },
+  "verification_results": {
+    "data_integrity": {
+      "users_migrated": "All visitor sessions successfully migrated to analytics.users",
+      "responses_preserved": "All guided ranking answers preserved in user_question_responses",
+      "criteria_preserved": "All criteria rankings preserved in user_criteria_responses",
+      "no_data_loss": "Confirmed zero data loss during migration"
+    },
+    "functional_testing": [
+      "New junction tables accept data correctly",
+      "Foreign key constraints working properly", 
+      "Rollup views return expected aggregated data",
+      "Migration function completed without errors"
+    ]
+  },
+  "post_migration_tasks": {
+    "completed": [
+      "Verify all data migrated correctly",
+      "Test rollup views for accurate aggregations",
+      "Confirm foreign key relationships working",
+      "Document new schema structure"
+    ],
+    "next_steps": [
+      "Update frontend code to use new analytics tables",
+      "Modify PostHog integration to use new structure", 
+      "Create new dashboard queries using rollup views",
+      "Plan deprecation of old visitor_sessions table"
+    ]
+  },
+  "rollback_plan": {
+    "availability": "Partial rollback available for structure changes",
+    "limitations": "Data migration cannot be rolled back - would require re-running visitor_sessions queries",
+    "safety": "Original visitor_sessions table preserved during migration",
+    "recovery": "Can recreate new structure from migration files if needed"
+  },
+  "performance_impact": {
+    "expected_improvements": [
+      "Faster queries due to proper indexes on junction tables",
+      "Better scalability with relational structure",
+      "Reduced JSON parsing overhead",
+      "More efficient aggregation queries"
+    ],
+    "monitoring": [
+      "Query performance on rollup views",
+      "Index effectiveness on junction tables", 
+      "Overall database size changes"
+    ]
+  }
+}

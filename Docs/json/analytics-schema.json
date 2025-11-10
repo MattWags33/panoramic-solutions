@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-08T22:00:00Z",
+  "type": "ARCHITECTURE",
+  "metadata": {
+    "project": "PPM Tool Finder",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "purpose": "Relational analytics schema for user behavior tracking and dynamic question management"
+  },
+  "analytics_schema": {
+    "description": "New relational database schema replacing monolithic visitor_sessions approach with junction tables for flexibility and better analytics",
+    "design_principles": [
+      "Junction tables for many-to-many relationships",
+      "Dynamic question/criteria handling without losing historical data",
+      "Roll-up fields for aggregated metrics",
+      "Separation of concerns between user data, questions, and interactions"
+    ],
+    "core_tables": {
+      "users": {
+        "description": "Core user sessions table replacing visitor_sessions",
+        "purpose": "Track individual user sessions with basic metrics",
+        "key_fields": {
+          "id": "Primary key UUID",
+          "session_id": "Unique session identifier",
+          "email": "User email if provided",
+          "total_time_on_tool": "Time spent in seconds",
+          "has_manual_ranking": "Boolean - completed manual ranking",
+          "has_partial_ranking": "Boolean - partial guided ranking",
+          "has_full_ranking": "Boolean - full guided ranking",
+          "has_sent_report": "Boolean - requested email report"
+        },
+        "rollup_fields": [
+          "questions_answered",
+          "criteria_rated", 
+          "tools_interacted_with",
+          "total_tool_actions"
+        ]
+      },
+      "questions": {
+        "description": "Dynamic questions table for guided ranking",
+        "purpose": "Support changing questions over time without losing historical data",
+        "key_fields": {
+          "id": "Primary key UUID",
+          "question_text": "The actual question text",
+          "question_order": "Display order (1-12 for current guided ranking)",
+          "question_type": "scale | multiple_choice | text",
+          "is_active": "Boolean - currently in use"
+        },
+        "rollup_fields": [
+          "total_responses",
+          "response_count"
+        ]
+      },
+      "question_choices": {
+        "description": "Answer options for questions",
+        "purpose": "Dynamic answer choices that can change without affecting historical responses",
+        "key_fields": {
+          "id": "Primary key UUID",
+          "question_id": "Foreign key to questions table",
+          "choice_text": "Display text for choice",
+          "choice_value": "Value stored in responses",
+          "choice_order": "Display order"
+        },
+        "rollup_fields": [
+          "unique_selections",
+          "total_selections",
+          "selection_percentage"
+        ]
+      }
+    },
+    "junction_tables": {
+      "user_question_responses": {
+        "description": "Links users to their question responses",
+        "purpose": "Track individual answers to guided ranking questions",
+        "key_fields": {
+          "user_id": "Foreign key to users table",
+          "question_id": "Foreign key to questions table", 
+          "question_choice_id": "Foreign key to question_choices table",
+          "response_text": "For text responses",
+          "response_timestamp": "When response was given"
+        },
+        "constraints": ["UNIQUE(user_id, question_id) - one response per question per user"],
+        "enables": [
+          "Dynamic question changes without data loss",
+          "Historical analysis of response patterns",
+          "A/B testing different question phrasings"
+        ]
+      },
+      "user_criteria_responses": {
+        "description": "Links users to their criteria ratings",  
+        "purpose": "Track 1-5 scale ratings for each criteria",
+        "key_fields": {
+          "user_id": "Foreign key to users table",
+          "criteria_id": "Foreign key to public.criteria table",
+          "rating": "Integer 1-5 scale rating",
+          "response_timestamp": "When rating was given"
+        },
+        "constraints": ["UNIQUE(user_id, criteria_id) - one rating per criteria per user"],
+        "enables": [
+          "Adding new criteria without affecting historical data",
+          "Criteria importance analysis",
+          "Match score calculation transparency"
+        ]
+      },
+      "user_tool_actions": {
+        "description": "Links users to their tool interactions",
+        "purpose": "Track all tool interaction types for monetization and behavior analysis",
+        "key_fields": {
+          "user_id": "Foreign key to users table",
+          "tool_id": "Foreign key to public.tools table",
+          "action_type": "click | view_details | compare | try_free",
+          "position": "Position in results when action occurred",
+          "match_score": "Match score at time of action",
+          "context": "Additional context data as JSONB"
+        },
+        "action_types": {
+          "click": "Basic tool interaction",
+          "view_details": "Opened detailed tool information",
+          "compare": "Added tool to comparison view", 
+          "try_free": "Clicked try free button (monetization event)"
+        },
+        "enables": [
+          "Tool performance analysis",
+          "User engagement patterns",
+          "Monetization tracking",
+          "A/B testing tool positioning"
+        ]
+      }
+    },
+    "rollup_views": {
+      "tool_action_rollups": {
+        "description": "Aggregated tool interaction metrics",
+        "metrics": [
+          "unique_clicks", "total_clicks",
+          "unique_detail_views", "total_detail_views", 
+          "unique_comparisons", "total_comparisons",
+          "unique_try_free", "total_try_free",
+          "avg_match_score", "avg_position"
+        ],
+        "use_cases": ["Tool performance dashboards", "Vendor reporting", "Revenue optimization"]
+      },
+      "question_response_rollups": {
+        "description": "Question response summaries and counts", 
+        "metrics": ["total_responses", "response_count"],
+        "use_cases": ["Question effectiveness analysis", "Guided ranking optimization"]
+      },
+      "question_choice_rollups": {
+        "description": "Choice selection frequencies and percentages",
+        "metrics": ["unique_selections", "total_selections", "selection_percentage"],
+        "use_cases": ["Answer option optimization", "User preference analysis"]
+      },
+      "criteria_response_rollups": {
+        "description": "Criteria rating summaries and distributions",
+        "metrics": ["total_responses", "avg_rating", "rating_1_count through rating_5_count"],
+        "use_cases": ["Criteria importance ranking", "Match score algorithm tuning"]
+      },
+      "user_activity_rollups": {
+        "description": "User engagement summaries across all interactions",
+        "metrics": [
+          "questions_answered", "criteria_rated",
+          "tools_interacted_with", "total_tool_actions", 
+          "action_types_taken", "has_recommendations"
+        ],
+        "use_cases": ["User segmentation", "Conversion funnel analysis", "Engagement scoring"]
+      }
+    },
+    "migration_strategy": {
+      "status": "COMPLETED",
+      "approach": "Created migration function to move data from visitor_sessions to new relational structure",
+      "data_preserved": [
+        "All existing user sessions",
+        "Guided ranking answers broken down into junction tables",
+        "Criteria rankings moved to user_criteria_responses", 
+        "Email reports linked to recommendations table"
+      ],
+      "verification_queries": [
+        "SELECT COUNT(*) FROM analytics.users",
+        "SELECT COUNT(*) FROM analytics.user_question_responses",
+        "SELECT COUNT(*) FROM analytics.user_criteria_responses"
+      ]
+    }
+  },
+  "business_benefits": {
+    "flexibility": "Can add/change questions and criteria without losing historical data",
+    "analytics": "Rich rollup views for deep user behavior insights",
+    "scalability": "Relational structure scales better than JSON-heavy approach", 
+    "monetization": "Better tool action tracking for vendor revenue",
+    "ai_ready": "Clean relational structure perfect for vector database integration"
+  },
+  "future_enhancements": {
+    "vector_database": {
+      "purpose": "LLM-powered queries for match score explanations and data analytics",
+      "implementation": "Supabase pgvector extension for embeddings",
+      "use_cases": [
+        "User queries about their match scores",
+        "Vendor queries about anonymized user data",
+        "AI-powered insights and recommendations"
+      ]
+    },
+    "data_monetization": {
+      "requirements": ["Data anonymization layer", "Aggregation functions", "API access controls"],
+      "revenue_streams": ["Vendor analytics subscriptions", "Market research reports", "Industry benchmarking"]
+    }
+  },
+  "technical_implementation": {
+    "database": "Supabase PostgreSQL",
+    "schema": "analytics (separate from public schema)",
+    "indexes": "Optimized for common query patterns",
+    "constraints": "Foreign keys and unique constraints for data integrity",
+    "performance": "Junction table approach with proper indexing for scale"
+  }
+}

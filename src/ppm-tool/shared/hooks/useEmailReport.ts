@@ -79,26 +79,63 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         mattHeadshotUrl: `${getBaseUrl()}/images/Wagner_Headshot_2024.webp`
       }, isTestMode);
 
-      // Get guided ranking data from localStorage for marketing insights
-      let guidedRankingAnswers = null;
-      let personalizationData = null;
+      // Get guided ranking data from analytics database (replaces localStorage)
+      let guidedRankingAnswers: Record<string, any> | null = null;
+      let personalizationData: { timestamp: string; departments?: string[]; methodologies?: string[]; userCount?: number } | null = null;
       
-      if (typeof window !== 'undefined') {
-        try {
-          const storedAnswers = localStorage.getItem('guidedRankingAnswers');
-          const storedPersonalization = localStorage.getItem('personalizationData');
+      try {
+        const userAnalytics = await analytics.getSessionData();
+        if (userAnalytics) {
+          // Convert question responses to guided ranking format for backward compatibility
+          const questionResponses = userAnalytics.question_responses || [];
+          guidedRankingAnswers = {};
           
-          if (storedAnswers) {
-            guidedRankingAnswers = JSON.parse(storedAnswers);
-            console.log('📊 Retrieved guided ranking answers for email:', guidedRankingAnswers);
+          questionResponses.forEach((response: any) => {
+            const questionKey = `q${response.question_order}`;
+            guidedRankingAnswers![questionKey] = {
+              value: response.choice_value || response.response_text,
+              timestamp: response.response_timestamp
+            };
+          });
+          
+          // Extract personalization data from questions 10, 11, and 12
+          if (questionResponses.length > 0) {
+            const q10Response = questionResponses.find((r: any) => r.question_order === 10);
+            const q11Responses = questionResponses.filter((r: any) => r.question_order === 11);
+            const q12Responses = questionResponses.filter((r: any) => r.question_order === 12);
+            
+            personalizationData = {
+              timestamp: new Date().toISOString(),
+              userCount: q10Response?.choice_value || undefined,
+              departments: q11Responses.map((r: any) => r.choice_text || '').filter(Boolean),
+              methodologies: q12Responses.map((r: any) => r.choice_text || '').filter(Boolean)
+            };
           }
           
-          if (storedPersonalization) {
-            personalizationData = JSON.parse(storedPersonalization);
-            console.log('👥 Retrieved personalization data for email:', personalizationData);
+          console.log('📊 Retrieved guided ranking answers from database:', guidedRankingAnswers);
+          console.log('👥 Retrieved personalization data from database:', personalizationData);
+        }
+      } catch (error) {
+        console.warn('Failed to retrieve guided ranking data from database, falling back to localStorage:', error);
+        
+        // Fallback to localStorage for backward compatibility
+        if (typeof window !== 'undefined') {
+          try {
+            const storedAnswers = localStorage.getItem('guidedRankingAnswers');
+            const storedPersonalization = localStorage.getItem('personalizationData');
+            
+            if (storedAnswers) {
+              guidedRankingAnswers = JSON.parse(storedAnswers);
+              console.log('📊 Retrieved guided ranking answers from localStorage fallback:', guidedRankingAnswers);
+            }
+            
+            if (storedPersonalization) {
+              personalizationData = JSON.parse(storedPersonalization);
+              console.log('👥 Retrieved personalization data from localStorage fallback:', personalizationData);
+            }
+          } catch (fallbackError) {
+            console.warn('Failed to retrieve guided ranking data from localStorage fallback:', fallbackError);
           }
-        } catch (error) {
-          console.warn('Failed to retrieve guided ranking data from localStorage:', error);
         }
       }
 
@@ -176,13 +213,13 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         const firmographics = personalizationData ? {
           departments: personalizationData.departments || [],
           methodologies: personalizationData.methodologies || [],
-          user_count: personalizationData.user_count || null,
+          user_count: personalizationData.userCount || null,
           project_volume: guidedRankingAnswers?.q1 || null,
           tasks_per_project: guidedRankingAnswers?.q2 || null,
           expertise_level: guidedRankingAnswers?.q3 || null
         } : {};
         
-        analytics.trackReportSent({
+        const recommendationId = await analytics.trackReportSent({
           email: data.userEmail,
           firstName: data.firstName,
           lastName: data.lastName,
@@ -191,6 +228,8 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
           matchScores: matchScores,
           firmographics: firmographics
         });
+        
+        console.log('📧 Analytics: Report sent tracked with ID:', recommendationId);
       } catch (analyticsError) {
         console.warn('Failed to track Supabase report event:', analyticsError);
         // Don't fail the email send for analytics tracking issues

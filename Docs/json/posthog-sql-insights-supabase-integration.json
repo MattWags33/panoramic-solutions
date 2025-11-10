@@ -1,0 +1,159 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-10T21:00:00Z",
+  "type": "DOCUMENTATION",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "description": "SQL Insights for PostHog Data Warehouse + Supabase Analytics Integration"
+  },
+  "prerequisites": {
+    "status": "⚠️ DATA WAREHOUSE SETUP REQUIRED",
+    "instructions": [
+      "1. Go to PostHog → Data Warehouse → New Source → PostgreSQL",
+      "2. Enter Supabase connection details (from docs/guides/SUPABASE-POSTHOG-SETUP.md)",
+      "3. Sync these tables: analytics_users, analytics_user_question_responses, analytics_user_criteria_responses, analytics_user_tool_actions, analytics_recommendations",
+      "4. Wait for initial sync to complete (~5-10 minutes)",
+      "5. Tables will appear in PostHog as: analytics_users, analytics_user_question_responses, etc."
+    ],
+    "verification_query": "SELECT COUNT(*) as users FROM analytics_users; -- Should return ~82 users"
+  },
+  "sql_insights": {
+    "category_user_journey": {
+      "insight_1_time_to_conversion": {
+        "name": "⏰ Average Time to Conversion (Minutes)",
+        "description": "How long does it take users to go from landing to sending report? Track improvements in funnel efficiency.",
+        "dashboard": "PPM Tool - Executive Metrics",
+        "sql": "SELECT\n  AVG(EXTRACT(EPOCH FROM (r.created_at - u.first_seen_at)) / 60) as avg_minutes_to_conversion,\n  PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (r.created_at - u.first_seen_at)) / 60) as median_minutes_to_conversion,\n  PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (r.created_at - u.first_seen_at)) / 60) as p90_minutes_to_conversion\nFROM analytics_users u\nJOIN analytics_recommendations r ON u.user_id = r.user_id\nWHERE u.first_seen_at >= NOW() - INTERVAL '30 days';",
+        "expected_result": "Avg: 15-30 minutes, Median: 10-20 minutes, P90: 30-60 minutes",
+        "visualization": "BoldNumber",
+        "insight_type": "SQL"
+      },
+      "insight_2_conversion_by_engagement_depth": {
+        "name": "📊 Conversion Rate by Engagement Depth",
+        "description": "Users who rate more criteria = higher conversion. Quantify the relationship.",
+        "dashboard": "PPM Tool - Executive Metrics",
+        "sql": "SELECT\n  CASE\n    WHEN criteria_rated = 0 THEN '0 criteria'\n    WHEN criteria_rated BETWEEN 1 AND 3 THEN '1-3 criteria'\n    WHEN criteria_rated BETWEEN 4 AND 6 THEN '4-6 criteria'\n    ELSE '7+ criteria'\n  END as engagement_level,\n  COUNT(DISTINCT u.user_id) as users,\n  COUNT(DISTINCT r.recommendation_id) as conversions,\n  ROUND(100.0 * COUNT(DISTINCT r.recommendation_id) / NULLIF(COUNT(DISTINCT u.user_id), 0), 2) as conversion_rate\nFROM analytics_users u\nLEFT JOIN (\n  SELECT user_id, COUNT(DISTINCT criteria_name) as criteria_rated\n  FROM analytics_user_criteria_responses\n  GROUP BY user_id\n) cr ON u.user_id = cr.user_id\nLEFT JOIN analytics_recommendations r ON u.user_id = r.user_id\nWHERE u.first_seen_at >= NOW() - INTERVAL '30 days'\nGROUP BY engagement_level\nORDER BY MIN(COALESCE(cr.criteria_rated, 0));",
+        "expected_result": "Higher criteria_rated = Higher conversion_rate (e.g., 0 criteria = 2%, 7+ criteria = 25%)",
+        "visualization": "ActionsBar",
+        "insight_type": "SQL"
+      },
+      "insight_3_questions_completion_funnel": {
+        "name": "📝 Guided Ranking Question Drop-off Analysis",
+        "description": "Which questions cause users to abandon? Identify friction points.",
+        "dashboard": "PPM Tool - Executive Metrics",
+        "sql": "SELECT\n  q.question_order,\n  q.question_text,\n  COUNT(DISTINCT r.user_id) as users_reached,\n  LAG(COUNT(DISTINCT r.user_id)) OVER (ORDER BY q.question_order) as previous_question_users,\n  ROUND(100.0 * COUNT(DISTINCT r.user_id) / NULLIF(LAG(COUNT(DISTINCT r.user_id)) OVER (ORDER BY q.question_order), 0), 2) as retention_rate\nFROM analytics_questions q\nLEFT JOIN analytics_user_question_responses r ON q.question_id = r.question_id\nWHERE q.is_active = TRUE\n  AND r.answered_at >= NOW() - INTERVAL '30 days'\nGROUP BY q.question_order, q.question_text\nORDER BY q.question_order;",
+        "expected_result": "Question-by-question retention: Q1=100%, Q2=85%, Q3=70%, etc. Identify drop-off points.",
+        "visualization": "ActionsTable",
+        "insight_type": "SQL"
+      }
+    },
+    "category_tool_monetization": {
+      "insight_4_tool_action_heatmap": {
+        "name": "🔥 Tool Engagement Heatmap: Views → Compare → Try Free",
+        "description": "For each tool, see full engagement funnel. Identify high-intent tools for partnerships.",
+        "dashboard": "Tool Performance & Monetization",
+        "sql": "SELECT\n  tool_name,\n  COUNT(DISTINCT CASE WHEN action_type = 'view_details' THEN user_id END) as unique_views,\n  COUNT(DISTINCT CASE WHEN action_type = 'compare' THEN user_id END) as unique_compares,\n  COUNT(DISTINCT CASE WHEN action_type = 'try_free' THEN user_id END) as unique_try_free,\n  ROUND(100.0 * COUNT(DISTINCT CASE WHEN action_type = 'compare' THEN user_id END) / NULLIF(COUNT(DISTINCT CASE WHEN action_type = 'view_details' THEN user_id END), 0), 2) as view_to_compare_rate,\n  ROUND(100.0 * COUNT(DISTINCT CASE WHEN action_type = 'try_free' THEN user_id END) / NULLIF(COUNT(DISTINCT CASE WHEN action_type = 'compare' THEN user_id END), 0), 2) as compare_to_try_free_rate,\n  AVG(CASE WHEN action_type = 'try_free' THEN match_score END) as avg_match_score_at_conversion\nFROM analytics_user_tool_actions\nWHERE created_at >= NOW() - INTERVAL '30 days'\nGROUP BY tool_name\nHAVING COUNT(DISTINCT CASE WHEN action_type = 'view_details' THEN user_id END) >= 5\nORDER BY unique_try_free DESC, unique_compares DESC\nLIMIT 20;",
+        "expected_result": "Top tools with high try_free counts = monetization priorities. High match_score at conversion = quality indicator.",
+        "visualization": "ActionsTable",
+        "insight_type": "SQL"
+      },
+      "insight_5_tool_recommendation_effectiveness": {
+        "name": "🎯 Tool Recommendation Accuracy (Match Score vs Actions)",
+        "description": "Do high match scores drive more actions? Validate recommendation algorithm.",
+        "dashboard": "Tool Performance & Monetization",
+        "sql": "SELECT\n  CASE\n    WHEN match_score >= 90 THEN '90-100 (Excellent Match)'\n    WHEN match_score >= 80 THEN '80-89 (Good Match)'\n    WHEN match_score >= 70 THEN '70-79 (Fair Match)'\n    ELSE '< 70 (Poor Match)'\n  END as match_score_bucket,\n  COUNT(*) as total_actions,\n  COUNT(DISTINCT user_id) as unique_users,\n  COUNT(CASE WHEN action_type = 'try_free' THEN 1 END) as try_free_clicks,\n  ROUND(100.0 * COUNT(CASE WHEN action_type = 'try_free' THEN 1 END) / NULLIF(COUNT(*), 0), 2) as try_free_conversion_rate\nFROM analytics_user_tool_actions\nWHERE created_at >= NOW() - INTERVAL '30 days'\n  AND match_score IS NOT NULL\nGROUP BY match_score_bucket\nORDER BY MIN(match_score) DESC;",
+        "expected_result": "Higher match_score = Higher try_free_conversion_rate. Validates algorithm effectiveness.",
+        "visualization": "ActionsBar",
+        "insight_type": "SQL"
+      },
+      "insight_6_user_tool_interaction_cohorts": {
+        "name": "👥 User Cohorts by Tool Interaction Count",
+        "description": "How many tools do users typically interact with? Segment by engagement level.",
+        "dashboard": "User Engagement & Behavior",
+        "sql": "SELECT\n  CASE\n    WHEN tool_count = 0 THEN '0 tools'\n    WHEN tool_count BETWEEN 1 AND 2 THEN '1-2 tools'\n    WHEN tool_count BETWEEN 3 AND 5 THEN '3-5 tools'\n    WHEN tool_count BETWEEN 6 AND 10 THEN '6-10 tools'\n    ELSE '11+ tools'\n  END as interaction_bucket,\n  COUNT(DISTINCT u.user_id) as users,\n  COUNT(DISTINCT r.recommendation_id) as conversions,\n  ROUND(100.0 * COUNT(DISTINCT r.recommendation_id) / NULLIF(COUNT(DISTINCT u.user_id), 0), 2) as conversion_rate\nFROM analytics_users u\nLEFT JOIN (\n  SELECT user_id, COUNT(DISTINCT tool_id) as tool_count\n  FROM analytics_user_tool_actions\n  GROUP BY user_id\n) ta ON u.user_id = ta.user_id\nLEFT JOIN analytics_recommendations r ON u.user_id = r.user_id\nWHERE u.first_seen_at >= NOW() - INTERVAL '30 days'\nGROUP BY interaction_bucket\nORDER BY MIN(COALESCE(ta.tool_count, 0));",
+        "expected_result": "Sweet spot: 3-5 tools = highest conversion. Too few = not engaged, too many = overwhelmed.",
+        "visualization": "ActionsBar",
+        "insight_type": "SQL"
+      }
+    },
+    "category_attribution_roi": {
+      "insight_7_utm_source_full_funnel": {
+        "name": "🌐 UTM Source Performance: Full Funnel + LTV Proxy",
+        "description": "Which traffic sources drive best quality leads? Track from landing to conversion.",
+        "dashboard": "Attribution & Marketing ROI",
+        "sql": "SELECT\n  COALESCE(u.initial_utm_source, 'Direct/Unknown') as traffic_source,\n  COUNT(DISTINCT u.user_id) as total_visitors,\n  COUNT(DISTINCT CASE WHEN u.has_manual_ranking = TRUE THEN u.user_id END) as adjusted_criteria,\n  COUNT(DISTINCT CASE WHEN u.has_partial_ranking = TRUE THEN u.user_id END) as started_questions,\n  COUNT(DISTINCT CASE WHEN u.has_full_ranking = TRUE THEN u.user_id END) as completed_questions,\n  COUNT(DISTINCT r.recommendation_id) as conversions,\n  ROUND(100.0 * COUNT(DISTINCT r.recommendation_id) / NULLIF(COUNT(DISTINCT u.user_id), 0), 2) as conversion_rate,\n  AVG(ta.tool_interactions) as avg_tool_interactions,\n  ROUND(AVG(EXTRACT(EPOCH FROM (r.created_at - u.first_seen_at)) / 60), 2) as avg_minutes_to_conversion\nFROM analytics_users u\nLEFT JOIN analytics_recommendations r ON u.user_id = r.user_id\nLEFT JOIN (\n  SELECT user_id, COUNT(*) as tool_interactions\n  FROM analytics_user_tool_actions\n  GROUP BY user_id\n) ta ON u.user_id = ta.user_id\nWHERE u.first_seen_at >= NOW() - INTERVAL '30 days'\nGROUP BY traffic_source\nORDER BY conversions DESC, conversion_rate DESC;",
+        "expected_result": "Source-by-source comparison: Which channels drive engaged, high-quality leads?",
+        "visualization": "ActionsTable",
+        "insight_type": "SQL"
+      },
+      "insight_8_cohort_retention_by_source": {
+        "name": "📅 7-Day Retention by UTM Source",
+        "description": "Which traffic sources bring users who return? Identify sticky channels.",
+        "dashboard": "Attribution & Marketing ROI",
+        "sql": "WITH first_visits AS (\n  SELECT\n    user_id,\n    COALESCE(initial_utm_source, 'Direct') as source,\n    first_seen_at,\n    DATE_TRUNC('week', first_seen_at) as cohort_week\n  FROM analytics_users\n  WHERE first_seen_at >= NOW() - INTERVAL '60 days'\n),\nreturn_visits AS (\n  SELECT\n    user_id,\n    last_seen_at\n  FROM analytics_users\n  WHERE last_seen_at > first_seen_at + INTERVAL '7 days'\n)\nSELECT\n  fv.source,\n  COUNT(DISTINCT fv.user_id) as cohort_size,\n  COUNT(DISTINCT rv.user_id) as returned_users,\n  ROUND(100.0 * COUNT(DISTINCT rv.user_id) / NULLIF(COUNT(DISTINCT fv.user_id), 0), 2) as retention_rate_7d\nFROM first_visits fv\nLEFT JOIN return_visits rv ON fv.user_id = rv.user_id\nGROUP BY fv.source\nHAVING COUNT(DISTINCT fv.user_id) >= 10\nORDER BY retention_rate_7d DESC;",
+        "expected_result": "High retention sources = valuable channels to invest in.",
+        "visualization": "ActionsBar",
+        "insight_type": "SQL"
+      }
+    },
+    "category_user_personalization": {
+      "insight_9_department_conversion_rates": {
+        "name": "🏢 Conversion Rate by Department",
+        "description": "Which departments convert best? Tailor marketing and tool recommendations.",
+        "dashboard": "User Engagement & Behavior",
+        "sql": "SELECT\n  UNNEST(departments) as department,\n  COUNT(DISTINCT user_id) as conversions,\n  ROUND(AVG(ARRAY_LENGTH(recommended_tools, 1)), 2) as avg_tools_recommended\nFROM analytics_recommendations\nWHERE created_at >= NOW() - INTERVAL '30 days'\n  AND departments IS NOT NULL\nGROUP BY department\nORDER BY conversions DESC;",
+        "expected_result": "IT, PMO, Operations = highest converters. Tailor outreach.",
+        "visualization": "ActionsPie",
+        "insight_type": "SQL"
+      },
+      "insight_10_methodology_tool_affinity": {
+        "name": "🔗 Methodology → Tool Affinity Matrix",
+        "description": "Which tools do Agile vs Waterfall users prefer? Personalize recommendations.",
+        "dashboard": "User Engagement & Behavior",
+        "sql": "SELECT\n  UNNEST(r.methodologies) as methodology,\n  ta.tool_name,\n  COUNT(DISTINCT ta.user_id) as unique_users,\n  COUNT(CASE WHEN ta.action_type = 'try_free' THEN 1 END) as try_free_clicks,\n  AVG(ta.match_score) as avg_match_score\nFROM analytics_recommendations r\nJOIN analytics_user_tool_actions ta ON r.user_id = ta.user_id\nWHERE r.created_at >= NOW() - INTERVAL '30 days'\n  AND r.methodologies IS NOT NULL\nGROUP BY methodology, ta.tool_name\nHAVING COUNT(DISTINCT ta.user_id) >= 3\nORDER BY methodology, try_free_clicks DESC;",
+        "expected_result": "Agile users prefer Jira, Monday. Waterfall users prefer MS Project. Use for personalization.",
+        "visualization": "ActionsTable",
+        "insight_type": "SQL"
+      }
+    },
+    "category_combined_posthog_supabase": {
+      "insight_11_posthog_events_with_supabase_context": {
+        "name": "🔗 PostHog Events Enriched with Supabase User Context",
+        "description": "Join PostHog events with Supabase user data for full picture. Example: New_Report_Sent with criteria ratings.",
+        "dashboard": "Advanced Analytics",
+        "sql": "-- NOTE: This requires PostHog Data Warehouse to import BOTH PostHog events AND Supabase tables\n-- Once both are available, you can JOIN them:\n\nSELECT\n  ph.timestamp,\n  ph.distinct_id,\n  ph.event as posthog_event,\n  u.email,\n  u.initial_utm_source,\n  COUNT(DISTINCT cr.criteria_name) as criteria_rated,\n  CASE WHEN r.recommendation_id IS NOT NULL THEN TRUE ELSE FALSE END as converted\nFROM events ph -- PostHog events table\nLEFT JOIN analytics_users u ON ph.distinct_id = u.session_id\nLEFT JOIN analytics_user_criteria_responses cr ON u.user_id = cr.user_id\nLEFT JOIN analytics_recommendations r ON u.user_id = r.user_id\nWHERE ph.event = 'New_Report_Sent'\n  AND ph.timestamp >= NOW() - INTERVAL '30 days'\nGROUP BY ph.timestamp, ph.distinct_id, ph.event, u.email, u.initial_utm_source, r.recommendation_id\nORDER BY ph.timestamp DESC;",
+        "expected_result": "Combined view: PostHog events + Supabase context = complete analytics.",
+        "visualization": "ActionsTable",
+        "insight_type": "SQL",
+        "note": "This is the POWER move - combining PostHog behavioral events with Supabase relational context."
+      }
+    }
+  },
+  "how_to_create_sql_insights": {
+    "step_1": "Go to PostHog → Product Analytics → New Insight",
+    "step_2": "Click 'SQL' tab (top right)",
+    "step_3": "Paste SQL query from above",
+    "step_4": "Click 'Run' to test",
+    "step_5": "Click 'Save' and add to dashboard",
+    "tip": "Use PostHog's SQL autocomplete to explore available tables/columns"
+  },
+  "expected_benefits": {
+    "1_unified_analytics": "PostHog events (behavioral) + Supabase data (relational context) = Complete picture",
+    "2_monetization_clarity": "See exactly which tools drive revenue, by user segment, match score, and engagement depth",
+    "3_funnel_optimization": "Identify exact drop-off points in guided ranking, tool exploration, and conversion",
+    "4_attribution_roi": "Track full funnel by traffic source: visitors → engaged → converted + LTV proxy metrics",
+    "5_personalization_data": "Methodology/department-specific insights for tailored tool recommendations",
+    "6_time_to_value": "All insights available in PostHog UI - no need for separate BI tool"
+  },
+  "next_steps": [
+    "1. ✅ COMPLETE: Supabase analytics schema deployed",
+    "2. ✅ COMPLETE: RPC functions deployed and working",
+    "3. ✅ COMPLETE: PostHog insights created and added to Executive Metrics dashboard",
+    "4. ⏳ PENDING: Connect PostHog Data Warehouse to Supabase (manual step, ~10 minutes)",
+    "5. ⏳ PENDING: Create SQL insights from this document (copy/paste, ~15 minutes)",
+    "6. 🚀 RESULT: Complete, unified analytics platform combining PostHog + Supabase"
+  ]
+}
+

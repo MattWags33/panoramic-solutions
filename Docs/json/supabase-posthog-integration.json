@@ -1,0 +1,412 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-10T17:50:00Z",
+  "type": "INTEGRATION",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "description": "Connect Supabase analytics database with PostHog for unified, accurate analytics"
+  },
+  "integration_overview": {
+    "goal": "Ensure PostHog dashboards always have the most accurate, up-to-date information from Supabase analytics database",
+    "benefits": [
+      "PostHog dashboards can query detailed Supabase user data",
+      "Combine event tracking with database-level analytics",
+      "SQL queries in PostHog can join events with user sessions, tool actions, etc.",
+      "Single source of truth for executive dashboards",
+      "No data drift between systems"
+    ],
+    "approach": "PostHog Data Warehouse imports Supabase PostgreSQL tables"
+  },
+  "approach_1_data_warehouse": {
+    "name": "PostHog Data Warehouse ← Supabase Analytics",
+    "status": "RECOMMENDED - Primary Integration",
+    "how_it_works": "PostHog connects to your Supabase PostgreSQL database and syncs analytics tables automatically",
+    "setup_steps": [
+      {
+        "step": 1,
+        "action": "Get Supabase Database Connection Details",
+        "location": "Supabase Dashboard → Project Settings → Database",
+        "details_needed": {
+          "host": "Your project host (e.g., db.ikqxrzhtdymkjmgxejxu.supabase.co)",
+          "database": "postgres",
+          "port": 5432,
+          "user": "postgres",
+          "password": "Your database password (from project settings)",
+          "ssl_mode": "require"
+        },
+        "supabase_dashboard_url": "https://supabase.com/dashboard/project/ikqxrzhtdymkjmgxejxu/settings/database"
+      },
+      {
+        "step": 2,
+        "action": "Set Up PostHog Data Pipeline Source",
+        "location": "PostHog Dashboard → Data Pipeline → Sources → New Source",
+        "instructions": [
+          "Go to: https://us.posthog.com/project/211080/pipeline/sources",
+          "Click 'New source'",
+          "Select 'Postgres' (Supabase is PostgreSQL)",
+          "Enter your Supabase connection details from Step 1"
+        ],
+        "connection_config": {
+          "source_type": "Postgres",
+          "host": "db.ikqxrzhtdymkjmgxejxu.supabase.co",
+          "port": 5432,
+          "database": "postgres",
+          "user": "postgres",
+          "password": "[YOUR_DATABASE_PASSWORD]",
+          "schemas": ["analytics"],
+          "ssl_mode": "require"
+        }
+      },
+      {
+        "step": 3,
+        "action": "Select Tables to Sync",
+        "tables_to_sync": [
+          {
+            "table": "analytics.users",
+            "sync_mode": "incremental",
+            "replication_key": "updated_at",
+            "why": "Core user data with session IDs, UTM tracking, conversion status"
+          },
+          {
+            "table": "analytics.user_question_responses",
+            "sync_mode": "incremental",
+            "replication_key": "answered_at",
+            "why": "Guided ranking answers for funnel analysis"
+          },
+          {
+            "table": "analytics.user_criteria_responses",
+            "sync_mode": "incremental",
+            "replication_key": "created_at",
+            "why": "Manual criteria sliders for engagement tracking"
+          },
+          {
+            "table": "analytics.user_tool_actions",
+            "sync_mode": "incremental",
+            "replication_key": "created_at",
+            "why": "Tool interactions (Try Free, View Details, Compare) for monetization"
+          },
+          {
+            "table": "analytics.recommendations",
+            "sync_mode": "incremental",
+            "replication_key": "created_at",
+            "why": "Email report conversions with personalization data"
+          },
+          {
+            "table": "analytics.questions",
+            "sync_mode": "full_refresh",
+            "why": "Reference table for guided ranking questions (rarely changes)"
+          },
+          {
+            "table": "analytics.question_choices",
+            "sync_mode": "full_refresh",
+            "why": "Reference table for answer options (rarely changes)"
+          }
+        ],
+        "recommended_sync_frequency": "Every 1 hour (hourly sync keeps dashboards fresh)"
+      },
+      {
+        "step": 4,
+        "action": "Test the Connection",
+        "test_queries": [
+          {
+            "name": "Verify users are syncing",
+            "query": "SELECT COUNT(*) FROM analytics_users LIMIT 10",
+            "expected": "Should see row count matching your Supabase analytics.users table"
+          },
+          {
+            "name": "Check latest synced data",
+            "query": "SELECT MAX(updated_at) as latest_user FROM analytics_users",
+            "expected": "Timestamp should be recent (within sync interval)"
+          },
+          {
+            "name": "Join PostHog events with Supabase users",
+            "query": "SELECT e.distinct_id, u.session_id, u.initial_utm_source, COUNT(*) as events FROM events e JOIN analytics_users u ON e.distinct_id = u.session_id WHERE e.event = 'New_Active' GROUP BY e.distinct_id, u.session_id, u.initial_utm_source LIMIT 10",
+            "expected": "Should show events joined with user UTM data"
+          }
+        ]
+      },
+      {
+        "step": 5,
+        "action": "Create Enhanced Insights Using Supabase Data",
+        "examples": [
+          {
+            "insight_name": "Tool Actions by Match Score Range",
+            "description": "See which match score ranges drive the most Try Free clicks",
+            "sql": "SELECT CASE WHEN match_score >= 80 THEN '80-100%' WHEN match_score >= 60 THEN '60-79%' WHEN match_score >= 40 THEN '40-59%' ELSE '<40%' END as score_range, action_type, COUNT(*) as actions FROM analytics_user_tool_actions WHERE action_type = 'try_free' GROUP BY score_range, action_type ORDER BY actions DESC"
+          },
+          {
+            "insight_name": "Conversion Rate by Number of Tools Clicked",
+            "description": "Do users who click more tools convert more?",
+            "sql": "WITH tool_clicks AS (SELECT user_id, COUNT(DISTINCT tool_id) as tools_clicked FROM analytics_user_tool_actions GROUP BY user_id), conversions AS (SELECT user_id FROM analytics_recommendations) SELECT CASE WHEN tools_clicked = 0 THEN '0 tools' WHEN tools_clicked = 1 THEN '1 tool' WHEN tools_clicked <= 3 THEN '2-3 tools' WHEN tools_clicked <= 5 THEN '4-5 tools' ELSE '6+ tools' END as engagement_level, COUNT(DISTINCT tc.user_id) as users, COUNT(DISTINCT c.user_id) as converted, ROUND(100.0 * COUNT(DISTINCT c.user_id) / COUNT(DISTINCT tc.user_id), 2) as conversion_rate FROM tool_clicks tc LEFT JOIN conversions c ON tc.user_id = c.user_id GROUP BY engagement_level ORDER BY tools_clicked"
+          },
+          {
+            "insight_name": "Time to Conversion by UTM Source",
+            "description": "Which traffic sources lead to fastest conversions?",
+            "sql": "SELECT u.initial_utm_source, COUNT(r.user_id) as conversions, AVG(EXTRACT(EPOCH FROM (r.created_at - u.first_seen_at)) / 3600) as avg_hours_to_convert, MIN(EXTRACT(EPOCH FROM (r.created_at - u.first_seen_at)) / 3600) as fastest_convert_hours FROM analytics_users u JOIN analytics_recommendations r ON u.user_id = r.user_id WHERE u.initial_utm_source IS NOT NULL GROUP BY u.initial_utm_source HAVING COUNT(r.user_id) >= 5 ORDER BY avg_hours_to_convert"
+          },
+          {
+            "insight_name": "Question Abandonment Analysis",
+            "description": "Which questions cause users to drop off?",
+            "sql": "SELECT q.question_text, q.question_order, COUNT(DISTINCT qr.user_id) as users_answered, (SELECT COUNT(DISTINCT user_id) FROM analytics_user_question_responses WHERE question_id = q.question_id AND question_order < q.question_order) as users_reached, ROUND(100.0 * COUNT(DISTINCT qr.user_id) / NULLIF((SELECT COUNT(DISTINCT user_id) FROM analytics_user_question_responses WHERE question_order < q.question_order), 0), 2) as completion_rate FROM analytics_questions q LEFT JOIN analytics_user_question_responses qr ON q.question_id = qr.question_id GROUP BY q.question_id, q.question_text, q.question_order ORDER BY q.question_order"
+          }
+        ]
+      }
+    ]
+  },
+  "approach_2_webhooks": {
+    "name": "Supabase Database Webhooks → PostHog",
+    "status": "OPTIONAL - Real-time event streaming",
+    "when_to_use": "If you want real-time PostHog events triggered by database changes (e.g., track when recommendations are created in DB)",
+    "how_it_works": "Supabase Database Webhooks call PostHog Capture API when rows are inserted/updated",
+    "setup_overview": "Create database webhooks in Supabase that POST to PostHog's /capture endpoint",
+    "example_use_cases": [
+      "Send 'Database_Report_Created' event to PostHog when a row is inserted into analytics.recommendations",
+      "Track 'Database_User_Updated' when user conversion status changes",
+      "Alert when high-value tool actions are recorded"
+    ],
+    "implementation_note": "This is redundant with your current frontend tracking, but useful for server-side events or as a backup tracking mechanism",
+    "skip_for_now": "Not needed since you're already tracking events from frontend to both systems simultaneously"
+  },
+  "data_consistency_strategy": {
+    "current_setup": {
+      "frontend_tracking": "Events tracked to BOTH PostHog AND Supabase simultaneously from React components",
+      "posthog_events": [
+        "New_Visitor",
+        "New_Active",
+        "New_Partial_Ranking",
+        "New_Full_Ranking_Submittal",
+        "New_Report_Sent",
+        "Tool_Try_Free_Click",
+        "Tool_Add_To_Compare_Click",
+        "Tool_View_Details_Click"
+      ],
+      "supabase_rpc_functions": [
+        "ensure_analytics_user()",
+        "track_question_response()",
+        "track_criteria_response()",
+        "track_tool_action()",
+        "track_recommendation_sent()"
+      ],
+      "session_id_linking": "Both systems use the same session_id (PostHog distinct_id = Supabase session_id)"
+    },
+    "with_data_warehouse_integration": {
+      "posthog_dashboards_can_now": [
+        "Show event counts (from PostHog events)",
+        "Show user-level context (from Supabase analytics tables)",
+        "Join events with user sessions to see full journey",
+        "Filter by tool action context (match_score, position, etc.)",
+        "Segment by guided ranking answers",
+        "Analyze conversion by personalization choices"
+      ],
+      "example_combined_queries": [
+        "Show New_Report_Sent events joined with analytics.recommendations to see first_name, last_name, departments",
+        "Show Tool_Try_Free_Click events joined with analytics.user_tool_actions to see match_score and position",
+        "Show conversion funnel segmented by user's initial_utm_source from analytics.users"
+      ]
+    }
+  },
+  "ensuring_accuracy": {
+    "data_validation_queries": {
+      "verify_event_counts_match": {
+        "description": "Check if PostHog event counts match Supabase table row counts",
+        "posthog_query": "SELECT COUNT(*) FROM events WHERE event = 'New_Report_Sent' AND timestamp > '2025-11-01'",
+        "supabase_query": "SELECT COUNT(*) FROM analytics.recommendations WHERE created_at > '2025-11-01'",
+        "expected": "Counts should be identical (±1 for timing differences)"
+      },
+      "verify_tool_actions": {
+        "description": "Verify tool action tracking accuracy",
+        "posthog_query": "SELECT COUNT(*) FROM events WHERE event = 'Tool_Try_Free_Click' AND timestamp > '2025-11-01'",
+        "supabase_query": "SELECT COUNT(*) FROM analytics.user_tool_actions WHERE action_type = 'try_free' AND created_at > '2025-11-01'",
+        "expected": "Counts should match"
+      },
+      "verify_unique_users": {
+        "description": "Check unique user counts",
+        "posthog_query": "SELECT COUNT(DISTINCT distinct_id) FROM events WHERE event = 'New_Visitor'",
+        "supabase_query": "SELECT COUNT(*) FROM analytics.users",
+        "expected": "Supabase should have slightly more (includes users from before PostHog tracking)"
+      }
+    },
+    "monitoring_sync_health": [
+      {
+        "check": "Data warehouse sync status",
+        "location": "PostHog → Data Pipeline → Sources",
+        "frequency": "Weekly",
+        "action": "Verify last sync timestamp is recent (within sync interval)"
+      },
+      {
+        "check": "Row counts increasing",
+        "query": "SELECT table_name, COUNT(*) as row_count, MAX(updated_at) as latest_update FROM (SELECT 'users' as table_name, updated_at FROM analytics_users UNION ALL SELECT 'tool_actions', created_at FROM analytics_user_tool_actions) GROUP BY table_name",
+        "frequency": "Weekly",
+        "action": "Confirm row counts are growing as expected"
+      },
+      {
+        "check": "No sync errors",
+        "location": "PostHog → Data Pipeline → Sources → View Logs",
+        "frequency": "After initial setup, then monthly",
+        "action": "Check for any sync errors or warnings"
+      }
+    ]
+  },
+  "enhanced_executive_dashboard": {
+    "description": "With Supabase data in PostHog, you can now enhance the Executive Metrics dashboard with database-powered insights",
+    "new_insights_possible": [
+      {
+        "insight_name": "Avg Match Score of Try Free Clicks",
+        "description": "What's the average match score when users click Try Free?",
+        "data_source": "analytics.user_tool_actions",
+        "query": "SELECT AVG(match_score) as avg_match_score FROM analytics_user_tool_actions WHERE action_type = 'try_free'",
+        "target": "> 75% (higher = better targeting)"
+      },
+      {
+        "insight_name": "Conversion by Department Selected",
+        "description": "Which departments convert best?",
+        "data_source": "analytics.recommendations",
+        "query": "SELECT departments, COUNT(*) as conversions FROM analytics_recommendations GROUP BY departments ORDER BY conversions DESC",
+        "use_for": "Target marketing to high-converting departments"
+      },
+      {
+        "insight_name": "Top Tool Actions by Position",
+        "description": "Do users click tools at the top more?",
+        "data_source": "analytics.user_tool_actions",
+        "query": "SELECT position, action_type, COUNT(*) as actions FROM analytics_user_tool_actions GROUP BY position, action_type ORDER BY position, actions DESC",
+        "use_for": "Optimize tool ranking algorithm"
+      },
+      {
+        "insight_name": "Guided Ranking Path Analysis",
+        "description": "Most common answer sequences that lead to conversion",
+        "data_source": "analytics.user_question_responses + analytics.recommendations",
+        "complexity": "Advanced - requires joining multiple tables",
+        "value": "Understand which user personas convert best"
+      }
+    ]
+  },
+  "immediate_action_items": {
+    "step_1": {
+      "task": "Get Supabase Database Password",
+      "instructions": [
+        "Go to: https://supabase.com/dashboard/project/ikqxrzhtdymkjmgxejxu/settings/database",
+        "Copy your database password (or reset it if needed)",
+        "IMPORTANT: This is your postgres user password, not your API key"
+      ],
+      "note": "You'll need this for Step 2"
+    },
+    "step_2": {
+      "task": "Set Up PostHog Data Warehouse Source",
+      "instructions": [
+        "Go to: https://us.posthog.com/project/211080/pipeline/sources",
+        "Click 'New source' → Select 'Postgres'",
+        "Enter connection details:",
+        "  - Host: db.ikqxrzhtdymkjmgxejxu.supabase.co",
+        "  - Port: 5432",
+        "  - Database: postgres",
+        "  - User: postgres",
+        "  - Password: [from Step 1]",
+        "  - Schema: analytics",
+        "  - SSL Mode: require",
+        "Click 'Test Connection' to verify",
+        "Save the source"
+      ]
+    },
+    "step_3": {
+      "task": "Select Tables to Sync",
+      "tables": [
+        "analytics.users (incremental sync on updated_at)",
+        "analytics.user_question_responses (incremental sync on answered_at)",
+        "analytics.user_criteria_responses (incremental sync on created_at)",
+        "analytics.user_tool_actions (incremental sync on created_at)",
+        "analytics.recommendations (incremental sync on created_at)",
+        "analytics.questions (full refresh)",
+        "analytics.question_choices (full refresh)"
+      ],
+      "sync_frequency": "Every 1 hour",
+      "instructions": "In PostHog source config, select these tables and set incremental sync keys"
+    },
+    "step_4": {
+      "task": "Test the Integration",
+      "test_location": "PostHog → SQL Insights → New Insight",
+      "test_query": "SELECT COUNT(*) as total_users, MAX(updated_at) as latest_update FROM analytics_users",
+      "expected_result": "Should show your total user count and recent timestamp",
+      "if_it_works": "✅ Integration successful! Now you can create database-powered insights"
+    },
+    "step_5": {
+      "task": "Create Your First Combined Insight",
+      "example": "Tool Try Free Clicks with Match Score Context",
+      "query": "SELECT t.tool_name, AVG(t.match_score) as avg_match_score, COUNT(*) as try_free_clicks FROM analytics_user_tool_actions t WHERE t.action_type = 'try_free' GROUP BY t.tool_name ORDER BY try_free_clicks DESC LIMIT 10",
+      "add_to_dashboard": "PPM Tool - Executive Metrics",
+      "insight_type": "Table",
+      "why_powerful": "Shows which tools get Try Free clicks AND their average match scores - reveals if users trust the recommendations"
+    }
+  },
+  "troubleshooting": {
+    "connection_failed": {
+      "error": "Could not connect to database",
+      "solutions": [
+        "Verify database password is correct (postgres user password, not anon key)",
+        "Check that your Supabase project is not paused",
+        "Verify host is: db.ikqxrzhtdymkjmgxejxu.supabase.co (not api.supabase.co)",
+        "Ensure SSL mode is set to 'require'",
+        "Check Supabase Dashboard → Settings → Database → Connection Pooling is enabled"
+      ]
+    },
+    "no_tables_showing": {
+      "error": "Cannot see analytics schema or tables",
+      "solutions": [
+        "Verify 'analytics' schema exists in Supabase (run: SELECT schema_name FROM information_schema.schemata;)",
+        "Check postgres user has permission to read analytics schema",
+        "Try selecting 'public' schema first to test connection, then add 'analytics'"
+      ]
+    },
+    "sync_not_updating": {
+      "error": "Data is stale, not syncing",
+      "solutions": [
+        "Check PostHog → Data Pipeline → Sources → View Logs for errors",
+        "Verify incremental sync keys (updated_at, created_at) exist on tables",
+        "Manually trigger a sync to test",
+        "Check sync schedule is set correctly (hourly recommended)"
+      ]
+    },
+    "query_performance_slow": {
+      "error": "SQL insights take too long to run",
+      "solutions": [
+        "Ensure analytics tables have indexes on commonly queried columns",
+        "Use incremental sync instead of full table refresh where possible",
+        "Limit query date ranges (use WHERE created_at > '2025-01-01')",
+        "Consider creating materialized views in Supabase for complex queries"
+      ]
+    }
+  },
+  "benefits_summary": {
+    "before_integration": [
+      "PostHog: Great for event tracking and funnels",
+      "Supabase: Detailed user-level data and context",
+      "Problem: Two separate systems, hard to combine insights"
+    ],
+    "after_integration": [
+      "✅ PostHog dashboards show events + database context in one view",
+      "✅ SQL queries can join events with user sessions, tool actions, etc.",
+      "✅ Single source of truth - no data drift",
+      "✅ Executive dashboard shows both high-level metrics AND detailed context",
+      "✅ Can answer complex questions like 'Which guided ranking answers lead to most Try Free clicks?'",
+      "✅ Automatic sync keeps data fresh (hourly updates)",
+      "✅ No additional frontend code needed - works with existing tracking"
+    ]
+  },
+  "next_level_analytics": {
+    "description": "With Supabase data in PostHog, you unlock advanced analytics",
+    "possibilities": [
+      "Cohort Analysis: Create cohorts based on guided ranking answers, then track their conversion over time",
+      "User Journey Paths: See actual click sequences from analytics.user_tool_actions joined with events",
+      "Attribution Modeling: Full funnel from initial_utm_source (Supabase) to conversion events (PostHog)",
+      "A/B Testing: Compare conversion rates between different question answer combinations",
+      "Tool Recommendation Quality: Measure match_score accuracy vs. user actions",
+      "Personalization Effectiveness: Do certain department/methodology combos convert better?",
+      "Session Duration Analysis: Time between first_seen_at and conversion",
+      "Drop-off Analysis: Exactly which question causes users to abandon (from question_responses)",
+      "Revenue Forecasting: Tool Try Free clicks (database) × vendor commission rates",
+      "Marketing ROI: Cost per lead by UTM source (external data) + conversion data (database)"
+    ]
+  }
+}
+
