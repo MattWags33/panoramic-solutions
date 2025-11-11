@@ -595,6 +595,15 @@ export const analytics = {
       
       const sessionId = getAnalyticsSessionId();
       
+      // Merge firstName/lastName into context for database function
+      const contextWithNames = {
+        ...(options.context || {}),
+        firstName: options.firstName || null,
+        lastName: options.lastName || null,
+        first_name: options.firstName || null, // Also include snake_case for compatibility
+        last_name: options.lastName || null
+      };
+      
       const { data: reportId, error } = await supabase
         .schema('analytics')
         .rpc('track_email_report_send', {
@@ -602,7 +611,7 @@ export const analytics = {
           p_email: options.email,
           p_report_type: options.reportType || 'full_report',
           p_num_recommendations: options.numRecommendations || null,
-          p_context: options.context || {},
+          p_context: contextWithNames,
         });
       
       if (error) throw error;

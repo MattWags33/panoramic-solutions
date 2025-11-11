@@ -1,0 +1,513 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-11T22:00:00Z",
+  "type": "ERROR_RESOLUTION",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool Finder",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "related_systems": ["Supabase Analytics", "PostgreSQL", "Next.js Frontend"]
+  },
+  "summary": {
+    "issue": "Multiple 404 and 400 network errors in production analytics tracking",
+    "impact": "All user analytics tracking was failing - no data being collected",
+    "resolution": "Moved RPC functions to correct schema and added auto-user-creation resilience",
+    "status": "RESOLVED",
+    "date_fixed": "2025-11-11",
+    "migrations_applied": [
+      "move_ensure_and_track_email_to_analytics_schema",
+      "add_auto_user_creation_tracking_functions_v2"
+    ]
+  },
+  "errors_fixed": [
+    {
+      "error_id": "analytics_001",
+      "error_type": "404_NOT_FOUND",
+      "endpoint": "/rest/v1/rpc/ensure_analytics_user",
+      "http_status": 404,
+      "network_url": "https://vfqxzqhitumrxshrcqwr.supabase.co/rest/v1/rpc/ensure_analytics_user",
+      "request_method": "POST",
+      "description": "ensure_analytics_user function not found in analytics schema",
+      "root_cause": {
+        "issue": "Function existed in 'public' schema but code called it from 'analytics' schema",
+        "technical_details": "Frontend code: .schema('analytics').rpc('ensure_analytics_user') but function was CREATE FUNCTION public.ensure_analytics_user",
+        "why_it_happened": "Functions were created in public schema during initial development but never migrated when analytics schema was introduced"
+      },
+      "impact": {
+        "severity": "CRITICAL",
+        "affected_features": [
+          "User session tracking",
+          "Page view analytics",
+          "All downstream analytics (depends on user record)"
+        ],
+        "user_facing": false,
+        "data_loss": "All analytics data from 2025-11-01 to 2025-11-11 lost"
+      },
+      "resolution": {
+        "action": "Moved function from public to analytics schema",
+        "migration_file": "move_ensure_and_track_email_to_analytics_schema.sql",
+        "changes": [
+          "DROP FUNCTION public.ensure_analytics_user",
+          "CREATE FUNCTION analytics.ensure_analytics_user with same logic",
+          "Updated search_path to 'analytics', 'public'",
+          "Added EXCEPTION handler for graceful degradation"
+        ],
+        "verification": "Function now accessible via SELECT analytics.ensure_analytics_user(...)"
+      }
+    },
+    {
+      "error_id": "analytics_002",
+      "error_type": "404_NOT_FOUND",
+      "endpoint": "/rest/v1/rpc/track_email_report_send",
+      "http_status": 404,
+      "network_url": "https://vfqxzqhitumrxshrcqwr.supabase.co/rest/v1/rpc/track_email_report_send",
+      "request_method": "POST",
+      "description": "track_email_report_send function not found in analytics schema",
+      "root_cause": {
+        "issue": "Function existed in 'public' schema but code called it from 'analytics' schema",
+        "technical_details": "Frontend code: .schema('analytics').rpc('track_email_report_send') but function was CREATE FUNCTION public.track_email_report_send",
+        "why_it_happened": "Same root cause as analytics_001 - schema inconsistency"
+      },
+      "impact": {
+        "severity": "CRITICAL",
+        "affected_features": [
+          "Email report conversion tracking",
+          "Lead capture analytics",
+          "Revenue funnel metrics"
+        ],
+        "user_facing": false,
+        "data_loss": "No email report conversions tracked since 2025-11-01"
+      },
+      "resolution": {
+        "action": "Moved function from public to analytics schema",
+        "migration_file": "move_ensure_and_track_email_to_analytics_schema.sql",
+        "changes": [
+          "DROP FUNCTION public.track_email_report_send (both overloads)",
+          "CREATE FUNCTION analytics.track_email_report_send with auto-user-creation",
+          "Added fallback to create user if doesn't exist",
+          "Added EXCEPTION handler for graceful degradation"
+        ],
+        "verification": "Function now accessible via SELECT analytics.track_email_report_send(...)"
+      }
+    },
+    {
+      "error_id": "analytics_003",
+      "error_type": "400_BAD_REQUEST",
+      "endpoint": "/rest/v1/rpc/track_tool_action",
+      "http_status": 400,
+      "network_url": "https://vfqxzqhitumrxshrcqwr.supabase.co/rest/v1/rpc/track_tool_action",
+      "request_method": "POST",
+      "description": "track_tool_action failing with 'User not found' exception",
+      "root_cause": {
+        "issue": "Function threw EXCEPTION when user didn't exist",
+        "technical_details": "IF v_user_id IS NULL THEN RAISE EXCEPTION 'User not found for session_id: %'",
+        "why_it_happened": "ensure_analytics_user was failing (404), so no users were being created, causing cascading failures"
+      },
+      "impact": {
+        "severity": "HIGH",
+        "affected_features": [
+          "Tool click tracking (Try Free, Compare, View Details)",
+          "Tool impression tracking",
+          "User engagement metrics",
+          "Tool popularity rankings"
+        ],
+        "user_facing": false,
+        "data_loss": "All tool interaction data lost from 2025-11-01 to 2025-11-11"
+      },
+      "resolution": {
+        "action": "Added auto-user-creation and error handling",
+        "migration_file": "add_auto_user_creation_tracking_functions_v2.sql",
+        "changes": [
+          "Replace RAISE EXCEPTION with auto-creation: v_user_id := analytics.ensure_analytics_user(p_session_id)",
+          "Return NULL instead of throwing exception on error",
+          "Added EXCEPTION handler to catch and log errors",
+          "Changed RAISE EXCEPTION to RAISE WARNING for non-critical errors"
+        ],
+        "verification": "Function now returns UUID on success, NULL on error (graceful degradation)"
+      }
+    },
+    {
+      "error_id": "analytics_004",
+      "error_type": "400_BAD_REQUEST",
+      "endpoint": "/rest/v1/rpc/track_question_response",
+      "http_status": 400,
+      "network_url": "https://vfqxzqhitumrxshrcqwr.supabase.co/rest/v1/rpc/track_question_response",
+      "request_method": "POST",
+      "description": "track_question_response failing with 'User not found' exception",
+      "root_cause": {
+        "issue": "Function threw EXCEPTION when user didn't exist",
+        "technical_details": "Same pattern as track_tool_action - hard failure on missing user",
+        "why_it_happened": "Cascading failure from ensure_analytics_user 404 error"
+      },
+      "impact": {
+        "severity": "HIGH",
+        "affected_features": [
+          "Guided ranking question responses",
+          "Partial ranking completion tracking",
+          "Full guided ranking completion tracking",
+          "User preference analytics"
+        ],
+        "user_facing": false,
+        "data_loss": "All guided ranking interaction data lost from 2025-11-01 to 2025-11-11"
+      },
+      "resolution": {
+        "action": "Added auto-user-creation and error handling to both overloaded versions",
+        "migration_file": "add_auto_user_creation_tracking_functions_v2.sql",
+        "changes": [
+          "Drop both overloaded versions",
+          "Recreate with auto-user-creation logic",
+          "Replace RAISE EXCEPTION with auto-creation",
+          "Added EXCEPTION handlers to both versions",
+          "Return NULL instead of throwing exception"
+        ],
+        "verification": "Both function overloads now handle missing users gracefully"
+      }
+    }
+  ],
+  "technical_details": {
+    "database": {
+      "system": "PostgreSQL 15.8 on Supabase",
+      "project_id": "vfqxzqhitumrxshrcqwr",
+      "region": "us-east-1",
+      "schemas": {
+        "analytics": {
+          "purpose": "User behavior tracking and analytics",
+          "tables": [
+            "users",
+            "questions",
+            "question_choices",
+            "user_question_responses",
+            "user_criteria_responses",
+            "user_tool_actions",
+            "recommendations",
+            "tool_mapping"
+          ]
+        },
+        "public": {
+          "purpose": "Core application data (tools, criteria, tags)",
+          "tables": [
+            "tools",
+            "criteria",
+            "criteria_tools",
+            "tags",
+            "tag_type",
+            "tag_tools",
+            "email_reports",
+            "contact_submissions"
+          ]
+        }
+      }
+    },
+    "rpc_functions": {
+      "moved_to_analytics_schema": [
+        {
+          "name": "ensure_analytics_user",
+          "arguments": "p_session_id text, p_ip_address inet, p_user_agent text, p_referrer_url text, p_utm_source text, p_utm_medium text, p_utm_campaign text, p_email text, p_first_name text, p_last_name text",
+          "returns": "uuid",
+          "purpose": "Create or update analytics user record",
+          "security": "SECURITY DEFINER",
+          "search_path": "analytics, public"
+        },
+        {
+          "name": "track_email_report_send",
+          "arguments": "p_session_id text, p_email text, p_report_type text, p_num_recommendations integer, p_context jsonb",
+          "returns": "uuid",
+          "purpose": "Track email report conversion events",
+          "security": "SECURITY DEFINER",
+          "search_path": "analytics, public"
+        }
+      ],
+      "updated_with_resilience": [
+        {
+          "name": "track_tool_action",
+          "arguments": "p_session_id text, p_tool_name text, p_action_type text, p_position integer, p_match_score numeric, p_context jsonb",
+          "returns": "uuid",
+          "purpose": "Track tool interactions (click, view_details, compare, try_free, impression, add_to_compare)",
+          "changes": "Auto-creates user if doesn't exist, returns NULL on error instead of throwing exception"
+        },
+        {
+          "name": "track_question_response (overload 1)",
+          "arguments": "p_session_id text, p_question_order integer, p_choice_value text, p_response_text text",
+          "returns": "uuid",
+          "purpose": "Track guided ranking responses by question order",
+          "changes": "Auto-creates user and question if doesn't exist, returns NULL on error"
+        },
+        {
+          "name": "track_question_response (overload 2)",
+          "arguments": "p_session_id text, p_question_id uuid, p_choice_id uuid, p_context jsonb",
+          "returns": "uuid",
+          "purpose": "Track guided ranking responses by UUID (backward compatibility)",
+          "changes": "Auto-creates user if doesn't exist, returns NULL on error"
+        }
+      ]
+    },
+    "frontend_code": {
+      "file": "src/lib/analytics.ts",
+      "relevant_functions": [
+        "analytics.initializeUser() - calls ensure_analytics_user",
+        "analytics.trackToolClick() - calls track_tool_action",
+        "analytics.trackToolImpression() - calls track_tool_action with 'impression' type",
+        "analytics.trackGuidedRankingAnswer() - calls track_question_response",
+        "analytics.trackEmailReportSend() - calls track_email_report_send"
+      ],
+      "error_handling": "All functions use try-catch with console.warn, never throw to UI"
+    }
+  },
+  "tracking_capabilities": {
+    "now_working": [
+      {
+        "feature": "User Session Tracking",
+        "description": "Track unique users across sessions with fingerprinting",
+        "table": "analytics.users",
+        "function": "ensure_analytics_user"
+      },
+      {
+        "feature": "Tool Impressions",
+        "description": "Track when tools are displayed to users",
+        "table": "analytics.user_tool_actions (action_type='impression')",
+        "function": "track_tool_action",
+        "deduplication": "One impression per tool per session (localStorage cache)"
+      },
+      {
+        "feature": "Tool Clicks",
+        "description": "Track Try Free, Compare, View Details clicks",
+        "table": "analytics.user_tool_actions",
+        "function": "track_tool_action",
+        "deduplication": "1-second debounce per action"
+      },
+      {
+        "feature": "Guided Ranking Questions",
+        "description": "Track each question answer in guided ranking flow",
+        "table": "analytics.user_question_responses",
+        "function": "track_question_response",
+        "supports": "Partial and full guided ranking completion tracking"
+      },
+      {
+        "feature": "Email Report Conversions",
+        "description": "Track when users request email reports (lead capture)",
+        "table": "analytics.recommendations",
+        "function": "track_email_report_send",
+        "includes": "Tools selected, criteria weights, firmographic data"
+      },
+      {
+        "feature": "Criteria Adjustments",
+        "description": "Track when users manually adjust criteria sliders",
+        "table": "analytics.user_criteria_responses",
+        "function": "track_criteria_response"
+      }
+    ],
+    "funnel_stages": {
+      "visitor": "User lands on site (ensure_analytics_user called)",
+      "engaged": "User interacts with tools (track_tool_action called)",
+      "partial_ranking": "User answers at least 1 guided ranking question (has_partial_ranking=true)",
+      "full_ranking": "User completes all guided ranking questions (has_full_ranking=true)",
+      "converted": "User sends email report (has_converted=true, has_sent_report=true)"
+    }
+  },
+  "verification_queries": {
+    "check_users_created": {
+      "query": "SELECT COUNT(*) as total_users, COUNT(*) FILTER (WHERE created_at > '2025-11-11 22:00:00'::timestamptz) as new_users_after_fix FROM analytics.users;",
+      "purpose": "Verify users are being created after fix"
+    },
+    "check_tool_actions": {
+      "query": "SELECT COUNT(*) as total_actions, COUNT(DISTINCT user_id) as unique_users, action_type, COUNT(*) as count FROM analytics.user_tool_actions WHERE created_at > '2025-11-11 22:00:00'::timestamptz GROUP BY action_type ORDER BY count DESC;",
+      "purpose": "Verify tool actions are being tracked"
+    },
+    "check_question_responses": {
+      "query": "SELECT COUNT(*) as total_responses, COUNT(DISTINCT user_id) as unique_users FROM analytics.user_question_responses WHERE answered_at > '2025-11-11 22:00:00'::timestamptz;",
+      "purpose": "Verify guided ranking questions are being tracked"
+    },
+    "check_email_reports": {
+      "query": "SELECT COUNT(*) as total_reports, COUNT(DISTINCT user_id) as unique_converters FROM analytics.recommendations WHERE created_at > '2025-11-11 22:00:00'::timestamptz;",
+      "purpose": "Verify email report conversions are being tracked"
+    },
+    "check_funnel": {
+      "query": "SELECT COUNT(*) as total_users, COUNT(*) FILTER (WHERE is_active=true) as active_users, COUNT(*) FILTER (WHERE has_partial_ranking=true) as partial_ranking, COUNT(*) FILTER (WHERE has_full_ranking=true) as full_ranking, COUNT(*) FILTER (WHERE has_converted=true) as converted FROM analytics.users WHERE created_at > '2025-11-11 22:00:00'::timestamptz;",
+      "purpose": "Verify funnel stage tracking is working"
+    }
+  },
+  "testing_checklist": {
+    "production_verification": [
+      {
+        "step": 1,
+        "action": "Visit PPM Tool Finder page",
+        "expected": "ensure_analytics_user called, user record created in analytics.users",
+        "verify": "Check Network tab - POST /rest/v1/rpc/ensure_analytics_user returns 200 OK"
+      },
+      {
+        "step": 2,
+        "action": "Click Compare button on a tool",
+        "expected": "track_tool_action called with action_type='add_to_compare'",
+        "verify": "Check Network tab - POST /rest/v1/rpc/track_tool_action returns 200 OK"
+      },
+      {
+        "step": 3,
+        "action": "Open guided rankings and answer questions",
+        "expected": "track_question_response called for each question",
+        "verify": "Check Network tab - POST /rest/v1/rpc/track_question_response returns 200 OK"
+      },
+      {
+        "step": 4,
+        "action": "Click Apply Rankings in guided flow",
+        "expected": "User funnel flags updated (has_partial_ranking or has_full_ranking)",
+        "verify": "Check analytics.users table for user record with correct flags"
+      },
+      {
+        "step": 5,
+        "action": "Enter email and click Send Report",
+        "expected": "track_email_report_send called, recommendation record created",
+        "verify": "Check Network tab - POST /rest/v1/rpc/track_email_report_send returns 200 OK"
+      },
+      {
+        "step": 6,
+        "action": "Click How It Works overlay",
+        "expected": "ensure_analytics_user called to update last_seen_at",
+        "verify": "No 404 errors in Network tab"
+      }
+    ],
+    "error_scenarios": [
+      {
+        "scenario": "User blocks cookies/localStorage",
+        "expected_behavior": "New session_id generated on each page load, multiple user records created (acceptable degradation)"
+      },
+      {
+        "scenario": "Network timeout or Supabase downtime",
+        "expected_behavior": "Functions return NULL, errors logged to console.warn, UI continues working"
+      },
+      {
+        "scenario": "Invalid data passed to RPC function",
+        "expected_behavior": "Function logs WARNING, returns NULL, no exception thrown"
+      }
+    ]
+  },
+  "performance_improvements": {
+    "deduplication": {
+      "impressions": {
+        "mechanism": "localStorage cache + in-memory Set",
+        "duration": "Per session (until browser refresh)",
+        "benefit": "Prevents duplicate impression tracking on re-renders"
+      },
+      "actions": {
+        "mechanism": "In-memory Map with 1-second debounce",
+        "duration": "1 second window",
+        "benefit": "Prevents double-click spam"
+      }
+    },
+    "error_handling": {
+      "before": "Hard failures with RAISE EXCEPTION → 400 errors → no data",
+      "after": "Graceful degradation with RAISE WARNING → NULL returns → partial data",
+      "benefit": "Analytics failures don't break user experience"
+    },
+    "auto_user_creation": {
+      "before": "User must exist before any tracking can occur",
+      "after": "Users auto-created on first tracking call",
+      "benefit": "More resilient to race conditions and initialization failures"
+    }
+  },
+  "monitoring": {
+    "metrics_to_track": [
+      {
+        "metric": "Analytics RPC Success Rate",
+        "query": "SELECT function_name, COUNT(*) FILTER (WHERE error IS NULL) * 100.0 / COUNT(*) as success_rate FROM pg_stat_statements WHERE query LIKE '%analytics.%' GROUP BY function_name;",
+        "threshold": "> 95%"
+      },
+      {
+        "metric": "User Creation Rate",
+        "query": "SELECT DATE_TRUNC('hour', created_at) as hour, COUNT(*) as new_users FROM analytics.users WHERE created_at > NOW() - INTERVAL '24 hours' GROUP BY hour ORDER BY hour;",
+        "threshold": "> 0 per hour"
+      },
+      {
+        "metric": "Conversion Rate",
+        "query": "SELECT COUNT(*) FILTER (WHERE has_converted=true) * 100.0 / NULLIF(COUNT(*), 0) as conversion_rate FROM analytics.users WHERE created_at > NOW() - INTERVAL '7 days';",
+        "threshold": "> 1%"
+      }
+    ],
+    "alerts": [
+      {
+        "alert": "Analytics RPC 404 Errors",
+        "condition": "Any 404 on /rest/v1/rpc/ensure_analytics_user or /rest/v1/rpc/track_*",
+        "severity": "CRITICAL",
+        "action": "Check function exists in analytics schema"
+      },
+      {
+        "alert": "Analytics RPC 400 Errors",
+        "condition": "> 5% of analytics RPCs return 400",
+        "severity": "HIGH",
+        "action": "Check function error logs in Supabase Dashboard"
+      },
+      {
+        "alert": "No New Users",
+        "condition": "Zero new users in analytics.users for > 1 hour",
+        "severity": "HIGH",
+        "action": "Check ensure_analytics_user is being called"
+      }
+    ]
+  },
+  "lessons_learned": [
+    {
+      "lesson": "Schema consistency is critical",
+      "detail": "Always ensure RPC functions are in the schema where the frontend expects them. Use consistent schema references in both CREATE FUNCTION and frontend .schema() calls."
+    },
+    {
+      "lesson": "Fail gracefully in analytics",
+      "detail": "Analytics failures should NEVER break the user experience. Use RAISE WARNING + RETURN NULL instead of RAISE EXCEPTION."
+    },
+    {
+      "lesson": "Auto-create dependencies",
+      "detail": "Instead of requiring strict ordering (user must exist before tracking), auto-create dependencies when possible."
+    },
+    {
+      "lesson": "Test production schemas early",
+      "detail": "Development might work with different function locations due to search_path differences. Always test schema-qualified calls."
+    },
+    {
+      "lesson": "Document schema architecture",
+      "detail": "Maintain JSON documentation of which functions belong in which schemas and why."
+    }
+  ],
+  "related_documentation": [
+    {
+      "file": "Docs/json/supabase-security-fixes-complete-2025-11-11.json",
+      "description": "Previous Supabase fixes for security and performance"
+    },
+    {
+      "file": "src/lib/analytics.ts",
+      "description": "Frontend analytics service implementation"
+    },
+    {
+      "file": "supabase/migrations/move_ensure_and_track_email_to_analytics_schema.sql",
+      "description": "Migration that moved functions to analytics schema"
+    },
+    {
+      "file": "supabase/migrations/add_auto_user_creation_tracking_functions_v2.sql",
+      "description": "Migration that added resilience and auto-user-creation"
+    }
+  ],
+  "future_improvements": [
+    {
+      "improvement": "Batch tracking for performance",
+      "description": "Instead of individual RPC calls, batch multiple tracking events into single call",
+      "priority": "MEDIUM",
+      "estimated_effort": "4 hours"
+    },
+    {
+      "improvement": "Real-time analytics dashboard",
+      "description": "Admin dashboard showing live analytics metrics and user funnels",
+      "priority": "HIGH",
+      "estimated_effort": "2 days"
+    },
+    {
+      "improvement": "A/B test framework",
+      "description": "Built-in A/B testing with analytics tracking for variant performance",
+      "priority": "LOW",
+      "estimated_effort": "1 week"
+    },
+    {
+      "improvement": "Error rate alerting",
+      "description": "Automated Slack/email alerts when analytics error rate exceeds threshold",
+      "priority": "HIGH",
+      "estimated_effort": "4 hours"
+    }
+  ]
+}
+

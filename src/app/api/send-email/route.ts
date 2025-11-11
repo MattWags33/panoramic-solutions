@@ -1252,11 +1252,12 @@ Create a unique, varied description for ${tool.name} that stands out from other 
     
     if (supabase) {
       try {
-        console.log('💾 Storing email report in Supabase...');
+        console.log('💾 Storing/updating email report in Supabase...');
+        // Use UPSERT to update existing record or insert new one (prevents duplicate marketing emails)
         const { data: reportData, error: dbError } = await supabase
           .from('email_reports')
-          .insert({
-            user_email: userEmail,
+          .upsert({
+            user_email: userEmail, // Primary key for conflict resolution
             first_name: firstName,
             last_name: lastName,
             email_hash: emailHash,
@@ -1281,6 +1282,9 @@ Create a unique, varied description for ${tool.name} that stands out from other 
             departments: marketingData.departments,
             methodologies: marketingData.methodologies,
             has_guided_data: marketingData.has_guided_data
+          }, {
+            onConflict: 'user_email', // Update existing record with same email
+            ignoreDuplicates: false // Always update, don't ignore
           });
 
         if (dbError) {
