@@ -80,6 +80,48 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
     return [...selectedTools].sort((a, b) => calculateToolScore(b) - calculateToolScore(a));
   }, [selectedTools, calculateToolScore]);
 
+  // Track tool impressions when tools are displayed (once per mount)
+  const [impressionsTracked, setImpressionsTracked] = React.useState(false);
+  
+  React.useEffect(() => {
+    // ✅ FIXED: Only track impressions once per component mount
+    if (impressionsTracked || sortedTools.length === 0) return;
+    
+    // Track impressions for all visible tools (fire-and-forget)
+    sortedTools.forEach((tool, index) => {
+      try {
+        const matchScore = calculateToolScore(tool);
+        const matchCount = getMatchCount(tool);
+        
+        // Build competing tools array (top 5 tools with scores)
+        const competingTools = sortedTools.slice(0, 5).map((t) => ({
+          toolId: t.id,
+          toolName: t.name,
+          score: calculateToolScore(t)
+        }));
+        
+        // ✅ Deduplication handled inside trackToolImpression
+        analytics.trackToolImpression({
+          toolId: tool.id,
+          toolName: tool.name,
+          position: index + 1,
+          matchScore: matchScore,
+          matchBreakdown: {
+            match_count: matchCount,
+            total_criteria: selectedCriteria.length,
+            match_percentage: selectedCriteria.length > 0 ? (matchCount / selectedCriteria.length) * 100 : 0
+          },
+          competingTools: competingTools
+        });
+      } catch (error) {
+        console.warn('Failed to track tool impression:', error);
+      }
+    });
+    
+    // ✅ Mark as tracked to prevent re-runs
+    setImpressionsTracked(true);
+  }, [sortedTools, calculateToolScore, getMatchCount, selectedCriteria.length, impressionsTracked]); // ✅ All dependencies included
+
   // Set up tool order shuffle animation - triggers when sortedTools order changes
   useToolOrderShuffle(sortedTools, shuffleAnimation, {
     triggerOnChange: true
@@ -304,12 +346,12 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="flex items-center justify-center space-x-2"
-                          onClick={() => {
+                          onClick={async () => {
                             // Calculate match score
                             const matchScore = calculateToolScore(tool);
                             
-                            // Track Try Free click in Supabase (MONETIZATION KEY)
-                            analytics.trackToolClick({
+                            // ✅ Track in Supabase first (with deduplication)
+                            const tracked = await analytics.trackToolClick({
                               toolId: tool.id,
                               toolName: tool.name,
                               actionType: 'try_free',
@@ -321,21 +363,23 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                               }
                             });
                             
-                            // Track in PostHog (HIGHEST INTENT - MONETIZATION KEY)
-                            trackToolTryFreeClick({
-                              tool_id: tool.id,
-                              tool_name: tool.name,
-                              position: index + 1,
-                              match_score: matchScore,
-                              criteria_rankings: selectedCriteria.reduce((acc, c) => ({...acc, [c.id]: c.userRating}), {})
-                            });
-                            
-                            // Track as active user
-                            checkAndTrackNewActive('try_free_clicked', {
-                              tool_id: tool.id,
-                              tool_name: tool.name,
-                              position: index + 1
-                            });
+                            // ✅ Only track in PostHog if Supabase succeeded
+                            if (tracked) {
+                              trackToolTryFreeClick({
+                                tool_id: tool.id,
+                                tool_name: tool.name,
+                                position: index + 1,
+                                match_score: matchScore,
+                                criteria_rankings: selectedCriteria.reduce((acc, c) => ({...acc, [c.id]: c.userRating}), {})
+                              });
+                              
+                              // Track as active user
+                              checkAndTrackNewActive('try_free_clicked', {
+                                tool_id: tool.id,
+                                tool_name: tool.name,
+                                position: index + 1
+                              });
+                            }
                           }}
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -349,12 +393,12 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                     variant="outline" 
                     size="sm" 
                     className="flex-1 sm:flex-initial border-alpine-blue-200 text-alpine-blue-600 hover:bg-alpine-blue-50"
-                    onClick={() => {
+                    onClick={async () => {
                       // Calculate match score
                       const matchScore = calculateToolScore(tool);
                       
-                      // Track Add to Compare click in Supabase (MONETIZATION KEY)
-                      analytics.trackToolClick({
+                      // ✅ Track in Supabase first (with deduplication)
+                      const tracked = await analytics.trackToolClick({
                         toolId: tool.id,
                         toolName: tool.name,
                         actionType: 'add_to_compare',
@@ -366,21 +410,23 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                         }
                       });
                       
-                      // Track in PostHog (EVALUATION MODE)
-                      trackToolAddToCompareClick({
-                        tool_id: tool.id,
-                        tool_name: tool.name,
-                        position: index + 1,
-                        match_score: matchScore,
-                        comparing_with: sortedTools.slice(0, 3).map(t => t.name).filter(n => n !== tool.name)
-                      });
-                      
-                      // Track as active user
-                      checkAndTrackNewActive('add_to_compare_clicked', {
-                        tool_id: tool.id,
-                        tool_name: tool.name,
-                        position: index + 1
-                      });
+                      // ✅ Only track in PostHog if Supabase succeeded
+                      if (tracked) {
+                        trackToolAddToCompareClick({
+                          tool_id: tool.id,
+                          tool_name: tool.name,
+                          position: index + 1,
+                          match_score: matchScore,
+                          comparing_with: sortedTools.slice(0, 3).map(t => t.name).filter(n => n !== tool.name)
+                        });
+                        
+                        // Track as active user
+                        checkAndTrackNewActive('add_to_compare_clicked', {
+                          tool_id: tool.id,
+                          tool_name: tool.name,
+                          position: index + 1
+                        });
+                      }
                     }}
                   >
                     <Star className="w-4 h-4 mr-2" />
@@ -393,24 +439,12 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                    <AccordionItem value={`details-${tool.id}`} className="border-0">
                     <AccordionTrigger 
                       className="text-sm font-medium text-alpine-blue-600 hover:text-alpine-blue-800 hover:bg-alpine-blue-50 rounded-lg px-3 py-2"
-                      onClick={() => {
+                      onClick={async () => {
                         // Calculate match score
                         const matchScore = calculateToolScore(tool);
                         
-                        // Track tool details expansion for New_Active metric
-                        try {
-                          checkAndTrackNewActive('Active-details', {
-                            component: 'enhanced_recommendation_section',
-                            tool_id: tool.id,
-                            tool_name: tool.name,
-                            interaction_type: 'detailed_breakdown_expanded'
-                          });
-                        } catch (error) {
-                          console.warn('Failed to track tool details expansion:', error);
-                        }
-                        
-                        // Track View Details click in Supabase (MONETIZATION KEY)
-                        analytics.trackToolClick({
+                        // ✅ Track in Supabase first (with deduplication)
+                        const tracked = await analytics.trackToolClick({
                           toolId: tool.id,
                           toolName: tool.name,
                           actionType: 'view_details',
@@ -422,14 +456,29 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                           }
                         });
                         
-                        // Track in PostHog (INTEREST SIGNAL)
-                        trackToolViewDetailsClick({
-                          tool_id: tool.id,
-                          tool_name: tool.name,
-                          position: index + 1,
-                          match_score: matchScore,
-                          expanded: true
-                        });
+                        // ✅ Only track in PostHog if Supabase succeeded
+                        if (tracked) {
+                          // Track in PostHog
+                          trackToolViewDetailsClick({
+                            tool_id: tool.id,
+                            tool_name: tool.name,
+                            position: index + 1,
+                            match_score: matchScore,
+                            expanded: true
+                          });
+                          
+                          // Track as active user
+                          try {
+                            checkAndTrackNewActive('Active-details', {
+                              component: 'enhanced_recommendation_section',
+                              tool_id: tool.id,
+                              tool_name: tool.name,
+                              interaction_type: 'detailed_breakdown_expanded'
+                            });
+                          } catch (error) {
+                            console.warn('Failed to track tool details expansion:', error);
+                          }
+                        }
                       }}
                     >
                       View Detailed Breakdown

@@ -11,6 +11,97 @@ import { supabase } from './supabase';
 // Session ID management
 let cachedSessionId: string | null = null;
 
+// ============================================================================
+// DEDUPLICATION HELPERS
+// ============================================================================
+
+// Impression tracking state (prevents duplicate impressions per session)
+const impressionCache = new Set<string>();
+const IMPRESSION_CACHE_KEY = 'analytics_impressions_tracked';
+
+/**
+ * Check if tool impression was already tracked this session
+ */
+function hasImpressionBeenTracked(toolId: string): boolean {
+  // Check in-memory cache first (fast)
+  if (impressionCache.has(toolId)) return true;
+  
+  // Check localStorage (survives page refreshes within session)
+  if (typeof window === 'undefined') return false;
+  
+  try {
+    const sessionId = getAnalyticsSessionId();
+    const cached = localStorage.getItem(`${IMPRESSION_CACHE_KEY}_${sessionId}`);
+    if (cached) {
+      const trackedTools: string[] = JSON.parse(cached);
+      if (trackedTools.includes(toolId)) {
+        // Sync to in-memory cache
+        impressionCache.add(toolId);
+        return true;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to check impression cache:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * Mark tool impression as tracked
+ */
+function markImpressionTracked(toolId: string): void {
+  // Add to in-memory cache
+  impressionCache.add(toolId);
+  
+  // Persist to localStorage
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const sessionId = getAnalyticsSessionId();
+    const cacheKey = `${IMPRESSION_CACHE_KEY}_${sessionId}`;
+    const cached = localStorage.getItem(cacheKey);
+    const trackedTools: string[] = cached ? JSON.parse(cached) : [];
+    
+    if (!trackedTools.includes(toolId)) {
+      trackedTools.push(toolId);
+      localStorage.setItem(cacheKey, JSON.stringify(trackedTools));
+    }
+  } catch (error) {
+    console.warn('Failed to cache impression:', error);
+  }
+}
+
+// Action deduplication cache (prevents duplicate actions within time window)
+const recentActions = new Map<string, number>();
+const ACTION_DEBOUNCE_MS = 1000; // 1 second
+
+/**
+ * Check if action was recently tracked (within debounce window)
+ */
+function wasActionRecentlyTracked(key: string): boolean {
+  const lastTracked = recentActions.get(key);
+  if (!lastTracked) return false;
+  
+  const now = Date.now();
+  return (now - lastTracked) < ACTION_DEBOUNCE_MS;
+}
+
+/**
+ * Mark action as tracked
+ */
+function markActionTracked(key: string): void {
+  recentActions.set(key, Date.now());
+  
+  // Clean up old entries (older than 5 seconds to prevent memory leaks)
+  const now = Date.now();
+  for (const [k, timestamp] of recentActions.entries()) {
+    if (now - timestamp > 5000) {
+      recentActions.delete(k);
+    }
+  }
+}
+
 /**
  * Get or create analytics session ID
  * Stored in localStorage for persistence across page reloads
@@ -30,6 +121,14 @@ export function getAnalyticsSessionId(): string {
   
   cachedSessionId = sessionId;
   return sessionId;
+}
+
+/**
+ * Generate idempotency token to prevent duplicate tracking events
+ * Used for network retry protection
+ */
+function generateIdempotencyToken(): string {
+  return crypto.randomUUID();
 }
 
 /**
@@ -71,13 +170,15 @@ export const analytics = {
       const sessionId = getAnalyticsSessionId();
       const ip = await getClientIP();
       
-      const { data: userId, error } = await supabase.rpc('ensure_analytics_user', {
-        p_session_id: sessionId,
-        p_ip_address: ip,
-        p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-        p_referrer_url: options?.referrer || (typeof document !== 'undefined' ? document.referrer : null) || null,
-        p_utm_source: options?.utmSource || null,
-        p_utm_medium: options?.utmMedium || null,
+      const { data: userId, error } = await supabase
+        .schema('analytics')
+        .rpc('ensure_analytics_user', {
+          p_session_id: sessionId,
+          p_ip_address: ip,
+          p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+          p_referrer_url: options?.referrer || (typeof document !== 'undefined' ? document.referrer : null) || null,
+          p_utm_source: options?.utmSource || null,
+          p_utm_medium: options?.utmMedium || null,
         p_utm_campaign: options?.utmCampaign || null,
         p_email: options?.email || null,
         p_first_name: options?.firstName || null,
@@ -110,35 +211,41 @@ export const analytics = {
   /**
    * Track criteria ranking change (slider movement)
    * Call whenever user adjusts a criteria slider
-   * Stores in user_criteria_responses junction table
+   * Stores in user_criteria_responses junction table in analytics schema
    */
   async trackCriteriaRanking(options: {
     criteriaId: string;
     criteriaName: string;
     score: number;
     isManual?: boolean;
-  }) {
+  }): Promise<string | null> {
     try {
-      if (!supabase) return; // Supabase not configured
+      if (!supabase) return null; // Supabase not configured
       
       const sessionId = getAnalyticsSessionId();
       
-      const { error } = await supabase.rpc('track_criteria_response', {
-        p_session_id: sessionId,
-        p_criteria_name: options.criteriaName,
-        p_rating: Math.round(options.score), // Ensure integer rating
-      });
+      // Call analytics schema function (returns uuid)
+      const { data: responseId, error } = await supabase
+        .schema('analytics')
+        .rpc('track_criteria_response', {
+          p_session_id: sessionId,
+          p_criteria_name: options.criteriaName,
+          p_rating: Math.round(options.score), // Ensure integer rating
+          p_is_manual: options.isManual ?? true,
+        });
       
       if (error) throw error;
+      return responseId;
     } catch (error) {
       console.warn('Analytics tracking failed (trackCriteriaRanking):', error);
+      return null;
     }
   },
 
   /**
    * Track guided ranking answer
    * Call for each question answered in the guided ranking flow
-   * Stores in user_question_responses junction table
+   * Stores in user_question_responses junction table in analytics schema
    */
   async trackGuidedRankingAnswer(options: {
     questionId: string;
@@ -147,43 +254,54 @@ export const analytics = {
     questionText?: string;
     affectsCriteria?: string;
     isComplete?: boolean;
-  }) {
+  }): Promise<string | null> {
     try {
-      if (!supabase) return; // Supabase not configured
+      if (!supabase) return null; // Supabase not configured
       
       const sessionId = getAnalyticsSessionId();
+      let lastResponseId: string | null = null;
       
       // For multiple choice questions, we may need to track multiple responses
       if (Array.isArray(options.answer)) {
         // Track each selected option separately
         for (const value of options.answer) {
-          const { error } = await supabase.rpc('track_question_response', {
-            p_session_id: sessionId,
-            p_question_order: options.questionOrder,
-            p_choice_value: String(value),
-            p_response_text: null,
-          });
+          const { data: responseId, error } = await supabase
+            .schema('analytics')
+            .rpc('track_question_response', {
+              p_session_id: sessionId,
+              p_question_order: options.questionOrder,
+              p_choice_value: String(value),
+              p_response_text: null,
+            });
           if (error) throw error;
+          lastResponseId = responseId;
         }
       } else {
-        // Single choice or text response
-        const { error } = await supabase.rpc('track_question_response', {
-          p_session_id: sessionId,
-          p_question_order: options.questionOrder,
-          p_choice_value: typeof options.answer === 'string' ? null : String(options.answer),
-          p_response_text: typeof options.answer === 'string' ? options.answer : null,
-        });
+        // Single choice or text response - call analytics schema function
+        const { data: responseId, error } = await supabase
+          .schema('analytics')
+          .rpc('track_question_response', {
+            p_session_id: sessionId,
+            p_question_order: options.questionOrder,
+            p_choice_value: typeof options.answer === 'string' ? options.answer : String(options.answer),
+            p_response_text: typeof options.answer === 'string' ? options.answer : null,
+          });
         if (error) throw error;
+        lastResponseId = responseId;
       }
+      
+      return lastResponseId;
     } catch (error) {
       console.warn('Analytics tracking failed (trackGuidedRankingAnswer):', error);
+      return null;
     }
   },
 
   /**
    * Track tool interaction (MONETIZATION KEY)
    * Call when user interacts with tools: Try Free, Add to Compare, View Details, Click
-   * Stores in user_tool_actions junction table
+   * Stores in user_tool_actions junction table in analytics schema
+   * Includes debouncing to prevent duplicate tracking
    */
   async trackToolClick(options: {
     toolId: string;
@@ -192,61 +310,119 @@ export const analytics = {
     position?: number;
     matchScore?: number;
     context?: Record<string, any>;
-  }) {
+  }): Promise<string | null> {
     try {
-      if (!supabase) return; // Supabase not configured
+      if (!supabase) return null; // Supabase not configured
       
       const sessionId = getAnalyticsSessionId();
       
-      // Map action types to our schema
-      const actionTypeMap = {
-        'add_to_compare': 'compare',
+      // ✅ DEBOUNCING: Generate unique key for this action
+      const actionKey = `${sessionId}:${options.toolId}:${options.actionType}`;
+      
+      // ✅ Check if recently tracked (within 1 second)
+      if (wasActionRecentlyTracked(actionKey)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.debug(`[Analytics] Action ${options.actionType} on ${options.toolName} was recently tracked, skipping`);
+        }
+        return null;
+      }
+      
+      // Map action types to our schema (database now supports add_to_compare and impression)
+      const actionTypeMap: Record<string, string> = {
+        'add_to_compare': 'add_to_compare',
         'try_free': 'try_free',
         'view_details': 'view_details',
-        'click': 'click'
+        'click': 'click',
+        'impression': 'impression',
+        'compare': 'compare'
       };
       
-      const { error } = await supabase.rpc('track_tool_action', {
-        p_session_id: sessionId,
-        p_tool_name: options.toolName,
-        p_action_type: actionTypeMap[options.actionType] || 'click',
-        p_position: options.position || null,
-        p_match_score: options.matchScore || null,
-        p_context: options.context || {},
-      });
+      // Call analytics schema function (returns uuid)
+      const { data: actionId, error} = await supabase
+        .schema('analytics')
+        .rpc('track_tool_action', {
+          p_session_id: sessionId,
+          p_tool_name: options.toolName,
+          p_action_type: actionTypeMap[options.actionType] || 'click',
+          p_position: options.position || null,
+          p_match_score: options.matchScore || null,
+          p_context: options.context || {},
+        });
       
       if (error) throw error;
+      
+      // ✅ Mark as tracked AFTER successful write
+      if (actionId) {
+        markActionTracked(actionKey);
+        if (process.env.NODE_ENV === 'development') {
+          console.debug(`[Analytics] ✅ Tracked ${options.actionType} for ${options.toolName}`);
+        }
+      }
+      
+      return actionId;
     } catch (error) {
       console.warn('Analytics tracking failed (trackToolClick):', error);
+      return null;
     }
   },
 
   /**
-   * Track tool impression
+   * Track tool impression (NEW - proper impression tracking)
    * Call when tool is displayed in recommendation results
-   * Now consolidated into trackToolClick with action_type: 'impression'
+   * Uses dedicated impression tracking function with deduplication
    */
   async trackToolImpression(options: {
     toolId: string;
-    toolName?: string;
+    toolName: string;
     position: number;
     matchScore: number;
     matchBreakdown?: Record<string, any>;
     competingTools?: Array<{ toolId: string; toolName: string; score: number }>;
-  }) {
-    // Use the unified tool action tracking
-    await this.trackToolClick({
-      toolId: options.toolId,
-      toolName: options.toolName || 'Unknown',
-      actionType: 'click', // Impression treated as implicit click
-      position: options.position,
-      matchScore: options.matchScore,
-      context: {
-        type: 'impression',
-        match_breakdown: options.matchBreakdown,
-        competing_tools: options.competingTools
+  }): Promise<string | null> {
+    try {
+      // ✅ DEDUPLICATION: Check if already tracked this session
+      if (hasImpressionBeenTracked(options.toolId)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.debug(`[Analytics] Impression already tracked for ${options.toolName}, skipping`);
+        }
+        return null;
       }
-    });
+      
+      if (!supabase) return null; // Supabase not configured
+      
+      const sessionId = getAnalyticsSessionId();
+      
+      // Track impression using track_tool_action with 'impression' type
+      const { data: actionId, error } = await supabase
+        .schema('analytics')
+        .rpc('track_tool_action', {
+          p_session_id: sessionId,
+          p_tool_name: options.toolName,
+          p_action_type: 'impression',
+          p_position: options.position || null,
+          p_match_score: options.matchScore || null,
+          p_context: {
+            type: 'impression',
+            match_breakdown: options.matchBreakdown || {},
+          competing_tools: options.competingTools || []
+        },
+      });
+      
+      if (error) throw error;
+      
+      // ✅ Mark as tracked AFTER successful database write
+      if (actionId) {
+        markImpressionTracked(options.toolId);
+        if (process.env.NODE_ENV === 'development') {
+          console.debug(`[Analytics] ✅ Tracked impression for ${options.toolName}`);
+        }
+      }
+      
+      return actionId;
+    } catch (error) {
+      console.warn('Analytics tracking failed (trackToolImpression):', error);
+      return null;
+    }
   },
 
   /**
@@ -268,14 +444,16 @@ export const analytics = {
       
       const sessionId = getAnalyticsSessionId();
       
-      const { data: recommendationId, error } = await supabase.rpc('track_recommendation_sent', {
-        p_session_id: sessionId,
-        p_email: options.email,
-        p_first_name: options.firstName || null,
-        p_last_name: options.lastName || null,
-        p_recommended_tools: options.tools,
-        p_match_scores: options.matchScores || [],
-        p_criteria_weights: options.criteria || {},
+      const { data: recommendationId, error } = await supabase
+        .schema('analytics')
+        .rpc('track_recommendation_sent', {
+          p_session_id: sessionId,
+          p_email: options.email,
+          p_first_name: options.firstName || null,
+          p_last_name: options.lastName || null,
+          p_recommended_tools: options.tools,
+          p_match_scores: options.matchScores || [],
+          p_criteria_weights: options.criteria || {},
       });
       
       if (error) throw error;
@@ -295,9 +473,11 @@ export const analytics = {
       if (!supabase) return null; // Supabase not configured
       
       const sid = sessionId || getAnalyticsSessionId();
-      const { data, error } = await supabase.rpc('get_user_analytics', {
-        p_session_id: sid,
-      });
+      const { data, error } = await supabase
+        .schema('analytics')
+        .rpc('get_user_analytics', {
+          p_session_id: sid,
+        });
       
       if (error) throw error;
       return data;
@@ -346,6 +526,90 @@ export const analytics = {
     } catch (error) {
       console.warn('Failed to fetch tool actions:', error);
       return [];
+    }
+  },
+
+  /**
+   * Track department and firmographic data
+   * Call when user provides company information
+   */
+  async trackDepartment(options: {
+    department: string;
+    companySize?: string;
+    industry?: string;
+  }): Promise<string | null> {
+    try {
+      if (!supabase) return null;
+      const sessionId = getAnalyticsSessionId();
+      
+      const { data: userId, error } = await supabase.rpc('update_user_department', {
+        p_session_id: sessionId,
+        p_department: options.department,
+        p_company_size: options.companySize || null,
+        p_industry: options.industry || null,
+      });
+      
+      if (error) throw error;
+      return userId;
+    } catch (error) {
+      console.warn('Analytics tracking failed (trackDepartment):', error);
+      return null;
+    }
+  },
+
+  /**
+   * Get comprehensive session status
+   * Returns all tracking flags and counts for a user session
+   */
+  async getSessionStatus(sessionId?: string): Promise<any> {
+    try {
+      if (!supabase) return null;
+      
+      const sid = sessionId || getAnalyticsSessionId();
+      const { data, error } = await supabase.rpc('get_session_status', {
+        p_session_id: sid,
+      });
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.warn('Failed to fetch session status:', error);
+      return null;
+    }
+  },
+
+  /**
+   * Track email report send (CONVERSION EVENT)
+   * Uses new dedicated function for email report tracking
+   */
+  async trackEmailReportSend(options: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    reportType?: string;
+    numRecommendations?: number;
+    context?: Record<string, any>;
+  }): Promise<string | null> {
+    try {
+      if (!supabase) return null;
+      
+      const sessionId = getAnalyticsSessionId();
+      
+      const { data: reportId, error } = await supabase
+        .schema('analytics')
+        .rpc('track_email_report_send', {
+          p_session_id: sessionId,
+          p_email: options.email,
+          p_report_type: options.reportType || 'full_report',
+          p_num_recommendations: options.numRecommendations || null,
+          p_context: options.context || {},
+        });
+      
+      if (error) throw error;
+      return reportId;
+    } catch (error) {
+      console.warn('Analytics tracking failed (trackEmailReportSend):', error);
+      return null;
     }
   },
 };

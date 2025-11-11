@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, X, Zap, Users, Target, TrendingUp } from 'lucide-react';
 import { Button } from '@/ppm-tool/components/ui/button';
 import { checkAndTrackNewActive } from '@/lib/posthog';
+import { useMobileDetection } from '@/ppm-tool/shared/hooks/useMobileDetection';
+
+type TabType = 'how-it-works' | 'trust';
 
 interface HowItWorksOverlayProps {
   isVisible: boolean;
@@ -75,7 +78,15 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
   onGetStarted,
   onManualRanking
 }) => {
+  const isMobile = useMobileDetection();
+  const [activeTab, setActiveTab] = useState<TabType>('how-it-works');
 
+  // Always reset to 'how-it-works' tab when overlay opens
+  useEffect(() => {
+    if (isVisible) {
+      setActiveTab('how-it-works');
+    }
+  }, [isVisible]);
 
   // Handle body scroll and mobile compatibility
   useEffect(() => {
@@ -122,6 +133,23 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
   if (!isVisible) return null;
   
   return (
+    <>
+      {/* Add CSS for fade-in animation */}
+      <style>{`
+        .fade-in {
+          animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
+      
     <div 
       className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]"
       onClick={(e) => {
@@ -163,17 +191,58 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
             }}
           >
             <div className="p-3 md:p-6 lg:p-8">
-              {/* Header */}
-              <div className="relative text-center mb-4 pr-8">
-                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-3">How It Works</h2>
-              
-              {/* Value Statement - Hidden on Mobile */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100 hidden md:block">
-                <p className="text-sm text-gray-700 leading-relaxed text-center">
-                  Get 100% free personalized recommendations in minutes with our intelligent Project Portfolio Management Tool assessment. Make informed decisions and focus on key features identified through deep research for lasting project portfolio success.
-                </p>
+              {/* Tab Navigation - Desktop Only for Trust Tab */}
+              <div className="relative text-center mb-6 pr-8">
+                <div className="flex items-center justify-center gap-1 mb-4">
+                  <button
+                    onClick={() => setActiveTab('how-it-works')}
+                    className={`
+                      relative px-6 py-2 text-sm md:text-base lg:text-lg font-bold transition-all duration-200
+                      ${activeTab === 'how-it-works'
+                        ? 'text-blue-600'
+                        : 'text-gray-600 hover:text-gray-900'
+                      }
+                    `}
+                  >
+                    How It Works
+                    {activeTab === 'how-it-works' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                    )}
+                  </button>
+                  
+                  {/* Trust Tab - Desktop/Laptop Only */}
+                  {!isMobile && (
+                    <button
+                      onClick={() => setActiveTab('trust')}
+                      className={`
+                        relative px-6 py-2 text-sm md:text-base lg:text-lg font-bold transition-all duration-200
+                        ${activeTab === 'trust'
+                          ? 'text-blue-600'
+                          : 'text-gray-600 hover:text-gray-900'
+                        }
+                      `}
+                    >
+                      Trust
+                      {activeTab === 'trust' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+                      )}
+                    </button>
+                  )}
+                </div>
+                
+                {/* Divider line beneath tabs */}
+                <div className="w-full h-px bg-gray-200 mb-4"></div>
               </div>
-            </div>
+
+              {/* Tab Content - How It Works */}
+              {activeTab === 'how-it-works' && (
+                <div className="fade-in">
+                  {/* Value Statement - Hidden on Mobile */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100 hidden md:block mb-4">
+                    <p className="text-sm text-gray-700 leading-relaxed text-center">
+                      Get 100% free personalized recommendations in minutes with our intelligent Project Portfolio Management Tool assessment. Make informed decisions and focus on key features identified through deep research for lasting project portfolio success.
+                    </p>
+                  </div>
 
             {/* Feature Cards Section - Hidden on Mobile */}
             <div className="mb-6 hidden md:block">
@@ -274,11 +343,161 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                 </div>
               ))}
             </div>
+                </div>
+              )}
+
+              {/* Tab Content - Trust */}
+              {activeTab === 'trust' && (
+                <div className="fade-in space-y-6">
+                  {/* Introduction */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 md:p-6 border border-blue-100">
+                    <p className="text-sm md:text-base text-gray-800 leading-relaxed text-center font-medium">
+                      Panoramic Solutions&apos; PPM Tool Finder is grounded in real-world organizational change management principles backed by decades of research.
+                    </p>
+                  </div>
+
+                  {/* Research Foundation */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">Research Foundation</h3>
+                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                      Our framework draws from leading change management research, including work by organizational development pioneers Warner Burke, George Litwin, and Edgar Schein. These methodologies have been validated through empirical studies and real-world implementations across diverse industries.
+                    </p>
+                  </div>
+
+                  {/* Burke-Litwin Model */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">The Burke-Litwin Model (1992)</h3>
+                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-6">
+                      This comprehensive organizational change framework identifies four distinct approaches to implementing transformational change. Each approach addresses different aspects of organizational dynamics.
+                    </p>
+
+                    {/* Four Change Approaches Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      {/* Weaving */}
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <h4 className="font-bold text-gray-900 text-base mb-3">Weaving</h4>
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <p><span className="font-semibold">Focus:</span> Mutual dependence and collective learning</p>
+                          <p><span className="font-semibold">Approach:</span> Teams work together to integrate new processes while learning from each other&apos;s experiences</p>
+                          <p className="text-xs italic mt-3">Example: Cross-functional teams collaborating on PPM implementation</p>
+                        </div>
+                      </div>
+
+                      {/* Intergroup Interdependence */}
+                      <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                        <h4 className="font-bold text-gray-900 text-base mb-3">Intergroup Interdependence</h4>
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <p><span className="font-semibold">Focus:</span> Group boundaries are interlaced and remain distinct</p>
+                          <p><span className="font-semibold">Approach:</span> Different departments maintain their identity while coordinating closely on shared objectives</p>
+                          <p className="text-xs italic mt-3">Example: IT and PMO collaborating on tool integration</p>
+                        </div>
+                      </div>
+
+                      {/* Inside Out Change */}
+                      <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                        <h4 className="font-bold text-gray-900 text-base mb-3">Inside Out Change</h4>
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <p><span className="font-semibold">Focus:</span> Uphold internal values, beliefs, and relationships</p>
+                          <p><span className="font-semibold">Approach:</span> Change begins with organizational culture and core values, then extends outward to processes</p>
+                          <p className="text-xs italic mt-3">Example: Aligning PPM tool selection with company culture</p>
+                        </div>
+                      </div>
+
+                      {/* Outside In Change */}
+                      <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
+                        <h4 className="font-bold text-gray-900 text-base mb-3">Outside In Change</h4>
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <p><span className="font-semibold">Focus:</span> Focus on external systems, structure, and processes</p>
+                          <p><span className="font-semibold">Approach:</span> Change starts with external requirements and market needs, then adapts internal operations</p>
+                          <p className="text-xs italic mt-3">Example: Selecting PPM tools based on industry standards</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* How We Apply This Research */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">How We Apply This Research</h3>
+                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
+                      Our 7 core criteria are derived from analyzing how successful organizations implement PPM tools across these four change approaches. Each criterion addresses specific organizational needs identified in the research:
+                    </p>
+
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm md:text-base">Scalability</p>
+                          <p className="text-xs md:text-sm text-gray-600">Supports organizational growth across all change approaches, enabling teams to expand without disruption</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm md:text-base">Integrations & Extensibility</p>
+                          <p className="text-xs md:text-sm text-gray-600">Enables intergroup coordination and weaving by connecting disparate systems and teams</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm md:text-base">Ease of Use</p>
+                          <p className="text-xs md:text-sm text-gray-600">Facilitates collective learning and adoption, critical for weaving and inside-out change</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm md:text-base">Flexibility & Customization</p>
+                          <p className="text-xs md:text-sm text-gray-600">Adapts to internal culture and values while meeting external requirements</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm md:text-base">Reporting & Analytics</p>
+                          <p className="text-xs md:text-sm text-gray-600">Provides external visibility and evidence-based decision-making for outside-in change</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm md:text-base">Security & Compliance</p>
+                          <p className="text-xs md:text-sm text-gray-600">Maintains organizational values and meets external regulatory requirements</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm md:text-base">Portfolio Management</p>
+                          <p className="text-xs md:text-sm text-gray-600">Balances strategic priorities across all four change approaches, ensuring alignment between internal values and external demands</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Note */}
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-xs md:text-sm text-gray-600 leading-relaxed text-center">
+                      By grounding our PPM Tool Finder in these proven methodologies, we ensure that your tool selection process considers the full complexity of organizational change, not just technical features.
+                    </p>
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 }; 

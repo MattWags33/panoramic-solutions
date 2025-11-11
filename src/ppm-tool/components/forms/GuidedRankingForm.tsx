@@ -446,6 +446,19 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
       console.warn('Failed to track partial ranking:', error);
     }
     
+    // Track in Supabase analytics (fire-and-forget)
+    try {
+      analytics.trackGuidedRankingAnswer({
+        questionId: questionId,
+        questionOrder: currentStep + 1,
+        answer: value,
+        questionText: question?.text || '',
+        affectsCriteria: question?.isPersonalization ? 'personalization' : Object.keys(question?.criteriaImpact || {}).join(', '),
+      });
+    } catch (error) {
+      console.warn('Failed to track guided ranking in Supabase:', error);
+    }
+    
     if (question?.isMultiSelect) {
       // For multi-select, toggle values in an array
       setAnswers(prev => {

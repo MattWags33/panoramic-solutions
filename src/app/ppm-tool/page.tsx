@@ -40,7 +40,7 @@ export default function PPMToolPage() {
       utmMedium: searchParams?.get('utm_medium') || undefined,
       utmCampaign: searchParams?.get('utm_campaign') || undefined,
     });
-  }, []); // Run once on mount
+  }, [searchParams]); // Track when search params change
 
   // Check URL parameters on mount and when they change
   useEffect(() => {

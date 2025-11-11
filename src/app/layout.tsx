@@ -11,6 +11,7 @@ import { generateSiteMetadata } from '@/shared/utils/seo'
 import { Toaster } from "@/components/ui/toaster"
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/next'
+import { AnalyticsProvider } from '@/components/AnalyticsProvider'
 
 const inter = Inter({ 
   subsets: ['latin'],

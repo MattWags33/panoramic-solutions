@@ -18,6 +18,7 @@ import { ShuffleContainer } from '@/ppm-tool/components/animations/ShuffleContai
 import { AnimatedToolCard } from '@/ppm-tool/components/animations/AnimatedToolCard';
 import { checkAndTrackNewActive } from '@/lib/posthog';
 import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
+import { analytics } from '@/lib/analytics';
 
 
 
@@ -159,6 +160,47 @@ export const ToolSection: React.FC<ToolSectionProps> = ({
       return scoreDiff;
     });
   }, [filteredTools, toolMatchScores, criteriaAdjusted, isHydrated]);
+
+  // Track tool impressions when tools are displayed
+  // Track tool impressions (once per component mount)
+  const [impressionsTracked, setImpressionsTracked] = React.useState(false);
+  
+  React.useEffect(() => {
+    // ✅ FIXED: Only track impressions once per component mount
+    if (impressionsTracked || sortedTools.length === 0 || !isHydrated) return;
+    
+    // Track impressions for all visible tools (fire-and-forget)
+    sortedTools.forEach((tool, index) => {
+      try {
+        const matchScore = toolMatchScores.get(tool.id) || 0;
+        
+        // Build competing tools array (top 5 tools with scores)
+        const competingTools = sortedTools.slice(0, 5).map((t) => ({
+          toolId: t.id,
+          toolName: t.name,
+          score: toolMatchScores.get(t.id) || 0
+        }));
+        
+        // ✅ Deduplication handled inside trackToolImpression
+        analytics.trackToolImpression({
+          toolId: tool.id,
+          toolName: tool.name,
+          position: index + 1,
+          matchScore: matchScore,
+          matchBreakdown: {
+            total_criteria: selectedCriteria.length,
+            criteria_adjusted: criteriaAdjusted
+          },
+          competingTools: competingTools
+        });
+      } catch (error) {
+        console.warn('Failed to track tool impression:', error);
+      }
+    });
+    
+    // ✅ Mark as tracked to prevent re-runs
+    setImpressionsTracked(true);
+  }, [sortedTools, isHydrated, criteriaAdjusted, impressionsTracked, selectedCriteria.length, toolMatchScores]); // ✅ All dependencies included
 
   // Combine both disable sources (prop-based and imperative)
   const isShuffleDisabled = disableAutoShuffle || localDisableShuffle;

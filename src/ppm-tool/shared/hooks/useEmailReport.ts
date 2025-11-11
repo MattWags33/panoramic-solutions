@@ -193,45 +193,58 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         // Don't fail the email send for PostHog tracking issues
       }
       
-      // Track Supabase report sent (CONVERSION EVENT - fire-and-forget)
+      // Track Supabase email report send (CONVERSION EVENT - fire-and-forget)
       try {
-        // Build criteria rankings object
-        const criteriaRankings = data.selectedCriteria.reduce((acc, criterion) => {
-          acc[criterion.id] = criterion.userRating;
-          return acc;
-        }, {} as Record<string, number>);
+        // Build context object with all relevant data
+        const contextData = {
+          tool_count: data.selectedTools.length,
+          criteria_count: data.selectedCriteria.length,
+          has_chart: !!chartImageUrl,
+          guided_ranking_used: !!guidedRankingAnswers,
+          personalization_used: !!personalizationData,
+          test_mode: isTestMode,
+          tools: data.selectedTools.map((tool, index) => ({
+            id: tool.id,
+            name: tool.name,
+            score: calculateScore(tool, data.selectedCriteria),
+            rank: index + 1
+          })),
+          criteria: data.selectedCriteria.reduce((acc, criterion) => {
+            acc[criterion.id] = criterion.userRating;
+            return acc;
+          }, {} as Record<string, number>),
+          firmographics: personalizationData ? {
+            departments: personalizationData.departments || [],
+            methodologies: personalizationData.methodologies || [],
+            user_count: personalizationData.userCount || null,
+            project_volume: guidedRankingAnswers?.q1 || null,
+            tasks_per_project: guidedRankingAnswers?.q2 || null,
+            expertise_level: guidedRankingAnswers?.q3 || null
+          } : {}
+        };
         
-        // Build match scores array
-        const matchScores = data.selectedTools.map((tool, index) => ({
-          toolId: tool.id,
-          toolName: tool.name,
-          score: calculateScore(tool, data.selectedCriteria),
-          rank: index + 1
-        }));
-        
-        // Extract firmographics from personalization data
-        const firmographics = personalizationData ? {
-          departments: personalizationData.departments || [],
-          methodologies: personalizationData.methodologies || [],
-          user_count: personalizationData.userCount || null,
-          project_volume: guidedRankingAnswers?.q1 || null,
-          tasks_per_project: guidedRankingAnswers?.q2 || null,
-          expertise_level: guidedRankingAnswers?.q3 || null
-        } : {};
-        
-        const recommendationId = await analytics.trackReportSent({
+        // Use new trackEmailReportSend function
+        const reportId = await analytics.trackEmailReportSend({
           email: data.userEmail,
           firstName: data.firstName,
           lastName: data.lastName,
-          tools: data.selectedTools.map(t => ({ id: t.id, name: t.name, score: calculateScore(t, data.selectedCriteria) })),
-          criteria: criteriaRankings,
-          matchScores: matchScores,
-          firmographics: firmographics
+          reportType: 'full_report',
+          numRecommendations: data.selectedTools.length,
+          context: contextData
         });
         
-        console.log('📧 Analytics: Report sent tracked with ID:', recommendationId);
+        console.log('📧 Analytics: Email report send tracked with ID:', reportId);
+        
+        // Track department if provided in personalization
+        if (personalizationData?.departments && personalizationData.departments.length > 0) {
+          await analytics.trackDepartment({
+            department: personalizationData.departments[0], // Use first department
+            companySize: personalizationData.userCount ? `${personalizationData.userCount}+ users` : undefined,
+            industry: undefined // Add if we collect this data
+          });
+        }
       } catch (analyticsError) {
-        console.warn('Failed to track Supabase report event:', analyticsError);
+        console.warn('Failed to track Supabase email report event:', analyticsError);
         // Don't fail the email send for analytics tracking issues
       }
       

@@ -134,18 +134,11 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
   const matchDisplay = getMatchScoreDisplay(matchScore);
   const { isTouchDevice } = useUnifiedMobileDetection();
 
-  // Enhanced tracking handlers
+  // Enhanced tracking handlers with optimized dual tracking
   const handleTryFreeClick = async (event: React.MouseEvent) => {
     try {
-      // Track in both PostHog and analytics database
-      trackToolTryFreeClick({
-        tool_id: tool.id,
-        tool_name: tool.name,
-        position: position,
-        match_score: matchScore
-      });
-
-      await analytics.trackToolClick({
+      // ✅ Track in Supabase first (with deduplication)
+      const tracked = await analytics.trackToolClick({
         toolId: tool.id,
         toolName: tool.name,
         actionType: 'try_free',
@@ -153,22 +146,29 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
         matchScore: matchScore,
         context: { criteria_adjusted: criteriaAdjusted }
       });
+
+      // ✅ Only track in PostHog if Supabase tracking succeeded
+      if (tracked) {
+        trackToolTryFreeClick({
+          tool_id: tool.id,
+          tool_name: tool.name,
+          position: position,
+          match_score: matchScore
+        });
+      }
     } catch (error) {
       console.warn('Failed to track try free click:', error);
     }
   };
 
   const handleCompareClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    // ⚠️ CRITICAL: Persist event data before async operations
+    // React nullifies event.currentTarget after the event handler completes
+    const currentTarget = event.currentTarget; // Capture reference before async
+    
     try {
-      // Track in both PostHog and analytics database
-      trackToolAddToCompareClick({
-        tool_id: tool.id,
-        tool_name: tool.name,
-        position: position,
-        match_score: matchScore
-      });
-
-      await analytics.trackToolClick({
+      // ✅ Track in Supabase first (with deduplication)
+      const tracked = await analytics.trackToolClick({
         toolId: tool.id,
         toolName: tool.name,
         actionType: 'add_to_compare',
@@ -179,26 +179,34 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
           currently_compared: isCompared
         }
       });
+
+      // ✅ Only track in PostHog if Supabase tracking succeeded
+      if (tracked) {
+        trackToolAddToCompareClick({
+          tool_id: tool.id,
+          tool_name: tool.name,
+          position: position,
+          match_score: matchScore
+        });
+      }
     } catch (error) {
       console.warn('Failed to track compare click:', error);
     }
 
-    // Call the original handler
-    onCompare?.(event);
+    // Call the original handler with the persisted event
+    // Create a synthetic event with the captured currentTarget
+    const syntheticEvent = {
+      ...event,
+      currentTarget: currentTarget
+    } as React.MouseEvent<HTMLButtonElement>;
+    
+    onCompare?.(syntheticEvent);
   };
 
   const handleViewDetailsClick = async () => {
     try {
-      // Track in both PostHog and analytics database
-      trackToolViewDetailsClick({
-        tool_id: tool.id,
-        tool_name: tool.name,
-        position: position,
-        match_score: matchScore,
-        expanded: !isExpanded
-      });
-
-      await analytics.trackToolClick({
+      // ✅ Track in Supabase first (with deduplication)
+      const tracked = await analytics.trackToolClick({
         toolId: tool.id,
         toolName: tool.name,
         actionType: 'view_details',
@@ -209,6 +217,17 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
           expanding: !isExpanded
         }
       });
+
+      // ✅ Only track in PostHog if Supabase tracking succeeded
+      if (tracked) {
+        trackToolViewDetailsClick({
+          tool_id: tool.id,
+          tool_name: tool.name,
+          position: position,
+          match_score: matchScore,
+          expanded: !isExpanded
+        });
+      }
     } catch (error) {
       console.warn('Failed to track view details click:', error);
     }

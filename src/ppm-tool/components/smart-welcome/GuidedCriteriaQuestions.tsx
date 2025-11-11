@@ -5,6 +5,7 @@ import { ArrowRight, ArrowLeft, ToggleLeft, ToggleRight, Info } from 'lucide-rea
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ppm-tool/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { checkAndTrackNewActive } from '@/lib/posthog';
+import { analytics } from '@/lib/analytics';
 
 interface Question {
   id: string;
@@ -238,6 +239,20 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
       });
     } catch (error) {
       console.warn('Failed to track guided criteria question interaction:', error);
+    }
+    
+    // Track in Supabase analytics (fire-and-forget)
+    try {
+      const question = questions[currentQuestion];
+      analytics.trackGuidedRankingAnswer({
+        questionId: questionId,
+        questionOrder: currentQuestion + 1,
+        answer: value,
+        questionText: question?.text || '',
+        affectsCriteria: Object.keys(question?.criteriaImpact || {}).join(', '),
+      });
+    } catch (error) {
+      console.warn('Failed to track guided criteria question in Supabase:', error);
     }
     
     setAnswers(prev => ({ ...prev, [questionId]: value }));
