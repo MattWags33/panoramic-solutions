@@ -867,7 +867,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
 
   // Handlers for filters
   const handleAddFilterCondition = () => {
-    const newCondition = { id: Date.now().toString(), type: 'Methodology', value: '' };
+    const newCondition: FilterCondition = { id: Date.now().toString(), type: 'Methodology', value: '' };
     setFilterConditions([
       ...filterConditions,
       newCondition,
