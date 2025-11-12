@@ -399,7 +399,7 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                     <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
                       Transparency extends to how the platform operates. PPM Tool Finder is maintained through:
                     </p>
-                    <div className="space-y-3">
+                    <div className="space-y-3 mb-4">
                       <p className="text-sm md:text-base text-gray-700 leading-relaxed">
                         <span className="font-semibold">Consulting & Implementation Services</span> – Delivered by Panoramic Solutions to help teams implement the tools featured in our research.
                       </p>
@@ -410,6 +410,9 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                         <span className="font-semibold">Aggregated Insights</span> – Anonymous, aggregated data may be used to identify market trends. Individual data is never sold or shared without consent.
                       </p>
                     </div>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                      Our goal is to provide clear, data-backed software intelligence, not to sell influence.
+                    </p>
                   </div>
 
                   {/* 5. Our Promise */}
@@ -418,13 +421,6 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                     <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
                     <p className="text-sm md:text-base text-gray-700 leading-relaxed">
                       We are committed to accuracy, independence, and transparency. Our team continually refines the evaluation model, updates tool data, and protects user privacy at every step.
-                    </p>
-                  </div>
-
-                  {/* Bottom Note */}
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <p className="text-xs md:text-sm text-gray-600 leading-relaxed text-center">
-                      Our goal is to provide clear, data-backed software intelligence, not to sell influence.
                     </p>
                   </div>
                 </div>

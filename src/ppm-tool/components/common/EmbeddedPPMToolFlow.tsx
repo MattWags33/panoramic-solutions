@@ -57,6 +57,7 @@ interface EmbeddedPPMToolFlowProps {
   onOpenGuidedRanking?: (criterionId?: string) => void;
   onShowHowItWorks?: () => void;
   guidedButtonRef?: React.RefObject<HTMLButtonElement>;
+  initialView?: string;
 }
 
 interface DbCriterion {
@@ -102,7 +103,8 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   onGuidedRankingComplete: onGuidedRankingCompleteFromParent,
   onOpenGuidedRanking,
   onShowHowItWorks,
-  guidedButtonRef
+  guidedButtonRef,
+  initialView
 }) => {
   // Unified device detection - correctly identifies true mobile devices vs touchscreen laptops
   const { isMobile, isTouchDevice, hasTouch } = useUnifiedMobileDetection();
@@ -203,12 +205,18 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
   // Set initial step - wait for hydration to determine correct starting page
   const [currentStep, setCurrentStep] = useState<string>('');
   
-  // Set correct initial step after hydration based on device detection
+  // Set correct initial step after hydration based on device detection or initialView prop
   useEffect(() => {
     if (isHydrated && !currentStep) {
-      setCurrentStep(isMobile ? 'tools' : 'criteria-tools');
+      // If initialView is provided (e.g., 'chart' from URL), use that
+      if (initialView) {
+        setCurrentStep(initialView);
+      } else {
+        // Otherwise use device-based default
+        setCurrentStep(isMobile ? 'tools' : 'criteria-tools');
+      }
     }
-  }, [isHydrated, isMobile, currentStep]);
+  }, [isHydrated, isMobile, currentStep, initialView]);
   const [criteria, setCriteria] = useState<Criterion[]>([]);
   const [selectedTools, setSelectedTools] = useState<Tool[]>(defaultTools);
   const [removedCriteria, setRemovedCriteria] = useState<Criterion[]>([]);

@@ -18,6 +18,7 @@ export default function PPMToolPage() {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showGuidedRanking, setShowGuidedRanking] = useState(false);
   const [guidedRankingCriterionId, setGuidedRankingCriterionId] = useState<string | undefined>(undefined);
+  const [initialView, setInitialView] = useState<string | undefined>(undefined);
   const guidedButtonRef = useRef<HTMLButtonElement>(null);
   const { trackClick, trackTool, checkAndTrackVisitor, checkAndTrackActive } = usePostHog();
   
@@ -48,6 +49,11 @@ export default function PPMToolPage() {
     if (overlay === 'how-it-works') {
       setShowHowItWorks(true);
       setOverlayOpen(OVERLAY_TYPES.HOW_IT_WORKS);
+    }
+    
+    const view = searchParams?.get('view');
+    if (view === 'chart') {
+      setInitialView('chart');
     }
   }, [searchParams]);
 
@@ -181,6 +187,7 @@ export default function PPMToolPage() {
                 onOpenGuidedRanking={handleOpenGuidedRanking}
                 onShowHowItWorks={handleShowHowItWorks}
                 guidedButtonRef={guidedButtonRef}
+                initialView={initialView}
               />
               
               {/* How It Works Overlay - triggered manually via button or URL parameter */}
