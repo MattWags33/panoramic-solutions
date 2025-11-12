@@ -110,9 +110,22 @@ export const NotYetRankedTooltip: React.FC<NotYetRankedTooltipProps> = ({
           {wrapYourTool && <span>Your Tool</span>}
           <span className="text-gray-500 text-xs">Not Yet Ranked</span>
           <span 
-            className="text-gray-400 hover:text-gray-600 active:text-gray-700 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 cursor-pointer"
+            className="text-gray-400 hover:text-gray-600 active:text-gray-700 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center -m-2 p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
             aria-label="Not Yet Ranked Information"
-            role="img"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              // Allow keyboard activation with Enter or Space
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                // Tooltip is triggered by the parent MobileTooltip component
+              }
+            }}
+            onClick={(e) => {
+              // Prevent triggering parent button when clicking the help icon
+              e.stopPropagation();
+            }}
           >
             <HelpCircle className="w-4 h-4 text-gray-400" />
           </span>

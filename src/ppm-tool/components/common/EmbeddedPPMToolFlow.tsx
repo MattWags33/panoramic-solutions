@@ -217,6 +217,19 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       }
     }
   }, [isHydrated, isMobile, currentStep, initialView]);
+  
+  // Update current step when initialView changes (for URL navigation)
+  useEffect(() => {
+    if (isHydrated && currentStep) {
+      if (initialView) {
+        // URL specifies a view, navigate to it
+        setCurrentStep(initialView);
+      } else if (currentStep === 'chart') {
+        // URL doesn't specify view and we're on chart, go back to default
+        setCurrentStep(isMobile ? 'tools' : 'criteria-tools');
+      }
+    }
+  }, [initialView, isHydrated, isMobile, currentStep]);
   const [criteria, setCriteria] = useState<Criterion[]>([]);
   const [selectedTools, setSelectedTools] = useState<Tool[]>(defaultTools);
   const [removedCriteria, setRemovedCriteria] = useState<Criterion[]>([]);

@@ -49,13 +49,52 @@ export default function PPMToolPage() {
     if (overlay === 'how-it-works') {
       setShowHowItWorks(true);
       setOverlayOpen(OVERLAY_TYPES.HOW_IT_WORKS);
+    } else if (showHowItWorks) {
+      // Reset state when overlay parameter is removed
+      setShowHowItWorks(false);
+      setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
     }
     
     const view = searchParams?.get('view');
     if (view === 'chart') {
       setInitialView('chart');
+    } else if (initialView) {
+      // Reset state when view parameter is removed
+      setInitialView(undefined);
     }
-  }, [searchParams]);
+  }, [searchParams, showHowItWorks, initialView]);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      // Force re-check of URL parameters when browser navigation occurs
+      const url = new URL(window.location.href);
+      const overlay = url.searchParams.get('overlay');
+      const view = url.searchParams.get('view');
+      
+      // Update overlay state
+      if (overlay === 'how-it-works') {
+        setShowHowItWorks(true);
+        setOverlayOpen(OVERLAY_TYPES.HOW_IT_WORKS);
+      } else {
+        setShowHowItWorks(false);
+        setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
+      }
+      
+      // Update view state
+      if (view === 'chart') {
+        setInitialView('chart');
+      } else {
+        setInitialView(undefined);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   // Track new visitor and active user on page load
   useEffect(() => {

@@ -260,7 +260,19 @@ export const NavigationToggle: React.FC<NavigationToggleProps> = ({
                     <button
                     key={step.id}
                     ref={isChartStep ? chartButtonRef : undefined}
-                    onClick={() => onStepChange(step.id)}
+                    onClick={() => {
+                      // Update URL when changing views
+                      const url = new URL(window.location.href);
+                      if (step.id === 'chart') {
+                        url.searchParams.set('view', 'chart');
+                      } else {
+                        url.searchParams.delete('view');
+                      }
+                      window.history.pushState({}, '', url.toString());
+                      
+                      // Trigger step change
+                      onStepChange(step.id);
+                    }}
                     className={cn(
                       'relative py-2 font-bold transition-all duration-300 flex flex-col items-center justify-end',
                       !isHydrated ? 'px-1 text-center h-14 flex-1' : (isMobile ? 'px-1 text-center h-14 flex-1' : 'px-1'),
