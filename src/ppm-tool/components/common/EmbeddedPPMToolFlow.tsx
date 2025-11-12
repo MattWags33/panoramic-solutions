@@ -1280,7 +1280,10 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       } else {
         // Tool is being ADDED - trigger glow
         newSet.add(tool.id);
-        window.dispatchEvent(new CustomEvent('chartToggleGlow'));
+        // Defer event dispatch to after render cycle completes
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('chartToggleGlow'));
+        }, 0);
       }
       return newSet;
     });

@@ -141,6 +141,12 @@ export default function PPMToolPage() {
     
     setShowHowItWorks(false);
     setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
+    
+    // Remove overlay parameter from URL to prevent useEffect from reopening it
+    const url = new URL(window.location.href);
+    url.searchParams.delete('overlay');
+    router.push(url.pathname + url.search);
+    
     setShowGuidedRanking(true); // Directly open guided ranking
   };
 
@@ -157,6 +163,12 @@ export default function PPMToolPage() {
     
     setShowHowItWorks(false);
     setOverlayClosed(OVERLAY_TYPES.HOW_IT_WORKS);
+    
+    // Remove overlay parameter from URL to prevent useEffect from reopening it
+    const url = new URL(window.location.href);
+    url.searchParams.delete('overlay');
+    router.push(url.pathname + url.search);
+    
     // Go directly to manual tool selection
   };
 

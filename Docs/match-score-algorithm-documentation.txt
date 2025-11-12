@@ -1,0 +1,886 @@
+================================================================================
+MATCH SCORE ALGORITHM - COMPLETE DOCUMENTATION
+Panoramic Solutions PPM Tool
+Last Updated: November 12, 2025
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Overview
+2. Core Algorithm Components
+3. Detailed Calculation Process
+4. Scoring Rules and Logic
+5. Display Format (Percentage Conversion)
+6. Data Sources and Integration
+7. Usage Throughout Application
+8. Examples and Edge Cases
+9. Code Location Reference
+
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+The Match Score Algorithm is the core recommendation engine that powers the 
+Panoramic Solutions PPM Tool. It evaluates Project Portfolio Management (PPM) 
+software tools against user-defined criteria to generate personalized 
+recommendations.
+
+Purpose:
+--------
+- Calculate how well each tool matches a user's specific needs
+- Rank tools based on their alignment with user priorities
+- Provide quantitative scores that distinguish between similar tools
+- Enable data-driven decision making for software selection
+
+Score Range:
+------------
+- Internal: 0-10 scale (decimal precision)
+- Display: 0-100% (whole numbers after rounding)
+
+Key Principle:
+--------------
+The algorithm rewards tools that meet or exceed user requirements while 
+applying steep penalties for tools that fall short. This ensures that 
+tools missing critical capabilities are appropriately downweighted.
+
+
+================================================================================
+2. CORE ALGORITHM COMPONENTS
+================================================================================
+
+The algorithm consists of three main components:
+
+A. TOOL RATING RETRIEVAL (getToolRating)
+-----------------------------------------
+Retrieves a tool's capability level for a specific criterion.
+
+Input:
+  - tool: Tool object containing ratings data
+  - criterion: Criterion object or criterion ID
+
+Output:
+  - Number from 1-5 representing tool's capability level
+  - Returns 0 if rating not found
+
+Data Sources (in priority order):
+  1. tool.criteria array (from criteria_tools database table) - PRIMARY SOURCE
+  2. tool.ratings object (for default/legacy tools) - FALLBACK
+
+Rating Scale (1-5):
+  5 = Excellent - Industry-leading capability
+  4 = Good - Strong capability, meets most needs
+  3 = Average - Adequate capability, basic functionality
+  2 = Limited - Minimal capability, gaps exist
+  1 = Poor - Insufficient capability, major limitations
+
+
+B. SCORE CALCULATION (calculateScore)
+--------------------------------------
+Calculates the overall match score for a tool based on all selected criteria.
+
+Input:
+  - tool: Tool object to evaluate
+  - criteria: Array of Criterion objects with user ratings
+
+Output:
+  - Final match score on 0-10 scale (decimal)
+
+Process:
+  1. For each criterion, get tool rating and user rating
+  2. Calculate individual criterion score based on comparison
+  3. Sum all criterion scores
+  4. Calculate average across all criteria
+  5. Apply perfect score threshold if applicable
+
+
+C. PERCENTAGE FORMATTING (formatMatchScorePercentage)
+------------------------------------------------------
+Converts the 0-10 score to a user-friendly percentage display.
+
+Input:
+  - score: Raw score on 0-10 scale
+
+Output:
+  - Object with:
+    * percent: Numeric percentage (0-100)
+    * label: Formatted string (e.g., "93%")
+
+Conversion:
+  - Clamp score to 0-10 range
+  - Multiply by 10 to get percentage (0-100)
+  - Round to nearest whole number
+  - Format as string with % symbol
+
+
+================================================================================
+3. DETAILED CALCULATION PROCESS
+================================================================================
+
+STEP-BY-STEP ALGORITHM EXECUTION
+---------------------------------
+
+For a tool being evaluated against N selected criteria:
+
+INITIALIZATION:
+  totalScore = 0
+  meetsAllCriteria = true
+
+FOR EACH criterion in selectedCriteria:
+
+  STEP 1: Get Tool's Capability Rating
+  -------------------------------------
+  toolRating = getToolRating(tool, criterion)
+  Range: 1-5 (or 0 if not found)
+  
+  STEP 2: Get User's Importance Rating
+  -------------------------------------
+  userRating = criterion.userRating
+  Range: 1-5
+  
+  This represents how important this criterion is to the user:
+    5 = Critical - Must have, non-negotiable
+    4 = High Priority - Very important, strongly preferred
+    3 = Medium Priority - Important, nice to have
+    2 = Low Priority - Somewhat important, optional
+    1 = Minimal Priority - Not critical, minimal weight
+  
+  STEP 3: Check Requirement Met
+  ------------------------------
+  if (toolRating < userRating):
+    meetsAllCriteria = false
+  
+  STEP 4: Calculate Individual Criterion Score
+  ---------------------------------------------
+  
+  CASE A: Tool Meets or Exceeds Requirement (toolRating >= userRating)
+  
+    Base Score: 8 points
+    
+    Excess Capability: min(toolRating - userRating, 2)
+    This rewards tools that exceed requirements, but caps bonus at 2 points
+    
+    Criterion Score = 8 + excess
+    
+    Possible Scores: 8, 9, or 10 points
+    
+    Examples:
+      User needs 3, Tool has 5: excess = min(2, 2) = 2 → Score = 10
+      User needs 4, Tool has 5: excess = min(1, 2) = 1 → Score = 9
+      User needs 5, Tool has 5: excess = min(0, 2) = 0 → Score = 8
+  
+  
+  CASE B: Tool Falls Short of Requirement (toolRating < userRating)
+  
+    Base Score: 7 points
+    
+    Shortfall: userRating - toolRating
+    
+    Penalty: shortfall × 2 (double penalty for each point short)
+    
+    Criterion Score = max(0, 7 - (shortfall × 2))
+    
+    Possible Scores: 7, 5, 3, 1, or 0 points
+    
+    Examples:
+      User needs 5, Tool has 4: shortfall = 1 → Score = 7 - 2 = 5
+      User needs 5, Tool has 3: shortfall = 2 → Score = 7 - 4 = 3
+      User needs 5, Tool has 2: shortfall = 3 → Score = 7 - 6 = 1
+      User needs 5, Tool has 1: shortfall = 4 → Score = 7 - 8 = 0
+      User needs 3, Tool has 2: shortfall = 1 → Score = 7 - 2 = 5
+  
+  STEP 5: Add to Total Score
+  ---------------------------
+  totalScore += criterionScore
+
+END FOR EACH
+
+STEP 6: Calculate Average Score
+--------------------------------
+finalScore = totalScore / criteria.length
+
+This normalizes the score regardless of how many criteria are selected.
+
+STEP 7: Apply Perfect Score Threshold
+--------------------------------------
+if (finalScore >= 9.8):
+  finalScore = 10
+
+This rounds up near-perfect scores to avoid displaying 9.9 when the tool
+effectively meets all requirements with some bonus points.
+
+STEP 8: Return Final Score
+---------------------------
+return finalScore (range: 0-10)
+
+
+================================================================================
+4. SCORING RULES AND LOGIC
+================================================================================
+
+PHILOSOPHICAL PRINCIPLES
+------------------------
+
+1. MEETING REQUIREMENTS IS FUNDAMENTAL
+   Base score of 8/10 for meeting requirements ensures good tools are recognized
+
+2. EXCEEDING REQUIREMENTS IS REWARDED, BUT CAPPED
+   Bonus points (up to 2) prevent over-indexing on excessive capabilities
+   
+3. FALLING SHORT IS HEAVILY PENALIZED
+   Double penalty (2 points per shortfall) emphasizes importance of meeting needs
+   
+4. CONSISTENCY ACROSS CRITERIA
+   All criteria weighted equally within the average calculation
+   User ratings determine the importance bar for each criterion
+   
+5. PERFECT SCORES ARE RARE
+   10/10 score requires either:
+     - Tool exceeds user requirement by 2+ levels on all criteria, OR
+     - Average score >= 9.8 (tool consistently exceeds most requirements)
+
+
+SCORING MATRIX
+--------------
+
+Tool vs User Rating Comparison Chart:
+
+                    USER RATING (Importance)
+                 1     2     3     4     5
+              +-----+-----+-----+-----+-----+
+TOOL      5   | 10  | 10  | 10  |  9  |  8  |
+RATING    4   |  9  |  9  |  9  |  8  |  5  |
+(Capability)  |  8  |  8  |  8  |  5  |  3  |
+          2   |  7  |  7  |  5  |  3  |  1  |
+          1   |  6  |  5  |  3  |  1  |  0  |
+              +-----+-----+-----+-----+-----+
+
+Reading the Matrix:
+- Green zone (8-10): Tool meets or exceeds requirement
+- Yellow zone (5-7): Tool marginally acceptable
+- Red zone (0-4): Tool falls significantly short
+
+Calculation Examples:
+- Tool=5, User=3: excess=2 → 8+2=10
+- Tool=5, User=5: excess=0 → 8+0=8
+- Tool=3, User=5: shortfall=2 → 7-(2×2)=3
+- Tool=1, User=5: shortfall=4 → 7-(4×2)=-1→0
+
+
+MULTI-CRITERIA EXAMPLE
+----------------------
+
+Scenario: Tool evaluated against 4 criteria
+
+Criterion A: User=5, Tool=5 → Score=8  (meets requirement)
+Criterion B: User=4, Tool=5 → Score=9  (exceeds by 1)
+Criterion C: User=3, Tool=5 → Score=10 (exceeds by 2)
+Criterion D: User=5, Tool=4 → Score=5  (falls short by 1)
+
+Total Score: 8 + 9 + 10 + 5 = 32
+Average Score: 32 / 4 = 8.0
+Final Score: 8.0 (doesn't meet 9.8 threshold)
+
+Display: 80%
+
+
+EDGE CASES
+----------
+
+1. ZERO CRITERIA SELECTED
+   Result: Score = 0 (no evaluation possible)
+
+2. TOOL RATING NOT FOUND (toolRating = 0)
+   Result: Treated as falling maximally short
+   Example: User=5, Tool=0 → shortfall=5 → 7-(5×2)=-3→0
+
+3. ALL CRITERIA PERFECTLY MET
+   User=5, Tool=5 for all criteria
+   Result: Every criterion scores 8, average = 8.0, display = 80%
+
+4. ALL CRITERIA MAXIMALLY EXCEEDED
+   User=3, Tool=5 for all criteria
+   Result: Every criterion scores 10, average = 10.0, display = 100%
+
+5. NEAR-PERFECT SCORE
+   Average = 9.85
+   Result: Rounded up to 10.0 (threshold = 9.8), display = 100%
+
+
+================================================================================
+5. DISPLAY FORMAT (PERCENTAGE CONVERSION)
+================================================================================
+
+CONVERSION PROCESS
+------------------
+
+Internal Score (0-10) → Display Score (0-100%)
+
+Formula: displayScore = round((internalScore / 10) × 100)
+
+Examples:
+  9.3 → 93%
+  8.7 → 87%
+  7.5 → 75%
+  10.0 → 100%
+  6.2 → 62%
+
+DISPLAY LOCATIONS
+-----------------
+
+The percentage format is used in:
+
+1. TOOL CARDS
+   - Large percentage badge in top-right corner
+   - Color-coded background:
+     * Green (90-100%): Excellent match
+     * Blue (80-89%): Good match
+     * Gray (<80%): Moderate match
+
+2. RECOMMENDATION SECTION
+   - Match score next to each recommended tool
+   - Sorted by score (highest to lowest)
+
+3. EMAIL REPORTS
+   - Top Recommendations table
+   - Comparison table for selected tools
+   - Formatted as "93%" in table cells
+
+4. ANALYTICS TRACKING
+   - Raw 0-10 score stored in database
+   - Percentage used for display in admin reports
+
+
+COLOR CODING THRESHOLDS
+------------------------
+
+The UI applies visual indicators based on score ranges:
+
+Score Range (0-10) | Percentage | Color  | Meaning
+-------------------|------------|--------|------------------------
+8.0 - 10.0         | 80-100%    | Green  | Excellent match
+6.0 - 7.9          | 60-79%     | Blue   | Good match
+0.0 - 5.9          | 0-59%      | Gray   | Moderate/Poor match
+
+
+WHY PERCENTAGES?
+----------------
+
+Benefits of percentage display over X/10:
+
+1. INCREASED GRANULARITY
+   93% vs 92% is more distinguishable than 9.3 vs 9.2
+
+2. FAMILIAR METRIC
+   Users intuitively understand percentages as grades/scores
+
+3. CLEAR DIFFERENTIATION
+   When multiple tools score 9/10, percentages reveal the true ranking
+   Example: Tool A = 9.3 (93%) vs Tool B = 9.1 (91%)
+
+4. PROFESSIONAL PRESENTATION
+   Percentages align with business reporting standards
+
+
+================================================================================
+6. DATA SOURCES AND INTEGRATION
+================================================================================
+
+DATABASE SCHEMA
+---------------
+
+The algorithm integrates data from multiple Supabase tables:
+
+1. CRITERIA TABLE
+   Purpose: Master list of evaluation criteria
+   Key Fields:
+     - id (uuid): Unique identifier
+     - name (text): Criterion name (e.g., "Scalability")
+     - description (text): Detailed explanation
+     - category (text): Grouping (e.g., "Technical", "Business")
+
+2. CRITERIA_TOOLS TABLE (Junction Table)
+   Purpose: Maps tools to their capability ratings for each criterion
+   Key Fields:
+     - tool_id (uuid): Foreign key to tools table
+     - criterion_id (uuid): Foreign key to criteria table
+     - ranking (integer): Tool's capability level (1-5)
+   
+   This is the PRIMARY source for tool ratings in the algorithm
+
+3. TOOLS TABLE
+   Purpose: Master list of PPM tools
+   Key Fields:
+     - id (uuid): Unique identifier
+     - name (text): Tool name
+     - description (text): Tool description
+     - criteria (jsonb): Embedded criteria data with rankings
+     - ratings (jsonb): Legacy ratings object (fallback)
+
+4. USER_CRITERIA TABLE
+   Purpose: Stores user's importance ratings for each criterion
+   Key Fields:
+     - user_id (uuid): User identifier (anonymous or authenticated)
+     - criterion_id (uuid): Foreign key to criteria table
+     - user_rating (integer): User's importance level (1-5)
+     - created_at (timestamp): When rating was set
+
+
+DATA FLOW
+---------
+
+1. USER INPUT COLLECTION
+   User selects criteria and sets importance ratings (1-5) via:
+     - Guided Ranking Form (Q&A flow that calculates optimal ratings)
+     - Manual Ranking Form (direct slider input)
+   
+   Data stored in: user_criteria table
+
+2. TOOL DATA RETRIEVAL
+   Frontend fetches tools with embedded criteria ratings:
+     SELECT * FROM tools_view
+     WHERE submission_status = 'approved'
+   
+   Each tool includes criteria array from criteria_tools join
+
+3. SCORE CALCULATION
+   Frontend calls calculateScore() for each tool
+   Uses tool.criteria array (from criteria_tools) as primary source
+   Falls back to tool.ratings object if criteria array unavailable
+
+4. DISPLAY RENDERING
+   Scores formatted as percentages via formatMatchScorePercentage()
+   Tools sorted by score (descending)
+   Rendered in tool cards and recommendation sections
+
+5. ANALYTICS TRACKING
+   Raw 0-10 scores tracked in analytics.tool_actions table
+   Used for:
+     - User behavior analysis
+     - Algorithm performance monitoring
+     - A/B testing and optimization
+
+
+FRONTEND-BACKEND SYNCHRONIZATION
+---------------------------------
+
+The algorithm is implemented in TWO places to maintain consistency:
+
+FRONTEND: src/ppm-tool/shared/utils/toolRating.ts
+  - calculateScore() function
+  - getToolRating() helper
+  - formatMatchScorePercentage() formatter
+  - Used for: Real-time UI updates, tool sorting, comparison
+
+BACKEND: src/app/api/send-email/route.ts
+  - calculateTopRecommendations() function
+  - getToolRating() helper (duplicated logic)
+  - Used for: Email report generation
+
+CRITICAL RULE: These implementations MUST remain synchronized!
+Any changes to scoring logic must be applied to both locations.
+
+
+================================================================================
+7. USAGE THROUGHOUT APPLICATION
+================================================================================
+
+The match score algorithm is used extensively across the PPM Tool:
+
+COMPONENT: EmbeddedPPMToolFlow.tsx
+Location: src/ppm-tool/components/common/
+Purpose: Main wizard orchestrating the user journey
+Usage: 
+  - Calculates scores for all tools
+  - Determines recommendation display
+  - Tracks user interactions with scores
+
+COMPONENT: EnhancedRecommendationSection.tsx
+Location: src/ppm-tool/features/recommendations/components/
+Purpose: Displays top recommended tools
+Usage:
+  - Sorts tools by match score
+  - Shows percentage badge on each card
+  - Provides detailed score breakdowns
+  - Color-codes scores (green/blue/gray)
+
+COMPONENT: OptimizedToolCard.tsx
+Location: src/ppm-tool/components/cards/
+Purpose: Individual tool display card
+Usage:
+  - Renders large percentage badge
+  - Shows match score prominently
+  - Displays "Meets X of Y criteria"
+
+COMPONENT: EnhancedCompactToolCard.tsx
+Location: src/ppm-tool/components/cards/
+Purpose: Condensed tool card for lists
+Usage:
+  - Shows match score percentage
+  - Used in comparison views and email previews
+
+COMPONENT: ToolSection.tsx
+Location: src/ppm-tool/features/tools/
+Purpose: Manages tool selection and filtering
+Usage:
+  - Calculates match scores for filtering
+  - Sorts tools by score within categories
+
+API ROUTE: send-email/route.ts
+Location: src/app/api/
+Purpose: Generates and sends personalized email reports
+Usage:
+  - Recalculates scores server-side
+  - Generates top recommendations (sorted by score)
+  - Includes scores in email HTML tables
+  - Stores report data in database
+
+HOOK: useEmailReport.ts
+Location: src/ppm-tool/shared/hooks/
+Purpose: Manages email report generation and sending
+Usage:
+  - Passes tool scores to API
+  - Tracks email send analytics with match scores
+
+ANALYTICS SERVICE: analyticsService.ts
+Location: src/ppm-tool/shared/services/
+Purpose: Tracks user interactions and tool performance
+Usage:
+  - Records match scores with all tool actions
+  - Enables analysis of which score ranges convert
+  - Powers recommendation algorithm improvements
+
+
+================================================================================
+8. EXAMPLES AND EDGE CASES
+================================================================================
+
+EXAMPLE 1: TYPICAL SCENARIO
+---------------------------
+
+User: Mid-size company looking for PPM tool
+Selected Criteria: 5 criteria
+Tools Evaluated: 10 tools
+
+User Ratings:
+  - Scalability: 5 (Critical)
+  - Integrations: 4 (High Priority)
+  - Ease of Use: 3 (Medium Priority)
+  - Reporting: 4 (High Priority)
+  - Security: 5 (Critical)
+
+Tool: Airtable
+Tool Ratings:
+  - Scalability: 4
+  - Integrations: 5
+  - Ease of Use: 5
+  - Reporting: 4
+  - Security: 4
+
+Calculation:
+  Scalability: Tool=4, User=5 → shortfall=1 → 7-2 = 5 points
+  Integrations: Tool=5, User=4 → excess=1 → 8+1 = 9 points
+  Ease of Use: Tool=5, User=3 → excess=2 → 8+2 = 10 points
+  Reporting: Tool=4, User=4 → excess=0 → 8+0 = 8 points
+  Security: Tool=4, User=5 → shortfall=1 → 7-2 = 5 points
+
+Total: 5 + 9 + 10 + 8 + 5 = 37
+Average: 37 / 5 = 7.4
+Final Score: 7.4 (doesn't meet 9.8 threshold)
+Display: 74%
+
+Result: Good match, but falls short on two critical criteria
+
+
+EXAMPLE 2: PERFECT MATCH
+-------------------------
+
+Tool: Planview
+Tool Ratings:
+  - Scalability: 5
+  - Integrations: 5
+  - Ease of Use: 5
+  - Reporting: 5
+  - Security: 5
+
+Calculation (using same user ratings from Example 1):
+  Scalability: Tool=5, User=5 → excess=0 → 8+0 = 8 points
+  Integrations: Tool=5, User=4 → excess=1 → 8+1 = 9 points
+  Ease of Use: Tool=5, User=3 → excess=2 → 8+2 = 10 points
+  Reporting: Tool=5, User=4 → excess=1 → 8+1 = 9 points
+  Security: Tool=5, User=5 → excess=0 → 8+0 = 8 points
+
+Total: 8 + 9 + 10 + 9 + 8 = 44
+Average: 44 / 5 = 8.8
+Final Score: 8.8 (doesn't meet 9.8 threshold)
+Display: 88%
+
+Result: Excellent match, meets all requirements and exceeds some
+
+
+EXAMPLE 3: NEAR-PERFECT SCORE ROUNDING
+---------------------------------------
+
+Tool: SmartSheet
+Tool Ratings:
+  - Scalability: 5
+  - Integrations: 5
+  - Ease of Use: 5
+  - Reporting: 5
+  - Security: 5
+
+User Ratings (all medium-low priorities):
+  - Scalability: 3
+  - Integrations: 3
+  - Ease of Use: 3
+  - Reporting: 3
+  - Security: 4
+
+Calculation:
+  Scalability: Tool=5, User=3 → excess=2 → 8+2 = 10 points
+  Integrations: Tool=5, User=3 → excess=2 → 8+2 = 10 points
+  Ease of Use: Tool=5, User=3 → excess=2 → 8+2 = 10 points
+  Reporting: Tool=5, User=3 → excess=2 → 8+2 = 10 points
+  Security: Tool=5, User=4 → excess=1 → 8+1 = 9 points
+
+Total: 10 + 10 + 10 + 10 + 9 = 49
+Average: 49 / 5 = 9.8
+Final Score: 10.0 (threshold met!)
+Display: 100%
+
+Result: Perfect score due to 9.8+ threshold
+
+
+EXAMPLE 4: POOR MATCH
+----------------------
+
+Tool: Legacy Tool X
+Tool Ratings:
+  - Scalability: 2
+  - Integrations: 2
+  - Ease of Use: 3
+  - Reporting: 2
+  - Security: 2
+
+User Ratings (from Example 1):
+  - Scalability: 5
+  - Integrations: 4
+  - Ease of Use: 3
+  - Reporting: 4
+  - Security: 5
+
+Calculation:
+  Scalability: Tool=2, User=5 → shortfall=3 → 7-6 = 1 point
+  Integrations: Tool=2, User=4 → shortfall=2 → 7-4 = 3 points
+  Ease of Use: Tool=3, User=3 → excess=0 → 8+0 = 8 points
+  Reporting: Tool=2, User=4 → shortfall=2 → 7-4 = 3 points
+  Security: Tool=2, User=5 → shortfall=3 → 7-6 = 1 point
+
+Total: 1 + 3 + 8 + 3 + 1 = 16
+Average: 16 / 5 = 3.2
+Final Score: 3.2
+Display: 32%
+
+Result: Poor match, tool inadequate for critical requirements
+
+
+EXAMPLE 5: SINGLE CRITERION EVALUATION
+---------------------------------------
+
+Scenario: User evaluates tools on only one criterion
+
+User Rating:
+  - Ease of Use: 4
+
+Tool A:
+  - Ease of Use: 5
+  Score: 8+1 = 9 points
+  Average: 9 / 1 = 9.0
+  Display: 90%
+
+Tool B:
+  - Ease of Use: 4
+  Score: 8+0 = 8 points
+  Average: 8 / 1 = 8.0
+  Display: 80%
+
+Tool C:
+  - Ease of Use: 3
+  Score: 7-2 = 5 points
+  Average: 5 / 1 = 5.0
+  Display: 50%
+
+Result: Clear differentiation even with single criterion
+
+
+EXAMPLE 6: MISSING RATING DATA
+-------------------------------
+
+Scenario: Tool has incomplete rating data
+
+Tool: New Tool (not fully rated yet)
+Available Ratings:
+  - Scalability: 4
+  - Integrations: NOT FOUND (returns 0)
+  - Ease of Use: 5
+  - Reporting: NOT FOUND (returns 0)
+  - Security: 4
+
+User Ratings:
+  - Scalability: 4
+  - Integrations: 4
+  - Ease of Use: 3
+  - Reporting: 4
+  - Security: 5
+
+Calculation:
+  Scalability: Tool=4, User=4 → excess=0 → 8+0 = 8 points
+  Integrations: Tool=0, User=4 → shortfall=4 → 7-8 = 0 points (max at 0)
+  Ease of Use: Tool=5, User=3 → excess=2 → 8+2 = 10 points
+  Reporting: Tool=0, User=4 → shortfall=4 → 7-8 = 0 points (max at 0)
+  Security: Tool=4, User=5 → shortfall=1 → 7-2 = 5 points
+
+Total: 8 + 0 + 10 + 0 + 5 = 23
+Average: 23 / 5 = 4.6
+Final Score: 4.6
+Display: 46%
+
+Result: Low score due to missing critical data points
+
+
+================================================================================
+9. CODE LOCATION REFERENCE
+================================================================================
+
+PRIMARY IMPLEMENTATION
+----------------------
+
+File: src/ppm-tool/shared/utils/toolRating.ts
+Functions:
+  - getToolRating(tool, criterionId): number
+    Lines: 10-64
+    Purpose: Retrieve tool's capability rating for a criterion
+  
+  - calculateScore(tool, criteria): number
+    Lines: 77-122
+    Purpose: Main scoring algorithm implementation
+  
+  - formatMatchScorePercentage(score): { percent, label }
+    Lines: 219-229
+    Purpose: Convert 0-10 score to percentage display
+  
+  - toolMeetsCriterion(tool, criterion): boolean
+    Lines: 155-158
+    Purpose: Check if tool meets user requirement for one criterion
+  
+  - getCriteriaMatchCount(tool, criteria): number
+    Lines: 166-168
+    Purpose: Count how many criteria a tool meets
+  
+  - roundMatchScore(score): number
+    Lines: 202-210
+    Purpose: Custom rounding (0.1-0.5 down, 0.6-0.9 up)
+  
+  - getTopPerformerStrengths(tool, criteria): string
+    Lines: 140-147
+    Purpose: Get comma-separated list of tool's strengths
+
+
+BACKEND DUPLICATE IMPLEMENTATION
+---------------------------------
+
+File: src/app/api/send-email/route.ts
+Functions:
+  - getToolRating(tool, criterion): number
+    Lines: 20-54
+    Purpose: Server-side rating retrieval (matches frontend)
+  
+  - calculateTopRecommendations(tools, criteria): scoredTools[]
+    Lines: 57-116
+    Purpose: Server-side scoring for email generation
+
+
+USAGE IN COMPONENTS
+--------------------
+
+File: src/ppm-tool/features/recommendations/components/EnhancedRecommendationSection.tsx
+Usage:
+  - Import: calculateScore, formatMatchScorePercentage, getCriteriaMatchCount
+  - Lines: 48-76
+  - Purpose: Sort and display top recommendations
+
+File: src/ppm-tool/components/cards/OptimizedToolCard.tsx
+Usage:
+  - Import: getToolRating, formatMatchScorePercentage
+  - Purpose: Display match score badge on tool cards
+
+File: src/ppm-tool/components/cards/EnhancedCompactToolCard.tsx
+Usage:
+  - Import: formatMatchScorePercentage
+  - Purpose: Show score in compact card format
+
+File: src/ppm-tool/components/cards/CompactToolCard.tsx
+Usage:
+  - Import: formatMatchScorePercentage
+  - Purpose: Legacy compact card with score display
+
+File: src/ppm-tool/features/tools/ToolSection.tsx
+Usage:
+  - Import: calculateScore
+  - Lines: 54-56
+  - Purpose: Calculate scores for tool filtering and sorting
+
+File: src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx
+Usage:
+  - Import: calculateScore
+  - Purpose: Main flow orchestration with scoring
+
+
+TYPE DEFINITIONS
+----------------
+
+File: src/ppm-tool/shared/types.ts (or types/index.ts)
+Key Types:
+  - Tool: Interface defining tool structure with criteria and ratings
+  - Criterion: Interface defining criterion with id, name, userRating
+
+
+TESTING
+-------
+
+File: src/ppm-tool/shared/utils/toolRating.ts
+Function: testGetToolRating(tool, criterionId)
+Lines: 176-194
+Purpose: Debug helper to verify rating lookup logic
+Note: Console logs disabled in production
+
+
+================================================================================
+CHANGE LOG
+================================================================================
+
+November 12, 2025
+-----------------
+- Updated display format from "X/10" to percentage ("X%")
+- Added formatMatchScorePercentage() function
+- Updated all tool card components to use percentage display
+- Maintained internal 0-10 scale for calculations
+- Email reports already used percentages (no change needed)
+
+Previous Updates
+----------------
+- October 2025: Unified getToolRating() across all components
+- September 2025: Added criteria_tools database integration
+- August 2025: Implemented 9.8+ perfect score threshold
+- July 2025: Established double penalty for shortfall
+- June 2025: Initial algorithm implementation
+
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
+
+For questions or updates, contact: Parker Gawne
+Project: Panoramic Solutions PPM Tool
+Repository: panoramic-solutions/panoramic-solutions
+

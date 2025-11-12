@@ -294,7 +294,9 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                     {/* CTA Button - positioned to the right on desktop, below on mobile */}
                     <div className="flex justify-center lg:items-center mt-4 lg:mt-0">
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          
                           // Track how it works interaction for New_Active metric
                           try {
                             checkAndTrackNewActive('Active-how-it-works', {
@@ -308,7 +310,8 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                           
                           onGetStarted();
                         }}
-                        className="flex flex-col items-center px-6 py-4 text-sm md:text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
+                        className="flex flex-col items-center px-6 py-4 text-sm md:text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+                        type="button"
                       >
                         <span>Rank Your Criteria</span>
                         <div className="flex items-center mt-1">
