@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/ppm-tool/components/
 import { Button } from '@/ppm-tool/components/ui/button';
 import { Progress } from '@/ppm-tool/components/ui/progress';
 import { cn } from '@/ppm-tool/shared/lib/utils';
-import { roundMatchScore } from '@/ppm-tool/shared/utils/toolRating';
+import { formatMatchScorePercentage } from '@/ppm-tool/shared/utils/toolRating';
 import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
 import { MobileTooltip } from '@/ppm-tool/components/ui/MobileTooltip';
 import { getMatchScoreTooltipContent } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
@@ -72,25 +72,25 @@ const getToolExplanation = (tool: Tool, criterion: Criterion): string => {
 
 // Helper function to get match score display - with proper color coding
 const getMatchScoreDisplay = (score: number): { value: string; color: string; variant: "default" | "secondary" | "destructive"; bgColor: string } => {
-  const roundedScore = roundMatchScore(score);
+  const { label } = formatMatchScorePercentage(score);
   
-  if (roundedScore >= 8) {
+  if (score >= 8) {
     return { 
-      value: `${roundedScore}/10`, 
+      value: label, 
       color: 'text-green-700', 
       variant: 'secondary',
       bgColor: 'bg-green-50 border-green-200'
     };
-  } else if (roundedScore >= 6) {
+  } else if (score >= 6) {
     return { 
-      value: `${roundedScore}/10`, 
+      value: label, 
       color: 'text-alpine-blue-700', 
       variant: 'secondary',
       bgColor: 'bg-alpine-blue-50 border-alpine-blue-200'
     };
   } else {
     return { 
-      value: `${roundedScore}/10`, 
+      value: label, 
       color: 'text-gray-700', 
       variant: 'secondary',
       bgColor: 'bg-gray-50 border-gray-200'
@@ -133,6 +133,15 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
 }) => {
   const matchDisplay = getMatchScoreDisplay(matchScore);
   const { isTouchDevice } = useUnifiedMobileDetection();
+  const baseActionContext = React.useMemo(
+    () => ({
+      source_component: 'enhanced_compact_tool_card',
+      criteria_adjusted: criteriaAdjusted,
+      card_position: position,
+      filters_active_count: 0,
+    }),
+    [criteriaAdjusted, position]
+  );
 
   // Enhanced tracking handlers with optimized dual tracking
   const handleTryFreeClick = async (event: React.MouseEvent) => {
@@ -144,7 +153,10 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
         actionType: 'try_free',
         position: position,
         matchScore: matchScore,
-        context: { criteria_adjusted: criteriaAdjusted }
+        context: {
+          ...baseActionContext,
+          match_score: matchScore,
+        }
       });
 
       // ✅ Only track in PostHog if Supabase tracking succeeded
@@ -175,7 +187,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
         position: position,
         matchScore: matchScore,
         context: { 
-          criteria_adjusted: criteriaAdjusted,
+          ...baseActionContext,
           currently_compared: isCompared
         }
       });
@@ -213,7 +225,7 @@ export const EnhancedCompactToolCard: React.FC<EnhancedCompactToolCardProps> = (
         position: position,
         matchScore: matchScore,
         context: { 
-          criteria_adjusted: criteriaAdjusted,
+          ...baseActionContext,
           expanding: !isExpanded
         }
       });

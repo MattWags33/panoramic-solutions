@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { 
   getUnifiedBumperState,
   saveUnifiedBumperState,
@@ -23,6 +23,7 @@ import {
   setOverlayClosed, 
   OVERLAY_TYPES 
 } from '@/ppm-tool/shared/utils/homeState';
+import { analytics } from '@/lib/analytics';
 
 interface GuidanceContextType {
   showManualGuidance: boolean;
@@ -31,7 +32,7 @@ interface GuidanceContextType {
   hasShownManualGuidance: boolean;
   showProductBumper: boolean;
   triggerProductBumper: (bypassRules?: boolean) => void;
-  closeProductBumper: () => void;
+  closeProductBumper: (reason?: 'close_button' | 'cta' | 'auto') => void;
   hasShownProductBumper: boolean;
   showExitIntentBumper: boolean;
   triggerExitIntentBumper: (triggerType: 'mouse-leave' | 'tab-switch', bypassRules?: boolean) => void;
@@ -85,15 +86,46 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
   // Use external state if provided, otherwise use internal state
   const showProductBumper = externalShowProductBumper !== undefined ? externalShowProductBumper : internalShowProductBumper;
 
+  const emitOverlayEvent = useCallback(
+    (options: {
+      overlay: 'product_bumper' | 'exit_intent' | 'guided_ranking' | 'manual_guidance' | 'comparison_report';
+      eventType: 'shown' | 'cta_clicked' | 'dismissed' | 'timeout';
+      trigger?: string;
+      cta?: string;
+      context?: Record<string, any>;
+    }) => {
+      void analytics.trackOverlayEvent({
+        overlay: options.overlay,
+        eventType: options.eventType,
+        trigger: options.trigger,
+        cta: options.cta,
+        context: {
+          source_component: 'guidance_context',
+          ...options.context,
+        },
+      });
+    },
+    []
+  );
+
   const triggerManualGuidance = () => {
     if (!hasShownManualGuidance) {
       setShowManualGuidance(true);
       setHasShownManualGuidance(true);
+      emitOverlayEvent({
+        overlay: 'manual_guidance',
+        eventType: 'shown',
+      });
     }
   };
 
   const closeManualGuidance = () => {
     setShowManualGuidance(false);
+    emitOverlayEvent({
+      overlay: 'manual_guidance',
+      eventType: 'dismissed',
+      context: { reason: 'manual_close' },
+    });
   };
 
   const triggerProductBumper = (bypassRules = false) => {
@@ -130,9 +162,14 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     recordProductBumperShown();
     setBumperCurrentlyOpen(true);
     setOverlayOpen(OVERLAY_TYPES.PRODUCT_BUMPER);
+    emitOverlayEvent({
+      overlay: 'product_bumper',
+      eventType: 'shown',
+      trigger: bypassRules ? 'forced' : 'auto',
+    });
   };
 
-  const closeProductBumper = () => {
+  const closeProductBumper = (reason: 'close_button' | 'cta' | 'auto' = 'close_button') => {
     setInternalShowProductBumper(false);
     
     // Record dismissal in unified state
@@ -141,6 +178,11 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     setOverlayClosed(OVERLAY_TYPES.PRODUCT_BUMPER);
     console.log('💾 ProductBumper dismissed - saved to unified state');
     setHasShownProductBumper(true);
+    emitOverlayEvent({
+      overlay: 'product_bumper',
+      eventType: 'dismissed',
+      context: { reason },
+    });
   };
 
   const triggerExitIntentBumper = (triggerType: 'mouse-leave' | 'tab-switch', bypassRules = false) => {
@@ -184,6 +226,11 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     recordExitIntentBumperShown();
     setBumperCurrentlyOpen(true);
     setOverlayOpen(OVERLAY_TYPES.EXIT_INTENT_BUMPER);
+    emitOverlayEvent({
+      overlay: 'exit_intent',
+      eventType: 'shown',
+      trigger: triggerType,
+    });
   };
 
   const closeExitIntentBumper = () => {
@@ -195,40 +242,71 @@ export const GuidanceProvider = ({ children, showProductBumper: externalShowProd
     setOverlayClosed(OVERLAY_TYPES.EXIT_INTENT_BUMPER);
     console.log('💾 ExitIntentBumper dismissed - saved to unified state');
     setHasShownExitIntentBumper(true);
+    emitOverlayEvent({
+      overlay: 'exit_intent',
+      eventType: 'dismissed',
+      context: { reason: 'close_button' },
+    });
   };
 
   const onGuidedRankingStart = () => {
     console.log('🎯 Guided ranking started');
     recordGuidedRankingsOpened();
     setOverlayOpen(OVERLAY_TYPES.GUIDED_RANKINGS);
+    emitOverlayEvent({
+      overlay: 'guided_ranking',
+      eventType: 'shown',
+    });
   };
 
   const onGuidedRankingComplete = () => {
     console.log('🎯 Guided ranking completed');
     recordGuidedRankingsClosed();
     setOverlayClosed(OVERLAY_TYPES.GUIDED_RANKINGS);
+    emitOverlayEvent({
+      overlay: 'guided_ranking',
+      eventType: 'dismissed',
+      context: { status: 'completed' },
+    });
   };
 
   const onGuidedRankingClick = () => {
     console.log('🎯 User clicked into Guided Rankings');
     recordGuidedRankingsClick();
+    emitOverlayEvent({
+      overlay: 'guided_ranking',
+      eventType: 'cta_clicked',
+    });
   };
 
   const onComparisonReportClick = () => {
     console.log('📊 User clicked into Comparison Report');
     recordComparisonReportClick();
+    emitOverlayEvent({
+      overlay: 'comparison_report',
+      eventType: 'cta_clicked',
+    });
   };
 
   const onComparisonReportOpen = () => {
     console.log('📊 Comparison Report opened');
     recordComparisonReportOpened();
     setOverlayOpen(OVERLAY_TYPES.COMPARISON_REPORT);
+    emitOverlayEvent({
+      overlay: 'comparison_report',
+      eventType: 'shown',
+    });
   };
 
   const onComparisonReportClose = (submitted: boolean = false) => {
     console.log(`📊 Comparison Report closed (submitted: ${submitted})`);
     recordComparisonReportClosed(submitted);
     setOverlayClosed(OVERLAY_TYPES.COMPARISON_REPORT);
+    emitOverlayEvent({
+      overlay: 'comparison_report',
+      eventType: 'dismissed',
+      context: { submitted },
+    });
     
     // Reset Product Bumper eligibility when Report closes (if user never clicked GR)
     const state = getUnifiedBumperState();

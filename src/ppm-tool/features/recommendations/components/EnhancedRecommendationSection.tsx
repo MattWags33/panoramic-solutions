@@ -10,7 +10,8 @@ import { Progress } from '@/ppm-tool/components/ui/progress';
 import { Separator } from '@/ppm-tool/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/ppm-tool/components/ui/accordion';
 import { MobileTooltip } from '@/ppm-tool/components/ui/mobile-tooltip';
-import { calculateScore, getCriteriaMatchCount, roundMatchScore } from '@/ppm-tool/shared/utils/toolRating';
+import { calculateScore, getCriteriaMatchCount, formatMatchScorePercentage } from '@/ppm-tool/shared/utils/toolRating';
+import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
 import { useShuffleAnimation, useToolOrderShuffle } from '@/ppm-tool/hooks/useShuffleAnimation';
 import { ShuffleContainer } from '@/ppm-tool/components/animations/ShuffleContainer';
@@ -34,6 +35,7 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
   isSubmitting = false,
 }) => {
   const isMobile = useMobileDetection();
+  const criteriaAdjusted = hasCriteriaBeenAdjusted(selectedCriteria);
   // REMOVED: fullscreen functionality - simplified without FullscreenContext
 
   // Initialize shuffle animation
@@ -50,23 +52,23 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
 
   // Enhanced score display function - using 0-10 scale with proper color coding
   const getMatchScoreDisplay = (score: number): { value: string; color: string; bgColor: string } => {
-    const roundedScore = roundMatchScore(score);
+    const { label } = formatMatchScorePercentage(score);
     
-    if (roundedScore >= 8) {
+    if (score >= 8) {
       return { 
-        value: `${roundedScore}/10`, 
+        value: label, 
         color: 'text-green-700', 
         bgColor: 'bg-green-50 border-green-200'
       };
-    } else if (roundedScore >= 6) {
+    } else if (score >= 6) {
       return { 
-        value: `${roundedScore}/10`, 
+        value: label, 
         color: 'text-alpine-blue-700', 
         bgColor: 'bg-alpine-blue-50 border-alpine-blue-200'
       };
     } else {
       return { 
-        value: `${roundedScore}/10`, 
+        value: label, 
         color: 'text-gray-700', 
         bgColor: 'bg-gray-50 border-gray-200'
       };
@@ -76,51 +78,20 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
   // Use unified getCriteriaMatchCount function
   const getMatchCount = (tool: Tool) => getCriteriaMatchCount(tool, selectedCriteria);
 
+  const selectedToolCount = selectedTools.length;
+  const selectedCriteriaCount = selectedCriteria.length;
+
+  const baseActionContext = React.useMemo(() => ({
+    source_component: 'enhanced_recommendation_section',
+    selected_tool_count: selectedToolCount,
+    selected_criteria_count: selectedCriteriaCount,
+    criteria_adjusted: criteriaAdjusted,
+    filters_active_count: 0,
+  }), [selectedToolCount, selectedCriteriaCount, criteriaAdjusted]);
+
   const sortedTools = React.useMemo(() => {
     return [...selectedTools].sort((a, b) => calculateToolScore(b) - calculateToolScore(a));
   }, [selectedTools, calculateToolScore]);
-
-  // Track tool impressions when tools are displayed (once per mount)
-  const [impressionsTracked, setImpressionsTracked] = React.useState(false);
-  
-  React.useEffect(() => {
-    // ✅ FIXED: Only track impressions once per component mount
-    if (impressionsTracked || sortedTools.length === 0) return;
-    
-    // Track impressions for all visible tools (fire-and-forget)
-    sortedTools.forEach((tool, index) => {
-      try {
-        const matchScore = calculateToolScore(tool);
-        const matchCount = getMatchCount(tool);
-        
-        // Build competing tools array (top 5 tools with scores)
-        const competingTools = sortedTools.slice(0, 5).map((t) => ({
-          toolId: t.id,
-          toolName: t.name,
-          score: calculateToolScore(t)
-        }));
-        
-        // ✅ Deduplication handled inside trackToolImpression
-        analytics.trackToolImpression({
-          toolId: tool.id,
-          toolName: tool.name,
-          position: index + 1,
-          matchScore: matchScore,
-          matchBreakdown: {
-            match_count: matchCount,
-            total_criteria: selectedCriteria.length,
-            match_percentage: selectedCriteria.length > 0 ? (matchCount / selectedCriteria.length) * 100 : 0
-          },
-          competingTools: competingTools
-        });
-      } catch (error) {
-        console.warn('Failed to track tool impression:', error);
-      }
-    });
-    
-    // ✅ Mark as tracked to prevent re-runs
-    setImpressionsTracked(true);
-  }, [sortedTools, calculateToolScore, getMatchCount, selectedCriteria.length, impressionsTracked]); // ✅ All dependencies included
 
   // Set up tool order shuffle animation - triggers when sortedTools order changes
   useToolOrderShuffle(sortedTools, shuffleAnimation, {
@@ -351,16 +322,20 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                             const matchScore = calculateToolScore(tool);
                             
                             // ✅ Track in Supabase first (with deduplication)
+                            const actionContext = {
+                              ...baseActionContext,
+                              criteria_count: selectedCriteriaCount,
+                              meets_requirements: getCriteriaMatchCount(tool, selectedCriteria),
+                              result_rank: index + 1,
+                              match_score: matchScore,
+                            };
                             const tracked = await analytics.trackToolClick({
                               toolId: tool.id,
                               toolName: tool.name,
                               actionType: 'try_free',
                               position: index + 1,
                               matchScore: matchScore,
-                              context: {
-                                criteria_count: selectedCriteria.length,
-                                meets_requirements: getCriteriaMatchCount(tool, selectedCriteria)
-                              }
+                              context: actionContext,
                             });
                             
                             // ✅ Only track in PostHog if Supabase succeeded
@@ -405,8 +380,11 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                         position: index + 1,
                         matchScore: matchScore,
                         context: {
-                          criteria_count: selectedCriteria.length,
-                          meets_requirements: getCriteriaMatchCount(tool, selectedCriteria)
+                          ...baseActionContext,
+                          criteria_count: selectedCriteriaCount,
+                          meets_requirements: getCriteriaMatchCount(tool, selectedCriteria),
+                          result_rank: index + 1,
+                          match_score: matchScore,
                         }
                       });
                       
@@ -450,10 +428,13 @@ export const EnhancedRecommendationSection: React.FC<RecommendationSectionProps>
                           actionType: 'view_details',
                           position: index + 1,
                           matchScore: matchScore,
-                          context: {
-                            criteria_count: selectedCriteria.length,
-                            meets_requirements: getCriteriaMatchCount(tool, selectedCriteria)
-                          }
+                        context: {
+                          ...baseActionContext,
+                          criteria_count: selectedCriteriaCount,
+                          meets_requirements: getCriteriaMatchCount(tool, selectedCriteria),
+                          result_rank: index + 1,
+                          match_score: matchScore,
+                        }
                         });
                         
                         // ✅ Only track in PostHog if Supabase succeeded

@@ -6,6 +6,7 @@ import { Button } from '@/ppm-tool/components/ui/button';
 import { Separator } from '@/ppm-tool/components/ui/separator';
 import { CriteriaRatings } from '@/ppm-tool/features/criteria/components/CriteriaRatings';
 import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
+import { formatMatchScorePercentage } from '@/ppm-tool/shared/utils/toolRating';
 
 interface CompactToolCardProps {
   tool: Tool;
@@ -86,27 +87,29 @@ const getCriteriaExceededCount = (tool: Tool, criteria: Criterion[]): number => 
 
 // Helper function to get match score display
 const getMatchScoreDisplay = (score: number): { value: string; color: string; medal: string } => {
+  const { label } = formatMatchScorePercentage(score);
+
   if (score >= 8) {
     return { 
-      value: `${score.toFixed(1)}/10`, 
+      value: label, 
       color: 'text-green-600',
       medal: '🥇'
     };
   } else if (score >= 6) {
     return { 
-      value: `${score.toFixed(1)}/10`, 
+      value: label, 
       color: 'text-alpine-blue-600',
       medal: '🥈'
     };
   } else if (score >= 4) {
     return { 
-      value: `${score.toFixed(1)}/10`, 
+      value: label, 
       color: 'text-blue-600',
       medal: '🥉'
     };
   } else {
     return { 
-      value: `${score.toFixed(1)}/10`, 
+      value: label, 
       color: 'text-gray-600',
       medal: ''
     };

@@ -4,7 +4,7 @@ import { Tool, Criterion } from '@/ppm-tool/shared/types';
 import { Badge } from '@/ppm-tool/components/ui/badge';
 import { Button } from '@/ppm-tool/components/ui/button';
 import { cn } from '@/ppm-tool/shared/lib/utils';
-import { getToolRating, roundMatchScore } from '@/ppm-tool/shared/utils/toolRating';
+import { getToolRating, formatMatchScorePercentage } from '@/ppm-tool/shared/utils/toolRating';
 import { MethodologyTags } from '@/ppm-tool/components/common/MethodologyTags';
 import { Star } from 'lucide-react';
 
@@ -18,23 +18,23 @@ interface OptimizedToolCardProps {
 }
 
 const getMatchScoreDisplay = (score: number): { value: string; color: string; bgColor: string } => {
-  const roundedScore = roundMatchScore(score);
+  const { label } = formatMatchScorePercentage(score);
   
-  if (roundedScore >= 8) {
+  if (score >= 8) {
     return { 
-      value: `${roundedScore}/10`, 
+      value: label, 
       color: 'text-green-700', 
       bgColor: 'bg-green-50 border-green-200'
     };
-  } else if (roundedScore >= 6) {
+  } else if (score >= 6) {
     return { 
-      value: `${roundedScore}/10`, 
+      value: label, 
       color: 'text-alpine-blue-700', 
       bgColor: 'bg-alpine-blue-50 border-alpine-blue-200'
     };
   } else {
     return { 
-      value: `${roundedScore}/10`, 
+      value: label, 
       color: 'text-gray-700', 
       bgColor: 'bg-gray-50 border-gray-200'
     };
@@ -69,6 +69,7 @@ export const OptimizedToolCard: React.FC<OptimizedToolCardProps> = ({
   onAddToCompare,
 }) => {
   const { value: matchLabel, color } = getMatchScoreDisplay(matchScore);
+  const { label: percentLabel } = formatMatchScorePercentage(matchScore);
   const metCriteria = selectedCriteria.filter(c => getToolRating(tool, c) >= 3).length;
   const matchPercentage = Math.round((metCriteria / selectedCriteria.length) * 100);
 
@@ -100,7 +101,7 @@ export const OptimizedToolCard: React.FC<OptimizedToolCardProps> = ({
           </div>
         </div>
         <div className="text-right">
-          <div className={`text-lg md:text-2xl font-bold ${getMatchScoreDisplay(matchScore).color.replace('text-', 'text-').replace('-700', '-600')}`}>{roundMatchScore(matchScore)}/10</div>
+          <div className={`text-lg md:text-2xl font-bold ${getMatchScoreDisplay(matchScore).color.replace('text-', 'text-').replace('-700', '-600')}`}>{percentLabel}</div>
           <p className="text-xs text-gray-500">Match Score</p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowRight, ArrowLeft, ToggleLeft, ToggleRight, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ppm-tool/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -151,6 +151,48 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
     criteria.forEach(c => defaults[c.id] = 3);
     return defaults;
   });
+  const questionStartRef = useRef<number>(Date.now());
+  const hasCompletedRef = useRef(false);
+  const latestFlowStateRef = useRef<{ isManualMode: boolean; answersCount: number }>({
+    isManualMode,
+    answersCount: 0,
+  });
+
+  useEffect(() => {
+    latestFlowStateRef.current = {
+      isManualMode,
+      answersCount: Object.keys(answers).length,
+    };
+  }, [isManualMode, answers]);
+
+  useEffect(() => {
+    void analytics.trackGuidedFlowEvent({
+      eventType: 'flow_started',
+      mode: isManualMode ? 'manual' : 'guided',
+      context: {
+        source_component: 'guided_criteria_questions',
+        total_questions: questions.length,
+        user_role: userRole || 'unknown',
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRole]);
+
+  useEffect(() => {
+    questionStartRef.current = Date.now();
+    const question = questions[currentQuestion];
+    if (!isManualMode && question) {
+      void analytics.trackGuidedFlowEvent({
+        eventType: 'step_viewed',
+        questionId: question.id,
+        questionOrder: currentQuestion + 1,
+        mode: 'guided',
+        context: {
+          source_component: 'guided_criteria_questions',
+        },
+      });
+    }
+  }, [currentQuestion, isManualMode]);
 
   // Real-time calculated rankings based on current answers
   const [realTimeRankings, setRealTimeRankings] = useState<{ [key: string]: number }>(() => {
@@ -241,6 +283,19 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
       console.warn('Failed to track guided criteria question interaction:', error);
     }
     
+    const elapsed = Date.now() - questionStartRef.current;
+    void analytics.trackGuidedFlowEvent({
+      eventType: 'question_answered',
+      questionId,
+      questionOrder: currentQuestion + 1,
+      mode: isManualMode ? 'manual' : 'guided',
+      numericValue: value,
+      timeSpentMs: elapsed,
+      context: {
+        source_component: 'guided_criteria_questions',
+      },
+    });
+    
     // Track in Supabase analytics (fire-and-forget)
     try {
       const question = questions[currentQuestion];
@@ -261,6 +316,7 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
     setTimeout(() => {
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(prev => prev + 1);
+        questionStartRef.current = Date.now();
       }
     }, 500);
   };
@@ -278,6 +334,16 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
       console.warn('Failed to track manual ranking change:', error);
     }
     
+    void analytics.trackGuidedFlowEvent({
+      eventType: 'manual_rank_update',
+      questionId: criterionId,
+      mode: 'manual',
+      numericValue: value,
+      context: {
+        source_component: 'guided_criteria_questions',
+      },
+    });
+    
     setManualRankings(prev => ({ ...prev, [criterionId]: value }));
   };
 
@@ -285,6 +351,15 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
 
   const handleComplete = () => {
     const rankings = calculateRankings();
+    hasCompletedRef.current = true;
+    void analytics.trackGuidedFlowEvent({
+      eventType: 'flow_completed',
+      mode: isManualMode ? 'manual' : 'guided',
+      context: {
+        source_component: 'guided_criteria_questions',
+        answered_questions: Object.keys(answers).length,
+      },
+    });
     onNext(rankings);
   };
 
@@ -292,6 +367,22 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
   const progress = isManualMode ? 100 : ((currentQuestion + 1) / questions.length) * 100;
   const isLastQuestion = currentQuestion === questions.length - 1;
   const allAnswered = Object.keys(answers).length === questions.length;
+
+  useEffect(() => {
+    return () => {
+      if (!hasCompletedRef.current) {
+        const latest = latestFlowStateRef.current;
+        void analytics.trackGuidedFlowEvent({
+          eventType: 'flow_abandoned',
+          mode: latest.isManualMode ? 'manual' : 'guided',
+          context: {
+            source_component: 'guided_criteria_questions',
+            answered_questions: latest.answersCount,
+          },
+        });
+      }
+    };
+  }, []);
 
   // Animation variants
   const questionVariants = {
@@ -332,7 +423,17 @@ export const GuidedCriteriaQuestions: React.FC<GuidedCriteriaQuestionsProps> = (
                   console.warn('Failed to track mode toggle:', error);
                 }
                 
+                void analytics.trackGuidedFlowEvent({
+                  eventType: 'mode_toggled',
+                  mode: newMode ? 'manual' : 'guided',
+                  context: {
+                    source_component: 'guided_criteria_questions',
+                    from_mode: isManualMode ? 'manual' : 'guided',
+                  },
+                });
+                
                 setIsManualMode(newMode);
+                questionStartRef.current = Date.now();
               }}
               className="flex items-center"
               whileHover={{ scale: 1.05 }}

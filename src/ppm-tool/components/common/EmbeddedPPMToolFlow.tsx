@@ -49,6 +49,7 @@ import {
 } from '@/ppm-tool/shared/utils/criteriaStorage';
 import { resetGuidedRankingCompletion, markGuidedRankingAsCompleted, getGuidedRankingCriteriaIds } from '@/ppm-tool/shared/utils/guidedRankingState';
 import { checkAndTrackNewActive } from '@/lib/posthog';
+import { analytics } from '@/lib/analytics';
 
 interface EmbeddedPPMToolFlowProps {
   showGuidedRanking?: boolean;
@@ -820,6 +821,11 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     // Also clear all filter conditions and reset filter mode
     setFilterConditions([]);
     setFilterMode('AND');
+    emitFilterAction({
+      actionType: 'clear_all',
+      filterModeOverride: 'AND',
+      context: { reason: 'restore_all_tools', filter_count: 0, previous_mode: filterMode },
+    });
   };
 
   const handleToolRemove = (toolId: string) => {
@@ -830,25 +836,84 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
     }
   };
 
+  const emitFilterAction = React.useCallback(
+    (options: {
+      actionType: 'add' | 'update' | 'remove' | 'toggle_mode' | 'clear_all' | 'guided_sync';
+      filterType?: string;
+      filterValue?: string;
+      operator?: string;
+      rating?: number;
+      filterModeOverride?: string;
+      context?: Record<string, any>;
+    }) => {
+      const baseContext = {
+        source_component: 'embedded_ppm_tool_flow',
+        filter_count: options.context?.filter_count ?? filterConditions.length,
+        ...options.context,
+      };
+
+      void analytics.trackFilterAction({
+        actionType: options.actionType,
+        filterType: options.filterType,
+        filterValue: options.filterValue,
+        operator: options.operator,
+        rating: options.rating,
+        filterMode: options.filterModeOverride ?? filterMode,
+        context: baseContext,
+      });
+    },
+    [filterConditions.length, filterMode]
+  );
+
   // Handlers for filters
   const handleAddFilterCondition = () => {
+    const newCondition = { id: Date.now().toString(), type: 'Methodology', value: '' };
     setFilterConditions([
       ...filterConditions,
-      { id: Date.now().toString(), type: 'Methodology', value: '' },
+      newCondition,
     ]);
+    emitFilterAction({
+      actionType: 'add',
+      filterType: newCondition.type,
+      filterValue: newCondition.value,
+      context: { filter_count: filterConditions.length + 1, reason: 'manual_add' },
+    });
   };
 
   const handleRemoveFilterCondition = (id: string) => {
+    const condition = filterConditions.find((c) => c.id === id);
     setFilterConditions(filterConditions.filter((c) => c.id !== id));
+    if (condition) {
+      emitFilterAction({
+        actionType: 'remove',
+        filterType: condition.type,
+        filterValue: condition.value,
+        operator: condition.operator,
+        rating: condition.rating,
+        context: { filter_count: Math.max(0, filterConditions.length - 1), removed_id: id },
+      });
+    }
   };
 
   const handleUpdateFilterCondition = (
     id: string,
     updates: Partial<FilterCondition>
   ) => {
+    const existingCondition = filterConditions.find((c) => c.id === id);
+    const updatedCondition = existingCondition ? { ...existingCondition, ...updates } : undefined;
     setFilterConditions(
       filterConditions.map((c) => (c.id === id ? { ...c, ...updates } : c))
     );
+    if (updatedCondition) {
+      emitFilterAction({
+        actionType: 'update',
+        filterType: updatedCondition.type,
+        filterValue: updatedCondition.value,
+        operator: updatedCondition.operator,
+        rating: updatedCondition.rating,
+        context: { updated_id: id },
+      });
+    }
   };
 
   // Handler for guided ranking methodology filtering
@@ -859,7 +924,15 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
       
       if (methodologies.length === 0) {
         // No methodologies selected or "Not Sure" - show all tools
-        return nonMethodologyFilters;
+        const result = nonMethodologyFilters;
+        emitFilterAction({
+          actionType: 'guided_sync',
+          filterType: 'Methodology',
+          filterValue: '',
+          filterModeOverride: filterMode,
+          context: { filter_count: result.length, source: 'guided_methodology_clear', previous_mode: filterMode },
+        });
+        return result;
       } else {
         // Create methodology filter conditions for each selected methodology
         const methodologyFilters: FilterCondition[] = methodologies.map((methodology, index) => ({
@@ -873,16 +946,35 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
         // Set filter mode to OR when multiple methodologies are selected
         if (methodologies.length > 1) {
           setFilterMode('OR');
+          emitFilterAction({
+            actionType: 'toggle_mode',
+            filterModeOverride: 'OR',
+            context: { filter_count: nonMethodologyFilters.length + methodologyFilters.length, reason: 'guided_methodology_multiple', previous_mode: filterMode },
+          });
         }
         
         // Apply the new methodology filters
-        return [...nonMethodologyFilters, ...methodologyFilters];
+        const result = [...nonMethodologyFilters, ...methodologyFilters];
+        emitFilterAction({
+          actionType: 'guided_sync',
+          filterType: 'Methodology',
+          filterValue: methodologies.join(','),
+          filterModeOverride: methodologies.length > 1 ? 'OR' : filterMode,
+          context: { filter_count: result.length, source: 'guided_methodology_apply', previous_mode: filterMode },
+        });
+        return result;
       }
     });
-  }, []);
+  }, [emitFilterAction, filterMode]);
 
   const handleToggleFilterMode = () => {
-    setFilterMode(filterMode === 'AND' ? 'OR' : 'AND');
+    const nextMode = filterMode === 'AND' ? 'OR' : 'AND';
+    setFilterMode(nextMode);
+    emitFilterAction({
+      actionType: 'toggle_mode',
+      filterModeOverride: nextMode,
+      context: { filter_count: filterConditions.length, reason: 'manual_toggle', previous_mode: filterMode },
+    });
   };
 
   // Update criteria rankings from guided form
@@ -1571,7 +1663,7 @@ export const EmbeddedPPMToolFlow: React.FC<EmbeddedPPMToolFlowProps> = ({
             // Product bumper only opens full guided rankings
             onGuidedRankingClick();
             recordFullGuidedRankingsClick();
-            closeProductBumper();
+            closeProductBumper('cta');
             onOpenGuidedRanking && onOpenGuidedRanking();
           }}
           guidedButtonRef={guidedButtonRef}

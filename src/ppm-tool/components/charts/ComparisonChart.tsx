@@ -24,6 +24,7 @@ import { useMobileDetection } from '@/ppm-tool/shared/hooks/useMobileDetection';
 import { checkAndTrackNewActive } from '@/lib/posthog';
 import { hasCriteriaBeenAdjusted } from '@/ppm-tool/shared/utils/criteriaAdjustmentState';
 import { NotYetRankedTooltip } from '@/ppm-tool/components/ui/NotYetRankedTooltip';
+import { analytics } from '@/lib/analytics';
 
 
 interface ComparisonChartProps {
@@ -113,6 +114,17 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
     }
     
     setVisibleTools(newVisible);
+    void analytics.trackChartInteraction({
+      interactionType: 'toggle_tool',
+      toolId,
+      action: wasVisible ? 'hide_tool' : 'show_tool',
+      criteriaAdjusted,
+      visibleToolCount: newVisible.size,
+      visibleCriterionCount: visibleCriteria.size,
+      context: {
+        source_component: 'comparison_chart',
+      },
+    });
   };
 
   const handleToggleCriterion = (criterionId: string) => {
@@ -141,6 +153,17 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
     }
     
     setVisibleCriteria(newVisible);
+    void analytics.trackChartInteraction({
+      interactionType: 'toggle_criterion',
+      criterionId,
+      action: wasVisible ? 'hide_criterion' : 'show_criterion',
+      criteriaAdjusted,
+      visibleToolCount: visibleTools.size,
+      visibleCriterionCount: newVisible.size,
+      context: {
+        source_component: 'comparison_chart',
+      },
+    });
   };
 
   const handleToggleAllTools = (visible: boolean) => {
@@ -154,6 +177,16 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
       selectedTools.forEach((tool) => tools.add(tool.id));
     }
     setVisibleTools(tools);
+    void analytics.trackChartInteraction({
+      interactionType: visible ? 'show_all_tools' : 'hide_all_tools',
+      action: visible ? 'show_all_tools' : 'hide_all_tools',
+      criteriaAdjusted,
+      visibleToolCount: tools.size,
+      visibleCriterionCount: visibleCriteria.size,
+      context: {
+        source_component: 'comparison_chart',
+      },
+    });
   };
 
   const handleToggleAllCriteria = (visible: boolean) => {
@@ -167,6 +200,19 @@ export const ComparisonChart: React.FC<ComparisonChartProps> = ({
         setVisibleCriteria(new Set([firstCriterion.id]));
       }
     }
+    const nextVisibleCount = visible
+      ? selectedCriteria.length
+      : (selectedCriteria[0] ? 1 : 0);
+    void analytics.trackChartInteraction({
+      interactionType: visible ? 'show_all_criteria' : 'hide_all_criteria',
+      action: visible ? 'show_all_criteria' : 'hide_all_criteria',
+      criteriaAdjusted,
+      visibleToolCount: visibleTools.size,
+      visibleCriterionCount: nextVisibleCount,
+      context: {
+        source_component: 'comparison_chart',
+      },
+    });
   };
 
   // Enhanced function to get tool rating for a criterion

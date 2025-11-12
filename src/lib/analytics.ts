@@ -15,63 +15,6 @@ let cachedSessionId: string | null = null;
 // DEDUPLICATION HELPERS
 // ============================================================================
 
-// Impression tracking state (prevents duplicate impressions per session)
-const impressionCache = new Set<string>();
-const IMPRESSION_CACHE_KEY = 'analytics_impressions_tracked';
-
-/**
- * Check if tool impression was already tracked this session
- */
-function hasImpressionBeenTracked(toolId: string): boolean {
-  // Check in-memory cache first (fast)
-  if (impressionCache.has(toolId)) return true;
-  
-  // Check localStorage (survives page refreshes within session)
-  if (typeof window === 'undefined') return false;
-  
-  try {
-    const sessionId = getAnalyticsSessionId();
-    const cached = localStorage.getItem(`${IMPRESSION_CACHE_KEY}_${sessionId}`);
-    if (cached) {
-      const trackedTools: string[] = JSON.parse(cached);
-      if (trackedTools.includes(toolId)) {
-        // Sync to in-memory cache
-        impressionCache.add(toolId);
-        return true;
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to check impression cache:', error);
-  }
-  
-  return false;
-}
-
-/**
- * Mark tool impression as tracked
- */
-function markImpressionTracked(toolId: string): void {
-  // Add to in-memory cache
-  impressionCache.add(toolId);
-  
-  // Persist to localStorage
-  if (typeof window === 'undefined') return;
-  
-  try {
-    const sessionId = getAnalyticsSessionId();
-    const cacheKey = `${IMPRESSION_CACHE_KEY}_${sessionId}`;
-    const cached = localStorage.getItem(cacheKey);
-    const trackedTools: string[] = cached ? JSON.parse(cached) : [];
-    
-    if (!trackedTools.includes(toolId)) {
-      trackedTools.push(toolId);
-      localStorage.setItem(cacheKey, JSON.stringify(trackedTools));
-    }
-  } catch (error) {
-    console.warn('Failed to cache impression:', error);
-  }
-}
-
 // Action deduplication cache (prevents duplicate actions within time window)
 const recentActions = new Map<string, number>();
 const ACTION_DEBOUNCE_MS = 1000; // 1 second
@@ -327,17 +270,17 @@ export const analytics = {
         return null;
       }
       
-      // Map action types to our schema (database now supports add_to_compare and impression)
+      // Map action types to our schema
       const actionTypeMap: Record<string, string> = {
         'add_to_compare': 'add_to_compare',
         'try_free': 'try_free',
         'view_details': 'view_details',
         'click': 'click',
-        'impression': 'impression',
         'compare': 'compare'
       };
       
       // Call analytics schema function (returns uuid)
+      // Backend automatically looks up UUID from public.tools by name
       const { data: actionId, error} = await supabase
         .schema('analytics')
         .rpc('track_tool_action', {
@@ -346,7 +289,10 @@ export const analytics = {
           p_action_type: actionTypeMap[options.actionType] || 'click',
           p_position: options.position || null,
           p_match_score: options.matchScore || null,
-          p_context: options.context || {},
+          p_context: {
+            source_component: options.context?.source_component || 'unknown',
+            ...options.context
+          },
         });
       
       if (error) throw error;
@@ -367,63 +313,165 @@ export const analytics = {
   },
 
   /**
-   * Track tool impression (NEW - proper impression tracking)
-   * Call when tool is displayed in recommendation results
-   * Uses dedicated impression tracking function with deduplication
+   * Track filter builder actions (add/remove/update/toggle)
    */
-  async trackToolImpression(options: {
-    toolId: string;
-    toolName: string;
-    position: number;
-    matchScore: number;
-    matchBreakdown?: Record<string, any>;
-    competingTools?: Array<{ toolId: string; toolName: string; score: number }>;
+  async trackFilterAction(options: {
+    actionType: 'add' | 'update' | 'remove' | 'toggle_mode' | 'clear_all' | 'guided_sync';
+    filterType?: string;
+    filterValue?: string;
+    operator?: string;
+    rating?: number;
+    filterMode?: string;
+    context?: Record<string, any>;
   }): Promise<string | null> {
     try {
-      // ✅ DEDUPLICATION: Check if already tracked this session
-      if (hasImpressionBeenTracked(options.toolId)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.debug(`[Analytics] Impression already tracked for ${options.toolName}, skipping`);
-        }
-        return null;
-      }
-      
-      if (!supabase) return null; // Supabase not configured
-      
+      if (!supabase) return null;
+
       const sessionId = getAnalyticsSessionId();
-      
-      // Track impression using track_tool_action with 'impression' type
       const { data: actionId, error } = await supabase
         .schema('analytics')
-        .rpc('track_tool_action', {
+        .rpc('track_filter_action', {
           p_session_id: sessionId,
-          p_tool_name: options.toolName,
-          p_action_type: 'impression',
-          p_position: options.position || null,
-          p_match_score: options.matchScore || null,
+          p_action_type: options.actionType,
+          p_filter_type: options.filterType || null,
+          p_filter_value: options.filterValue || null,
+          p_operator: options.operator || null,
+          p_rating: options.rating ?? null,
+          p_filter_mode: options.filterMode || null,
           p_context: {
-            type: 'impression',
-            match_breakdown: options.matchBreakdown || {},
-          competing_tools: options.competingTools || []
-        },
-      });
-      
+            source_component: options.context?.source_component || 'unknown',
+            ...options.context,
+          },
+        });
+
       if (error) throw error;
-      
-      // ✅ Mark as tracked AFTER successful database write
-      if (actionId) {
-        markImpressionTracked(options.toolId);
-        if (process.env.NODE_ENV === 'development') {
-          console.debug(`[Analytics] ✅ Tracked impression for ${options.toolName}`);
-        }
-      }
-      
       return actionId;
     } catch (error) {
-      console.warn('Analytics tracking failed (trackToolImpression):', error);
+      console.warn('Analytics tracking failed (trackFilterAction):', error);
       return null;
     }
   },
+
+  /**
+   * Track guided ranking funnel events
+   */
+  async trackGuidedFlowEvent(options: {
+    eventType: 'flow_started' | 'question_answered' | 'mode_toggled' | 'flow_completed' | 'flow_abandoned' | 'manual_rank_update' | 'step_viewed';
+    questionId?: string;
+    questionOrder?: number;
+    mode?: string;
+    value?: string;
+    numericValue?: number;
+    timeSpentMs?: number;
+    context?: Record<string, any>;
+  }): Promise<string | null> {
+    try {
+      if (!supabase) return null;
+
+      const sessionId = getAnalyticsSessionId();
+      const { data: eventId, error } = await supabase
+        .schema('analytics')
+        .rpc('track_guided_flow_event', {
+          p_session_id: sessionId,
+          p_event_type: options.eventType,
+          p_question_id: options.questionId || null,
+          p_question_order: options.questionOrder ?? null,
+          p_mode: options.mode || null,
+          p_value: options.value || null,
+          p_numeric_value: options.numericValue ?? null,
+          p_time_spent_ms: options.timeSpentMs ?? null,
+          p_context: {
+            source_component: options.context?.source_component || 'unknown',
+            ...options.context,
+          },
+        });
+
+      if (error) throw error;
+      return eventId;
+    } catch (error) {
+      console.warn('Analytics tracking failed (trackGuidedFlowEvent):', error);
+      return null;
+    }
+  },
+
+  /**
+   * Track interactions within the comparison chart
+   */
+  async trackChartInteraction(options: {
+    interactionType: 'toggle_tool' | 'toggle_criterion' | 'show_all_tools' | 'hide_all_tools' | 'show_all_criteria' | 'hide_all_criteria';
+    toolId?: string;
+    criterionId?: string;
+    action?: string;
+    criteriaAdjusted?: boolean;
+    visibleToolCount?: number;
+    visibleCriterionCount?: number;
+    context?: Record<string, any>;
+  }): Promise<string | null> {
+    try {
+      if (!supabase) return null;
+
+      const sessionId = getAnalyticsSessionId();
+      const { data: interactionId, error } = await supabase
+        .schema('analytics')
+        .rpc('track_chart_interaction', {
+          p_session_id: sessionId,
+          p_interaction_type: options.interactionType,
+          p_tool_id: options.toolId || null,
+          p_criterion_id: options.criterionId || null,
+          p_action: options.action || null,
+          p_criteria_adjusted: options.criteriaAdjusted ?? null,
+          p_visible_tool_count: options.visibleToolCount ?? null,
+          p_visible_criterion_count: options.visibleCriterionCount ?? null,
+          p_context: {
+            source_component: options.context?.source_component || 'unknown',
+            ...options.context,
+          },
+        });
+
+      if (error) throw error;
+      return interactionId;
+    } catch (error) {
+      console.warn('Analytics tracking failed (trackChartInteraction):', error);
+      return null;
+    }
+  },
+
+  /**
+   * Track overlay / bumper lifecycle events
+   */
+  async trackOverlayEvent(options: {
+    overlay: 'product_bumper' | 'exit_intent' | 'guided_ranking' | 'manual_guidance' | 'comparison_report';
+    eventType: 'shown' | 'cta_clicked' | 'dismissed' | 'timeout';
+    trigger?: string;
+    cta?: string;
+    context?: Record<string, any>;
+  }): Promise<string | null> {
+    try {
+      if (!supabase) return null;
+
+      const sessionId = getAnalyticsSessionId();
+      const { data: eventId, error } = await supabase
+        .schema('analytics')
+        .rpc('track_overlay_event', {
+          p_session_id: sessionId,
+          p_overlay: options.overlay,
+          p_event_type: options.eventType,
+          p_trigger: options.trigger || null,
+          p_cta: options.cta || null,
+          p_context: {
+            source_component: options.context?.source_component || 'unknown',
+            ...options.context,
+          },
+        });
+
+      if (error) throw error;
+      return eventId;
+    } catch (error) {
+      console.warn('Analytics tracking failed (trackOverlayEvent):', error);
+      return null;
+    }
+  },
+
 
   /**
    * Track report sent (CONVERSION EVENT)

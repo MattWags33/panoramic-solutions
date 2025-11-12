@@ -28,8 +28,9 @@ export const getToolRating = (tool: Tool, criterionId: string | Criterion): numb
       }
       
       // Fallback: try to find by name if we have a criterion object
-      if (criterion) {
-        const criterionDataByName = tool.criteria.find(c => c.name === criterion.name);
+      const criterionName = criterion?.name;
+      if (criterionName) {
+        const criterionDataByName = tool.criteria.find(c => c.name === criterionName);
         if (criterionDataByName && typeof criterionDataByName.ranking === 'number') {
           return criterionDataByName.ranking;
         }
@@ -45,8 +46,9 @@ export const getToolRating = (tool: Tool, criterionId: string | Criterion): numb
       }
       
       // Try to find by criterion name (convert to lowercase for matching)
-      if (criterion) {
-        const ratingByName = tool.ratings[criterion.name.toLowerCase()];
+      const criterionName = criterion?.name;
+      if (criterionName) {
+        const ratingByName = tool.ratings[criterionName.toLowerCase()];
         if (typeof ratingByName === 'number') {
           return ratingByName;
         }
@@ -205,4 +207,23 @@ export const roundMatchScore = (score: number): number => {
   } else {
     return Math.floor(score);
   }
+}; 
+
+/**
+ * Format a 0-10 match score into a percentage label for display purposes
+ * while preserving the numeric percent value for optional use.
+ *
+ * @param score - Raw score on 0-10 scale
+ * @returns Percent representation (rounded) and preformatted label string
+ */
+export const formatMatchScorePercentage = (
+  score: number
+): { percent: number; label: string } => {
+  const clampedScore = Math.max(0, Math.min(10, score));
+  const percent = Math.round((clampedScore / 10) * 100);
+
+  return {
+    percent,
+    label: `${percent}%`
+  };
 }; 

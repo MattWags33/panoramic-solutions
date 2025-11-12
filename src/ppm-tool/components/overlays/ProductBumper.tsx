@@ -4,10 +4,11 @@ import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, ArrowRight } from 'lucide-react';
 import { useUnifiedMobileDetection } from '@/ppm-tool/shared/hooks/useUnifiedMobileDetection';
+import { analytics } from '@/lib/analytics';
 
 interface ProductBumperProps {
   isVisible: boolean;
-  onClose: () => void;
+  onClose: (reason?: 'close_button' | 'cta' | 'auto') => void;
   onUseGuided: () => void;
   guidedButtonRef?: React.RefObject<HTMLButtonElement>;
 }
@@ -127,6 +128,19 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
     return null;
   }
 
+  const handleUseGuided = () => {
+    void analytics.trackOverlayEvent({
+      overlay: 'product_bumper',
+      eventType: 'cta_clicked',
+      cta: 'use_guided_rankings',
+      context: {
+        source_component: 'product_bumper',
+      },
+    });
+    onUseGuided();
+    onClose('cta');
+  };
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -180,7 +194,7 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
                   <p className="text-sm text-gray-500">Why guided ranking works better</p>
                 </div>
                 <button
-                  onClick={onClose}
+                  onClick={() => onClose('close_button')}
                   className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
                   aria-label="Close guided ranking suggestion"
                 >
@@ -195,7 +209,7 @@ export const ProductBumper: React.FC<ProductBumperProps> = ({
                 </p>
 
                 <button
-                  onClick={onUseGuided}
+                  onClick={handleUseGuided}
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-lg font-medium transition-all"
                   aria-describedby="product-bumper-description"
                 >
