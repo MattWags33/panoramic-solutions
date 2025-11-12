@@ -352,142 +352,79 @@ export const HowItWorksOverlay: React.FC<HowItWorksOverlayProps> = ({
                   {/* Introduction */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 md:p-6 border border-blue-100">
                     <p className="text-sm md:text-base text-gray-800 leading-relaxed text-center font-medium">
-                      Panoramic Solutions&apos; PPM Tool Finder is grounded in real-world organizational change management principles backed by decades of research.
+                      PPM Tool Finder helps organizations choose the right project portfolio management software through an objective, research-driven process. Every recommendation is based on verified tool data, guided user input, and an intelligent matching algorithm shaped by real-world PMO experience.
                     </p>
                   </div>
 
-                  {/* Research Foundation */}
+                  {/* 1. How We Research Tools */}
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">Research Foundation</h3>
-                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
-                    <p className="text-sm md:text-base text-gray-700 leading-relaxed">
-                      Our framework draws from leading change management research, including work by organizational development pioneers Warner Burke, George Litwin, and Edgar Schein. These methodologies have been validated through empirical studies and real-world implementations across diverse industries.
-                    </p>
-                  </div>
-
-                  {/* Burke-Litwin Model */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">The Burke-Litwin Model (1992)</h3>
-                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
-                    <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-6">
-                      This comprehensive organizational change framework identifies four distinct approaches to implementing transformational change. Each approach addresses different aspects of organizational dynamics.
-                    </p>
-
-                    {/* Four Change Approaches Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      {/* Weaving */}
-                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                        <h4 className="font-bold text-gray-900 text-base mb-3">Weaving</h4>
-                        <div className="space-y-2 text-sm text-gray-700">
-                          <p><span className="font-semibold">Focus:</span> Mutual dependence and collective learning</p>
-                          <p><span className="font-semibold">Approach:</span> Teams work together to integrate new processes while learning from each other&apos;s experiences</p>
-                          <p className="text-xs italic mt-3">Example: Cross-functional teams collaborating on PPM implementation</p>
-                        </div>
-                      </div>
-
-                      {/* Intergroup Interdependence */}
-                      <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                        <h4 className="font-bold text-gray-900 text-base mb-3">Intergroup Interdependence</h4>
-                        <div className="space-y-2 text-sm text-gray-700">
-                          <p><span className="font-semibold">Focus:</span> Group boundaries are interlaced and remain distinct</p>
-                          <p><span className="font-semibold">Approach:</span> Different departments maintain their identity while coordinating closely on shared objectives</p>
-                          <p className="text-xs italic mt-3">Example: IT and PMO collaborating on tool integration</p>
-                        </div>
-                      </div>
-
-                      {/* Inside Out Change */}
-                      <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                        <h4 className="font-bold text-gray-900 text-base mb-3">Inside Out Change</h4>
-                        <div className="space-y-2 text-sm text-gray-700">
-                          <p><span className="font-semibold">Focus:</span> Uphold internal values, beliefs, and relationships</p>
-                          <p><span className="font-semibold">Approach:</span> Change begins with organizational culture and core values, then extends outward to processes</p>
-                          <p className="text-xs italic mt-3">Example: Aligning PPM tool selection with company culture</p>
-                        </div>
-                      </div>
-
-                      {/* Outside In Change */}
-                      <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
-                        <h4 className="font-bold text-gray-900 text-base mb-3">Outside In Change</h4>
-                        <div className="space-y-2 text-sm text-gray-700">
-                          <p><span className="font-semibold">Focus:</span> Focus on external systems, structure, and processes</p>
-                          <p><span className="font-semibold">Approach:</span> Change starts with external requirements and market needs, then adapts internal operations</p>
-                          <p className="text-xs italic mt-3">Example: Selecting PPM tools based on industry standards</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* How We Apply This Research */}
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">How We Apply This Research</h3>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">1. How We Research Tools</h3>
                     <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
                     <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
-                      Our 7 core criteria are derived from analyzing how successful organizations implement PPM tools across these four change approaches. Each criterion addresses specific organizational needs identified in the research:
+                      Each platform in our database is tested and configured in realistic business environments. We evaluate tools across seven core criteria: Scalability, Integrations & Extensibility, Ease of Use, Flexibility & Customization, Portfolio Management, Reporting & Analytics, Security & Compliance.
                     </p>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                      Each category is scored through hands-on builds, verified data, and expert testing. Rankings are refreshed as tools release major updates.
+                    </p>
+                  </div>
 
+                  {/* 2. How We Evaluate User Rankings */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">2. How We Evaluate User Rankings</h3>
+                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
+                      When users complete the guided questionnaire or manual ranking, their responses form a requirement profile. Each answer is weighted by importance using the same criteria applied during tool research.
+                    </p>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                      This shared framework ensures that user priorities and platform capabilities are compared consistently and fairly.
+                    </p>
+                  </div>
+
+                  {/* 3. How We Match Users to Tools */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">3. How We Match Users to Tools</h3>
+                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
+                      The PPM Tool Finder algorithm compares each user&apos;s weighted profile to every platform&apos;s research data. It calculates alignment scores and produces a ranked list of tools best matched to the user&apos;s priorities.
+                    </p>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                      As more users participate, the system learns from patterns to enhance precision and relevance.
+                    </p>
+                  </div>
+
+                  {/* 4. How PPM Tool Finder Sustains Itself */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">4. How PPM Tool Finder Sustains Itself</h3>
+                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-4">
+                      Transparency extends to how the platform operates. PPM Tool Finder is maintained through:
+                    </p>
                     <div className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm md:text-base">Scalability</p>
-                          <p className="text-xs md:text-sm text-gray-600">Supports organizational growth across all change approaches, enabling teams to expand without disruption</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm md:text-base">Integrations & Extensibility</p>
-                          <p className="text-xs md:text-sm text-gray-600">Enables intergroup coordination and weaving by connecting disparate systems and teams</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm md:text-base">Ease of Use</p>
-                          <p className="text-xs md:text-sm text-gray-600">Facilitates collective learning and adoption, critical for weaving and inside-out change</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm md:text-base">Flexibility & Customization</p>
-                          <p className="text-xs md:text-sm text-gray-600">Adapts to internal culture and values while meeting external requirements</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm md:text-base">Reporting & Analytics</p>
-                          <p className="text-xs md:text-sm text-gray-600">Provides external visibility and evidence-based decision-making for outside-in change</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm md:text-base">Security & Compliance</p>
-                          <p className="text-xs md:text-sm text-gray-600">Maintains organizational values and meets external regulatory requirements</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm md:text-base">Portfolio Management</p>
-                          <p className="text-xs md:text-sm text-gray-600">Balances strategic priorities across all four change approaches, ensuring alignment between internal values and external demands</p>
-                        </div>
-                      </div>
+                      <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                        <span className="font-semibold">Consulting & Implementation Services</span> – Delivered by Panoramic Solutions to help teams implement the tools featured in our research.
+                      </p>
+                      <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                        <span className="font-semibold">Sponsored Visibility (Clearly Marked)</span> – Select vendors may sponsor educational content, never rankings or match results.
+                      </p>
+                      <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                        <span className="font-semibold">Aggregated Insights</span> – Anonymous, aggregated data may be used to identify market trends. Individual data is never sold or shared without consent.
+                      </p>
                     </div>
+                  </div>
+
+                  {/* 5. Our Promise */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">5. Our Promise</h3>
+                    <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-600 mb-4 rounded-full"></div>
+                    <p className="text-sm md:text-base text-gray-700 leading-relaxed">
+                      We are committed to accuracy, independence, and transparency. Our team continually refines the evaluation model, updates tool data, and protects user privacy at every step.
+                    </p>
                   </div>
 
                   {/* Bottom Note */}
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <p className="text-xs md:text-sm text-gray-600 leading-relaxed text-center">
-                      By grounding our PPM Tool Finder in these proven methodologies, we ensure that your tool selection process considers the full complexity of organizational change, not just technical features.
+                      Our goal is to provide clear, data-backed software intelligence, not to sell influence.
                     </p>
                   </div>
                 </div>
