@@ -39,29 +39,72 @@ export const captureAttribution = (): UserAttribution => {
   localStorage.setItem('user_attribution', JSON.stringify(attribution));
   console.log('🎯 User attribution captured:', attribution);
   
+  // ✅ NEW: Set attribution as PostHog super properties (auto-included in all events)
+  try {
+    if (typeof window !== 'undefined' && (window as any).posthog) {
+      const posthog = (window as any).posthog;
+      posthog.register({
+        initial_referrer: attribution.referrer,
+        initial_source: attribution.source_category,
+        initial_utm_source: attribution.utm_source || null,
+        initial_utm_medium: attribution.utm_medium || null,
+        initial_utm_campaign: attribution.utm_campaign || null,
+        initial_utm_content: attribution.utm_content || null,
+        initial_utm_term: attribution.utm_term || null,
+        initial_landing_page: attribution.landing_page
+      });
+      
+      // Also set as user properties for person profile
+      posthog.capture('$set', {
+        $set_once: {
+          first_referrer: attribution.referrer,
+          first_source: attribution.source_category,
+          first_utm_source: attribution.utm_source,
+          first_utm_campaign: attribution.utm_campaign,
+          first_landing_page: attribution.landing_page,
+          first_visit_date: new Date().toISOString()
+        }
+      });
+      
+      console.log('✅ PostHog: Attribution set as super properties');
+    }
+  } catch (error) {
+    console.warn('Failed to set PostHog attribution:', error);
+  }
+  
   return attribution;
 };
 
 /**
  * Detect user source category from referrer domain
+ * ✅ ENHANCED: Added more platforms for robust tracking
  */
 const detectSourceCategory = (referrer: string): string => {
   if (!referrer) return 'Direct Traffic';
   
   const ref = referrer.toLowerCase();
   
-  // Social Media
+  // Social Media (Enhanced)
   if (ref.includes('youtube.com') || ref.includes('youtu.be')) return 'YouTube';
-  if (ref.includes('linkedin.com')) return 'LinkedIn';
-  if (ref.includes('facebook.com') || ref.includes('fb.com')) return 'Facebook';
-  if (ref.includes('twitter.com') || ref.includes('t.co') || ref.includes('x.com')) return 'Twitter';
+  if (ref.includes('linkedin.com') || ref.includes('lnkd.in')) return 'LinkedIn';
+  if (ref.includes('facebook.com') || ref.includes('fb.com') || ref.includes('fbclid')) return 'Facebook';
+  if (ref.includes('twitter.com') || ref.includes('t.co') || ref.includes('x.com')) return 'Twitter/X';
   if (ref.includes('instagram.com')) return 'Instagram';
-  if (ref.includes('reddit.com')) return 'Reddit';
+  if (ref.includes('reddit.com') || ref.includes('redd.it')) return 'Reddit';
+  if (ref.includes('tiktok.com')) return 'TikTok';
+  if (ref.includes('pinterest.com') || ref.includes('pin.it')) return 'Pinterest';
+  if (ref.includes('discord.com') || ref.includes('discord.gg')) return 'Discord';
+  if (ref.includes('slack.com')) return 'Slack';
+  if (ref.includes('whatsapp.com')) return 'WhatsApp';
+  if (ref.includes('telegram.org') || ref.includes('t.me')) return 'Telegram';
   
-  // Search Engines
-  if (ref.includes('google.com')) return 'Google Search';
+  // Search Engines (Enhanced)
+  if (ref.includes('google.com') || ref.includes('google.')) return 'Google Search';
   if (ref.includes('bing.com')) return 'Bing Search';
   if (ref.includes('duckduckgo.com')) return 'DuckDuckGo';
+  if (ref.includes('yahoo.com')) return 'Yahoo Search';
+  if (ref.includes('baidu.com')) return 'Baidu Search';
+  if (ref.includes('yandex.com') || ref.includes('yandex.ru')) return 'Yandex Search';
   
   // PPM Tool Communities (flexible patterns)
   if (ref.includes('smartsheet') && (ref.includes('community') || ref.includes('forum'))) return 'Smartsheet Community';

@@ -98,6 +98,25 @@ export default function PPMToolPage() {
 
   // Track new visitor and active user on page load
   useEffect(() => {
+    // ✅ NEW: Register super properties (auto-included in every event)
+    const registerSuperProperties = async () => {
+      try {
+        const posthog = (await import('posthog-js')).default;
+        if (posthog && posthog.__loaded) {
+          posthog.register({
+            app_version: '1.0.0',
+            environment: process.env.NODE_ENV || 'production',
+            page_type: 'ppm_tool',
+            tool_category: 'portfolio_management'
+          });
+          console.log('✅ PostHog: Super properties registered');
+        }
+      } catch (error) {
+        console.warn('Failed to register super properties:', error);
+      }
+    };
+    registerSuperProperties();
+    
     // Check and track new visitor
     checkAndTrackVisitor({
       page: 'ppm_tool',

@@ -1,0 +1,505 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-13T19:30:00Z",
+  "type": "TRACKING_DOCUMENTATION",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "feature": "Referrer & Attribution Tracking"
+  },
+  "summary": {
+    "status": "ENHANCED ✅",
+    "tracking_coverage": "Complete referrer tracking for all major platforms",
+    "platforms_tracked": 28,
+    "integration": "PostHog + Supabase + localStorage",
+    "persistence": "Permanent (stored on first visit, never changes)"
+  },
+  "how_it_works": {
+    "step_1": {
+      "event": "User lands on site",
+      "action": "captureAttribution() fires automatically",
+      "captures": [
+        "document.referrer (full URL)",
+        "Detected source category (e.g., 'LinkedIn', 'Google Search')",
+        "All UTM parameters (utm_source, utm_medium, utm_campaign, utm_content, utm_term)",
+        "Landing page URL",
+        "Timestamp"
+      ]
+    },
+    "step_2": {
+      "event": "Attribution stored permanently",
+      "where": [
+        "localStorage (persists across sessions)",
+        "PostHog super properties (auto-included in all events)",
+        "PostHog user properties (permanent on person profile)"
+      ]
+    },
+    "step_3": {
+      "event": "User sends email report",
+      "action": "Attribution linked to email identity",
+      "result": "User profile permanently shows how they first discovered you"
+    }
+  },
+  "platforms_tracked": {
+    "social_media": [
+      {
+        "platform": "LinkedIn",
+        "domains": ["linkedin.com", "lnkd.in"],
+        "category": "LinkedIn",
+        "use_case": "B2B campaigns, professional networking"
+      },
+      {
+        "platform": "Reddit",
+        "domains": ["reddit.com", "redd.it"],
+        "category": "Reddit",
+        "use_case": "Community discussions, r/projectmanagement posts"
+      },
+      {
+        "platform": "Twitter/X",
+        "domains": ["twitter.com", "t.co", "x.com"],
+        "category": "Twitter/X",
+        "use_case": "Social media marketing, tech communities"
+      },
+      {
+        "platform": "Facebook",
+        "domains": ["facebook.com", "fb.com", "fbclid"],
+        "category": "Facebook",
+        "use_case": "Social ads, PM groups"
+      },
+      {
+        "platform": "YouTube",
+        "domains": ["youtube.com", "youtu.be"],
+        "category": "YouTube",
+        "use_case": "Video content, tutorials, demos"
+      },
+      {
+        "platform": "Instagram",
+        "domains": ["instagram.com"],
+        "category": "Instagram",
+        "use_case": "Visual marketing, stories"
+      },
+      {
+        "platform": "TikTok",
+        "domains": ["tiktok.com"],
+        "category": "TikTok",
+        "use_case": "Short-form video content"
+      },
+      {
+        "platform": "Pinterest",
+        "domains": ["pinterest.com", "pin.it"],
+        "category": "Pinterest",
+        "use_case": "Visual discovery, infographics"
+      },
+      {
+        "platform": "Discord",
+        "domains": ["discord.com", "discord.gg"],
+        "category": "Discord",
+        "use_case": "Community servers, tech communities"
+      },
+      {
+        "platform": "Slack",
+        "domains": ["slack.com"],
+        "category": "Slack",
+        "use_case": "Workspace sharing, team links"
+      },
+      {
+        "platform": "WhatsApp",
+        "domains": ["whatsapp.com"],
+        "category": "WhatsApp",
+        "use_case": "Direct messaging, group chats"
+      },
+      {
+        "platform": "Telegram",
+        "domains": ["telegram.org", "t.me"],
+        "category": "Telegram",
+        "use_case": "Group channels, communities"
+      }
+    ],
+    "search_engines": [
+      {
+        "platform": "Google",
+        "domains": ["google.com", "google.*"],
+        "category": "Google Search",
+        "use_case": "Organic search, SEO traffic"
+      },
+      {
+        "platform": "Bing",
+        "domains": ["bing.com"],
+        "category": "Bing Search",
+        "use_case": "Microsoft search traffic"
+      },
+      {
+        "platform": "DuckDuckGo",
+        "domains": ["duckduckgo.com"],
+        "category": "DuckDuckGo",
+        "use_case": "Privacy-focused search users"
+      },
+      {
+        "platform": "Yahoo",
+        "domains": ["yahoo.com"],
+        "category": "Yahoo Search",
+        "use_case": "Legacy search users"
+      },
+      {
+        "platform": "Baidu",
+        "domains": ["baidu.com"],
+        "category": "Baidu Search",
+        "use_case": "Chinese search traffic"
+      },
+      {
+        "platform": "Yandex",
+        "domains": ["yandex.com", "yandex.ru"],
+        "category": "Yandex Search",
+        "use_case": "Russian search traffic"
+      }
+    ],
+    "ppm_communities": [
+      {
+        "platform": "Smartsheet Community",
+        "pattern": "smartsheet + (community|forum)",
+        "category": "Smartsheet Community",
+        "use_case": "Competitor tool users"
+      },
+      {
+        "platform": "Airtable Community",
+        "pattern": "airtable + (community|forum)",
+        "category": "Airtable Community",
+        "use_case": "Competitor tool users"
+      },
+      {
+        "platform": "Asana Community",
+        "pattern": "asana + (community|forum)",
+        "category": "Asana Community",
+        "use_case": "Competitor tool users"
+      },
+      {
+        "platform": "Monday.com Community",
+        "pattern": "monday + (community|forum)",
+        "category": "Monday.com Community",
+        "use_case": "Competitor tool users"
+      },
+      {
+        "platform": "ClickUp Community",
+        "pattern": "clickup + (community|forum)",
+        "category": "ClickUp Community",
+        "use_case": "Competitor tool users"
+      },
+      {
+        "platform": "Jira/Atlassian",
+        "pattern": "(jira|atlassian) + (community|forum)",
+        "category": "Jira Community / Atlassian Community",
+        "use_case": "Competitor tool users"
+      },
+      {
+        "platform": "ProjectManagement.com",
+        "domains": ["projectmanagement.com"],
+        "category": "ProjectManagement.com",
+        "use_case": "PM education, resources"
+      },
+      {
+        "platform": "PMI.org",
+        "domains": ["pmi.org"],
+        "category": "PMI.org",
+        "use_case": "Professional PM organization"
+      }
+    ],
+    "direct_traffic": {
+      "category": "Direct Traffic",
+      "when": "No referrer detected",
+      "possible_sources": [
+        "User typed URL directly",
+        "Bookmark",
+        "Email link (without tracking)",
+        "Mobile app",
+        "QR code",
+        "Referrer blocked by privacy settings"
+      ]
+    }
+  },
+  "utm_tracking": {
+    "description": "All UTM parameters are automatically captured and stored",
+    "parameters": {
+      "utm_source": {
+        "purpose": "Identifies the source (e.g., 'linkedin', 'google', 'newsletter')",
+        "example": "?utm_source=linkedin"
+      },
+      "utm_medium": {
+        "purpose": "Identifies the marketing medium (e.g., 'social', 'email', 'cpc')",
+        "example": "?utm_medium=social"
+      },
+      "utm_campaign": {
+        "purpose": "Identifies the campaign (e.g., 'spring_2025', 'product_launch')",
+        "example": "?utm_campaign=linkedin_b2b_campaign"
+      },
+      "utm_content": {
+        "purpose": "Identifies specific ad content or link",
+        "example": "?utm_content=ad_variant_a"
+      },
+      "utm_term": {
+        "purpose": "Identifies search keywords (for paid search)",
+        "example": "?utm_term=project+management+tool"
+      }
+    },
+    "best_practice_url": "https://panoramic-solutions.com/ppm-tool?utm_source=linkedin&utm_medium=social&utm_campaign=nov_2025_launch&utm_content=tool_comparison_post"
+  },
+  "posthog_integration": {
+    "super_properties": {
+      "description": "Attribution set as super properties = auto-included in EVERY event",
+      "properties": [
+        "initial_referrer: Full referrer URL",
+        "initial_source: Detected category (e.g., 'LinkedIn')",
+        "initial_utm_source: utm_source value",
+        "initial_utm_medium: utm_medium value",
+        "initial_utm_campaign: utm_campaign value",
+        "initial_utm_content: utm_content value",
+        "initial_utm_term: utm_term value",
+        "initial_landing_page: Landing page URL"
+      ],
+      "benefit": "Filter ANY dashboard by source without complex queries"
+    },
+    "user_properties": {
+      "description": "Attribution permanently stored on user profile (set once, never changes)",
+      "properties_set_once": [
+        "first_referrer",
+        "first_source",
+        "first_utm_source",
+        "first_utm_campaign",
+        "first_landing_page",
+        "first_visit_date"
+      ],
+      "benefit": "Know forever how each user discovered you"
+    }
+  },
+  "dashboard_capabilities": {
+    "insights_you_can_create": [
+      {
+        "insight": "📊 Traffic by Source",
+        "query": "Count(New_Visitor) GROUP BY initial_source",
+        "shows": "Which platforms drive the most visitors"
+      },
+      {
+        "insight": "💰 Conversion Rate by Source",
+        "query": "Count(New_Report_Sent) / Count(New_Visitor) GROUP BY initial_source",
+        "shows": "Which platforms have best conversion rates"
+      },
+      {
+        "insight": "🎯 LinkedIn Campaign Performance",
+        "query": "Filter: initial_source = 'LinkedIn', show all events",
+        "shows": "Complete journey of LinkedIn campaign visitors"
+      },
+      {
+        "insight": "🔍 Reddit vs LinkedIn Quality",
+        "query": "Compare: Reddit visitors vs LinkedIn visitors - engagement, time to convert, tools clicked",
+        "shows": "Which platform brings higher quality leads"
+      },
+      {
+        "insight": "📈 UTM Campaign ROI",
+        "query": "Count(New_Report_Sent) GROUP BY initial_utm_campaign",
+        "shows": "Which campaigns drive the most conversions"
+      },
+      {
+        "insight": "🏆 Best Performing Landing Pages",
+        "query": "Count(New_Report_Sent) GROUP BY initial_landing_page",
+        "shows": "Which pages convert best"
+      }
+    ],
+    "cohorts_you_can_create": [
+      {
+        "cohort": "LinkedIn Visitors",
+        "filter": "initial_source = 'LinkedIn'",
+        "use_case": "Retarget with LinkedIn ads"
+      },
+      {
+        "cohort": "Reddit Visitors",
+        "filter": "initial_source = 'Reddit'",
+        "use_case": "Analyze Reddit post effectiveness"
+      },
+      {
+        "cohort": "Organic Search",
+        "filter": "initial_source LIKE '%Search'",
+        "use_case": "SEO performance analysis"
+      },
+      {
+        "cohort": "Direct Traffic Converters",
+        "filter": "initial_source = 'Direct Traffic' AND has_converted = true",
+        "use_case": "High-intent users (bookmarked, typed URL)"
+      },
+      {
+        "cohort": "Spring 2025 Campaign",
+        "filter": "initial_utm_campaign = 'spring_2025'",
+        "use_case": "Campaign-specific analysis"
+      }
+    ]
+  },
+  "real_world_examples": {
+    "example_1_linkedin_campaign": {
+      "scenario": "You post on LinkedIn: 'Check out our PPM tool comparison'",
+      "url": "https://panoramic-solutions.com/ppm-tool?utm_source=linkedin&utm_medium=social&utm_campaign=nov_2025_launch",
+      "user_journey": [
+        "1. User clicks LinkedIn link",
+        "2. Attribution captured: source='LinkedIn', utm_source='linkedin', utm_campaign='nov_2025_launch'",
+        "3. User browses tool, clicks 5 tools",
+        "4. User sends email report",
+        "5. User profile PERMANENTLY shows: First source = LinkedIn, First campaign = nov_2025_launch"
+      ],
+      "what_you_see_in_posthog": {
+        "person_profile": {
+          "email": "user@company.com",
+          "first_source": "LinkedIn",
+          "first_utm_campaign": "nov_2025_launch",
+          "first_landing_page": "https://panoramic-solutions.com/ppm-tool?utm_source=linkedin...",
+          "first_visit_date": "2025-11-13..."
+        },
+        "all_events": "Every event includes initial_source='LinkedIn' in properties"
+      }
+    },
+    "example_2_reddit_post": {
+      "scenario": "Someone shares your tool on r/projectmanagement",
+      "url": "https://panoramic-solutions.com/ppm-tool",
+      "user_journey": [
+        "1. User clicks Reddit link (referrer = 'https://www.reddit.com/r/projectmanagement/...')",
+        "2. Attribution captured: source='Reddit', referrer='reddit.com'",
+        "3. User explores tool",
+        "4. User sends report",
+        "5. Forever known as 'Reddit' user"
+      ],
+      "what_you_see_in_posthog": {
+        "dashboard_filter": "Show all Reddit visitors",
+        "metrics": [
+          "Total Reddit visitors this month: 45",
+          "Reddit conversion rate: 18% (8/45 sent reports)",
+          "Average tools clicked by Reddit users: 6.2"
+        ]
+      }
+    },
+    "example_3_google_search": {
+      "scenario": "User searches 'best project management tool comparison'",
+      "url": "https://panoramic-solutions.com/ppm-tool",
+      "user_journey": [
+        "1. User clicks Google search result (referrer = 'https://www.google.com/search?q=...')",
+        "2. Attribution captured: source='Google Search'",
+        "3. Organic SEO traffic identified"
+      ],
+      "seo_insights": "Track which keywords drive traffic (if Google passes search query)"
+    }
+  },
+  "testing": {
+    "how_to_test_locally": [
+      {
+        "step": 1,
+        "test": "Direct traffic",
+        "action": "Type 'localhost:3000/ppm-tool' directly in browser",
+        "expected": "source_category = 'Direct Traffic'"
+      },
+      {
+        "step": 2,
+        "test": "LinkedIn simulation",
+        "action": "Create test.html with link: <a href='http://localhost:3000/ppm-tool?utm_source=linkedin'>Test</a>",
+        "expected": "source_category = 'LinkedIn', utm_source = 'linkedin'"
+      },
+      {
+        "step": 3,
+        "test": "Check console",
+        "action": "Open browser console",
+        "expected": "See '🎯 User attribution captured: {...}' and '✅ PostHog: Attribution set as super properties'"
+      },
+      {
+        "step": 4,
+        "test": "Check localStorage",
+        "action": "Browser DevTools → Application → Local Storage → Check 'user_attribution'",
+        "expected": "See full attribution JSON object"
+      },
+      {
+        "step": 5,
+        "test": "Send report and check PostHog",
+        "action": "Send email report, then check PostHog person profile",
+        "expected": "Person profile shows first_source, first_referrer, etc."
+      }
+    ],
+    "debug_functions": {
+      "description": "Available in browser console (development mode only)",
+      "functions": [
+        {
+          "function": "debugAttribution()",
+          "shows": "Current attribution data from localStorage"
+        },
+        {
+          "function": "clearAttribution()",
+          "use": "Reset attribution for testing (simulates new visitor)"
+        }
+      ]
+    }
+  },
+  "benefits": {
+    "marketing": [
+      "Know which platforms drive the most traffic",
+      "Identify highest-converting sources",
+      "Calculate ROI per campaign",
+      "Optimize ad spend based on conversion data"
+    ],
+    "product": [
+      "Understand user journey from first touch",
+      "See which sources bring quality users",
+      "Identify drop-off patterns by source",
+      "Prioritize features for high-value sources"
+    ],
+    "sales": [
+      "Know which companies came from where",
+      "LinkedIn = B2B leads (prioritize)",
+      "Direct traffic = high intent (already know about you)",
+      "Follow up based on source context"
+    ]
+  },
+  "persistence_rules": {
+    "first_touch_attribution": {
+      "behavior": "Attribution NEVER changes once set",
+      "example": "User visits from LinkedIn → browses → leaves → comes back via Google search → attribution stays 'LinkedIn'",
+      "reason": "First touch attribution - credit the channel that brought them in"
+    },
+    "storage_duration": "Permanent until user clears browser data",
+    "cross_session": "Attribution persists across all sessions",
+    "cross_device": "Once user identifies (sends email), attribution follows them across devices via email ID"
+  },
+  "deployment_checklist": {
+    "files_changed": [
+      "src/lib/attribution.ts (enhanced platform detection + PostHog integration)",
+      "src/ppm-tool/shared/hooks/useEmailReport.ts (links attribution to user profile)"
+    ],
+    "what_to_test": [
+      "Visit site from different sources (direct, LinkedIn, Google)",
+      "Check console logs for attribution capture",
+      "Send email report",
+      "Verify PostHog person profile shows attribution",
+      "Check PostHog events include super properties"
+    ],
+    "posthog_setup": [
+      "Create insight: Traffic by Source",
+      "Create cohorts: LinkedIn Visitors, Reddit Visitors, etc.",
+      "Set up alerts: 'New source detected' (discover new referrers)"
+    ]
+  },
+  "frequently_asked_questions": [
+    {
+      "question": "What if user visits from LinkedIn, then comes back via Google?",
+      "answer": "Attribution stays 'LinkedIn' - first touch attribution. The channel that brought them in gets credit."
+    },
+    {
+      "question": "How do I track a specific marketing campaign?",
+      "answer": "Use UTM parameters: ?utm_source=linkedin&utm_campaign=spring_promo. Then filter PostHog by initial_utm_campaign='spring_promo'"
+    },
+    {
+      "question": "What if referrer is blocked by privacy settings?",
+      "answer": "Shows as 'Direct Traffic'. Use UTM parameters in your links to ensure tracking."
+    },
+    {
+      "question": "Can I see which Reddit post drove traffic?",
+      "answer": "Yes! The full referrer URL is stored. Check 'initial_referrer' property in PostHog."
+    },
+    {
+      "question": "How do I reset attribution for testing?",
+      "answer": "Browser console (dev mode): clearAttribution() - then revisit site as 'new' visitor"
+    }
+  ]
+}
+

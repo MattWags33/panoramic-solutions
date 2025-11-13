@@ -1,0 +1,286 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-13T18:15:00Z",
+  "type": "TRACKING_CONFIGURATION",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true
+  },
+  "tracking_requirements": {
+    "confirmed_by_user": "Parker Gawne",
+    "date_confirmed": "2025-11-13",
+    "summary": "Daily unique user tracking with per-tool-per-day deduplication for tool actions, and unlimited report tracking"
+  },
+  "tracking_behaviors": {
+    "user_level_metrics": {
+      "description": "Track unique users once per day - resets daily",
+      "events": [
+        {
+          "event_name": "New_Visitor",
+          "fires": "Once per day per user",
+          "example": "User visits 3x today = 1 event. User visits tomorrow = another event.",
+          "localStorage_key": "posthog_visitor_tracked_2025-11-13"
+        },
+        {
+          "event_name": "New_Active",
+          "fires": "Once per day per user",
+          "example": "User interacts 5x today = 1 event. User interacts tomorrow = another event.",
+          "localStorage_key": "posthog_active_tracked_2025-11-13"
+        },
+        {
+          "event_name": "New_Manual_Ranking",
+          "fires": "Once per day per user",
+          "example": "User moves slider 10x today = 1 event. User moves slider tomorrow = another event.",
+          "localStorage_key": "posthog_manual_ranking_tracked_2025-11-13"
+        },
+        {
+          "event_name": "New_Partial_Ranking",
+          "fires": "Once per day per user",
+          "example": "User answers questions multiple times today = 1 event. Tomorrow = another event.",
+          "localStorage_key": "posthog_partial_ranking_tracked_2025-11-13"
+        },
+        {
+          "event_name": "New_Full_Ranking_Submittal",
+          "fires": "Once per day per user",
+          "example": "User completes ranking twice today = 1 event. Tomorrow = another event.",
+          "localStorage_key": "posthog_full_ranking_tracked_2025-11-13"
+        }
+      ]
+    },
+    "tool_level_metrics": {
+      "description": "Track once per tool per day - same tool clicked multiple times = 1 event, different tool = separate event",
+      "events": [
+        {
+          "event_name": "Tool_Try_Free_Click",
+          "fires": "Once per tool per day",
+          "example": "User clicks Airtable Try Free 3x today = 1 event. User clicks Adobe Workfront Try Free today = 1 event (different tool). User clicks Airtable again tomorrow = 1 event (different day).",
+          "localStorage_key": "posthog_tool_try_free_airtable_2025-11-13"
+        },
+        {
+          "event_name": "Tool_Add_To_Compare_Click",
+          "fires": "Once per tool per day",
+          "example": "User adds Airtable to compare 5x today = 1 event. User adds Monday.com today = 1 event.",
+          "localStorage_key": "posthog_tool_compare_monday_com_2025-11-13"
+        },
+        {
+          "event_name": "Tool_View_Details_Click",
+          "fires": "Once per tool per day",
+          "example": "User views Jira details 3x today = 1 event. User views Asana details today = 1 event.",
+          "localStorage_key": "posthog_tool_view_jira_2025-11-13"
+        }
+      ],
+      "key_behavior": "Per-tool-per-day means user can click 7 different tools = 7 events, but clicking same tool multiple times = 1 event"
+    },
+    "report_metrics": {
+      "description": "Track EVERY report sent - no limits, no deduplication",
+      "events": [
+        {
+          "event_name": "New_Report_Sent",
+          "fires": "Every time",
+          "example": "User sends 3 reports today = 3 events. No daily limit.",
+          "localStorage_key": "NONE - no deduplication"
+        }
+      ],
+      "reason": "Reports are conversion events - we want to count every single one"
+    }
+  },
+  "real_world_scenarios": {
+    "scenario_1_power_user_one_day": {
+      "description": "Parker visits site 3x in one day, clicks Try Free on 7 tools, sends 2 reports",
+      "actions": [
+        "10:00 AM - Lands on site, adjusts sliders",
+        "10:05 AM - Clicks Try Free on: Airtable, Monday.com, Asana",
+        "10:10 AM - Sends Report #1",
+        "2:00 PM - Comes back, adjusts sliders again",
+        "2:05 PM - Clicks Try Free on: Jira, ClickUp, Smartsheet, Adobe Workfront",
+        "2:10 PM - Sends Report #2"
+      ],
+      "events_fired": {
+        "New_Visitor": 1,
+        "New_Active": 1,
+        "New_Manual_Ranking": 1,
+        "Tool_Try_Free_Click": 7,
+        "Tool_Try_Free_Click_details": [
+          "Airtable (1 event)",
+          "Monday.com (1 event)",
+          "Asana (1 event)",
+          "Jira (1 event)",
+          "ClickUp (1 event)",
+          "Smartsheet (1 event)",
+          "Adobe Workfront (1 event)"
+        ],
+        "New_Report_Sent": 2
+      },
+      "total_events": 12,
+      "posthog_dashboard_shows": {
+        "unique_users_today": 1,
+        "total_try_free_clicks": 7,
+        "unique_users_who_clicked_try_free": 1,
+        "total_reports_sent": 2,
+        "unique_users_who_sent_reports": 1
+      }
+    },
+    "scenario_2_same_tool_multiple_clicks": {
+      "description": "Sarah clicks Airtable Try Free button 5 times in one day",
+      "actions": [
+        "9:00 AM - Clicks Airtable Try Free (1st time)",
+        "9:05 AM - Clicks Airtable Try Free again (2nd time)",
+        "10:00 AM - Clicks Airtable Try Free again (3rd time)",
+        "2:00 PM - Clicks Airtable Try Free again (4th time)",
+        "5:00 PM - Clicks Airtable Try Free again (5th time)"
+      ],
+      "events_fired": {
+        "Tool_Try_Free_Click": 1,
+        "note": "Only the FIRST click fires event. 2nd-5th clicks are deduplicated."
+      },
+      "localStorage": {
+        "key": "posthog_tool_try_free_airtable_2025-11-13",
+        "value": "true",
+        "expires": "Midnight (new day resets)"
+      }
+    },
+    "scenario_3_multi_day_engagement": {
+      "description": "John uses tool on Monday, Tuesday, Wednesday",
+      "monday": {
+        "actions": "Visits, adjusts sliders, clicks Try Free on Monday.com, sends 1 report",
+        "events": {
+          "New_Visitor": 1,
+          "New_Active": 1,
+          "New_Manual_Ranking": 1,
+          "Tool_Try_Free_Click": 1,
+          "New_Report_Sent": 1
+        }
+      },
+      "tuesday": {
+        "actions": "Visits again, adjusts sliders, clicks Try Free on Monday.com again, sends 2 reports",
+        "events": {
+          "New_Visitor": 1,
+          "New_Active": 1,
+          "New_Manual_Ranking": 1,
+          "Tool_Try_Free_Click": 1,
+          "New_Report_Sent": 2
+        },
+        "note": "All events fire again because it's a new day!"
+      },
+      "wednesday": {
+        "actions": "Visits, clicks Try Free on Asana (new tool), sends 0 reports",
+        "events": {
+          "New_Visitor": 1,
+          "New_Active": 1,
+          "New_Manual_Ranking": 0,
+          "Tool_Try_Free_Click": 1,
+          "New_Report_Sent": 0
+        }
+      },
+      "totals_across_3_days": {
+        "New_Visitor": 3,
+        "Tool_Try_Free_Click": 3,
+        "New_Report_Sent": 3
+      }
+    }
+  },
+  "posthog_dashboard_metrics": {
+    "daily_unique_users": {
+      "metric": "🧑 Unique Users Per Day",
+      "calculation": "COUNT(DISTINCT user_id) WHERE date = today",
+      "example": "10 people visit today = 10 unique users. Same 10 people visit tomorrow = 10 unique users again."
+    },
+    "total_try_free_clicks": {
+      "metric": "🚀 Total Try Free Clicks",
+      "calculation": "COUNT(Tool_Try_Free_Click)",
+      "example": "User clicks 7 tools today = 7 total clicks"
+    },
+    "unique_users_who_clicked_try_free": {
+      "metric": "👥 Unique Users Who Clicked Try Free",
+      "calculation": "COUNT(DISTINCT user_id WHERE Tool_Try_Free_Click)",
+      "example": "User clicks 7 tools today = 1 unique user"
+    },
+    "try_free_clicks_by_tool": {
+      "metric": "📊 Try Free Clicks by Tool",
+      "calculation": "COUNT(Tool_Try_Free_Click) GROUP BY tool_name",
+      "example": "Airtable: 15 clicks, Monday.com: 12 clicks, Asana: 10 clicks"
+    },
+    "total_reports_sent": {
+      "metric": "✉️ Total Reports Sent",
+      "calculation": "COUNT(New_Report_Sent)",
+      "example": "User sends 3 reports = 3 total reports"
+    }
+  },
+  "localStorage_key_patterns": {
+    "user_level_daily": {
+      "pattern": "posthog_{metric}_tracked_{YYYY-MM-DD}",
+      "examples": [
+        "posthog_visitor_tracked_2025-11-13",
+        "posthog_active_tracked_2025-11-13"
+      ]
+    },
+    "tool_level_daily": {
+      "pattern": "posthog_tool_{action}_{tool_id}_{YYYY-MM-DD}",
+      "examples": [
+        "posthog_tool_try_free_airtable_2025-11-13",
+        "posthog_tool_compare_monday_com_2025-11-13",
+        "posthog_tool_view_jira_2025-11-13"
+      ]
+    },
+    "no_deduplication": {
+      "events": ["New_Report_Sent"],
+      "localStorage": "NONE - fires every time"
+    }
+  },
+  "testing": {
+    "test_user_level": {
+      "steps": [
+        "1. Visit site → Check localStorage for 'posthog_visitor_tracked_2025-11-13'",
+        "2. Visit again (same day) → New_Visitor should NOT fire again",
+        "3. Wait until tomorrow → Visit → New_Visitor SHOULD fire"
+      ]
+    },
+    "test_tool_level": {
+      "steps": [
+        "1. Click Airtable Try Free → Check for 'posthog_tool_try_free_airtable_2025-11-13'",
+        "2. Click Airtable Try Free again → Event should NOT fire",
+        "3. Click Monday.com Try Free → Event SHOULD fire (different tool)",
+        "4. Wait until tomorrow → Click Airtable Try Free → Event SHOULD fire (new day)"
+      ]
+    },
+    "test_reports": {
+      "steps": [
+        "1. Send report #1 → Event fires",
+        "2. Send report #2 (same day) → Event fires again",
+        "3. Send report #3 (same day) → Event fires again",
+        "4. Check PostHog → Should see 3 separate New_Report_Sent events"
+      ]
+    }
+  },
+  "verification": {
+    "localStorage_inspection": {
+      "how": "Browser DevTools → Application tab → Local Storage",
+      "look_for": "Keys with today's date suffix and tool names",
+      "examples": [
+        "posthog_visitor_tracked_2025-11-13 = 'true'",
+        "posthog_tool_try_free_airtable_2025-11-13 = 'true'",
+        "posthog_tool_compare_monday_com_2025-11-13 = 'true'"
+      ]
+    },
+    "posthog_dashboard": {
+      "url": "https://us.posthog.com/project/211080/dashboard/563189",
+      "check_insights": [
+        "🎯 PPM Tool - Daily Metrics (Recommended)",
+        "📈 Weekly Growth - All Metrics"
+      ]
+    }
+  },
+  "deployment": {
+    "files_changed": ["src/lib/posthog.ts"],
+    "deploy_steps": [
+      "1. Commit changes to git",
+      "2. Push to production",
+      "3. Wait for deployment to complete",
+      "4. Test on live site (check localStorage keys)",
+      "5. Monitor PostHog dashboard for new events"
+    ],
+    "rollback_plan": "If issues occur, revert src/lib/posthog.ts to previous version"
+  }
+}
+

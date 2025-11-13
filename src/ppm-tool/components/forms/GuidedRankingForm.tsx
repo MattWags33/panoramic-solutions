@@ -440,7 +440,15 @@ export const GuidedRankingForm: React.FC<GuidedRankingFormProps> = ({
         question_number: currentStep + 1,
         answer: value,
         affects_criteria: question?.isPersonalization ? 'personalization' : Object.keys(question?.criteriaImpact || {}).join(', '),
-        total_questions: relevantQuestions.length
+        total_questions: relevantQuestions.length,
+        // ✅ NEW: Add user properties
+        $set: {
+          latest_question_answered: question?.text,
+          total_questions_answered: Object.keys(answers).length + 1
+        },
+        $set_once: {
+          first_question_answered_at: new Date().toISOString()
+        }
       });
     } catch (error) {
       console.warn('Failed to track partial ranking:', error);

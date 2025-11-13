@@ -160,6 +160,10 @@ export const trackNewReportSent = (properties?: Record<string, any>) => {
 
 /**
  * Track tool "Try Free" click (HIGHEST INTENT - MONETIZATION KEY)
+ * NOW: Per-tool-per-day deduplication
+ * - User clicks Airtable 3x today = 1 event
+ * - User clicks Adobe Workfront today = 1 event (different tool)
+ * - User clicks Airtable tomorrow = 1 event (different day)
  */
 export const trackToolTryFreeClick = (properties: {
   tool_id: string;
@@ -169,6 +173,19 @@ export const trackToolTryFreeClick = (properties: {
   criteria_rankings?: Record<string, number>;
   firmographics?: Record<string, any>;
 }) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
+  // Create per-tool-per-day key for deduplication
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
+  const toolKey = properties.tool_id.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const dailyKey = `posthog_tool_try_free_${toolKey}_${today}`;
+  const hasTrackedToday = localStorage.getItem(dailyKey);
+  
+  if (hasTrackedToday) {
+    return false; // Already tracked this tool today
+  }
+  
   const attribution = getAttribution() || {};
   
   try {
@@ -177,13 +194,20 @@ export const trackToolTryFreeClick = (properties: {
       ...attribution,
       ...properties
     });
+    localStorage.setItem(dailyKey, 'true');
+    return true;
   } catch (error) {
     console.warn('PostHog tracking failed (trackToolTryFreeClick):', error);
+    return false;
   }
 };
 
 /**
  * Track tool "Add to Compare" click
+ * NOW: Per-tool-per-day deduplication
+ * - User adds Airtable 3x today = 1 event
+ * - User adds Adobe Workfront today = 1 event (different tool)
+ * - User adds Airtable tomorrow = 1 event (different day)
  */
 export const trackToolAddToCompareClick = (properties: {
   tool_id: string;
@@ -192,6 +216,19 @@ export const trackToolAddToCompareClick = (properties: {
   match_score?: number;
   comparing_with?: string[];
 }) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
+  // Create per-tool-per-day key for deduplication
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
+  const toolKey = properties.tool_id.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const dailyKey = `posthog_tool_compare_${toolKey}_${today}`;
+  const hasTrackedToday = localStorage.getItem(dailyKey);
+  
+  if (hasTrackedToday) {
+    return false; // Already tracked this tool today
+  }
+  
   const attribution = getAttribution() || {};
   
   try {
@@ -200,13 +237,20 @@ export const trackToolAddToCompareClick = (properties: {
       ...attribution,
       ...properties
     });
+    localStorage.setItem(dailyKey, 'true');
+    return true;
   } catch (error) {
     console.warn('PostHog tracking failed (trackToolAddToCompareClick):', error);
+    return false;
   }
 };
 
 /**
  * Track tool "View Details" click
+ * NOW: Per-tool-per-day deduplication
+ * - User views Airtable 3x today = 1 event
+ * - User views Adobe Workfront today = 1 event (different tool)
+ * - User views Airtable tomorrow = 1 event (different day)
  */
 export const trackToolViewDetailsClick = (properties: {
   tool_id: string;
@@ -215,6 +259,19 @@ export const trackToolViewDetailsClick = (properties: {
   match_score?: number;
   expanded?: boolean;
 }) => {
+  // Ensure we're in the browser before accessing localStorage
+  if (typeof window === 'undefined') return false;
+  
+  // Create per-tool-per-day key for deduplication
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
+  const toolKey = properties.tool_id.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const dailyKey = `posthog_tool_view_${toolKey}_${today}`;
+  const hasTrackedToday = localStorage.getItem(dailyKey);
+  
+  if (hasTrackedToday) {
+    return false; // Already tracked this tool today
+  }
+  
   const attribution = getAttribution() || {};
   
   try {
@@ -223,8 +280,11 @@ export const trackToolViewDetailsClick = (properties: {
       ...attribution,
       ...properties
     });
+    localStorage.setItem(dailyKey, 'true');
+    return true;
   } catch (error) {
     console.warn('PostHog tracking failed (trackToolViewDetailsClick):', error);
+    return false;
   }
 };
 
@@ -243,16 +303,20 @@ const STORAGE_KEYS = {
 
 /**
  * Check if this is a new visitor and track if so
+ * NOW RESETS DAILY - Same user visiting 3x in one day = 1 event, next day = another event
  */
 export const checkAndTrackNewVisitor = (properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
   if (typeof window === 'undefined') return false;
   
-  const hasTracked = localStorage.getItem(STORAGE_KEYS.VISITOR_TRACKED);
+  // Create date-specific key (resets daily)
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
+  const dailyKey = `${STORAGE_KEYS.VISITOR_TRACKED}_${today}`;
+  const hasTrackedToday = localStorage.getItem(dailyKey);
   
-  if (!hasTracked) {
+  if (!hasTrackedToday) {
     trackNewVisitor(properties);
-    localStorage.setItem(STORAGE_KEYS.VISITOR_TRACKED, 'true');
+    localStorage.setItem(dailyKey, 'true');
     return true;
   }
   
@@ -261,15 +325,19 @@ export const checkAndTrackNewVisitor = (properties?: Record<string, any>) => {
 
 /**
  * Check if this is a new active user and track if so
+ * NOW RESETS DAILY - Same user interacting 3x in one day = 1 event, next day = another event
  * Special handling: If user starts on "how it works" and action is closing it, don't count
  */
 export const checkAndTrackNewActive = (action: string, properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
   if (typeof window === 'undefined') return false;
   
-  const hasTracked = localStorage.getItem(STORAGE_KEYS.ACTIVE_TRACKED);
+  // Create date-specific key (resets daily)
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
+  const dailyKey = `${STORAGE_KEYS.ACTIVE_TRACKED}_${today}`;
+  const hasTrackedToday = localStorage.getItem(dailyKey);
   
-  if (!hasTracked) {
+  if (!hasTrackedToday) {
     // Check if user landed on "how it works"
     const landingPath = localStorage.getItem(STORAGE_KEYS.LANDING_PATH);
     const isHowItWorksStart = landingPath?.includes('section=how-it-works');
@@ -281,7 +349,7 @@ export const checkAndTrackNewActive = (action: string, properties?: Record<strin
     
     // Otherwise, track as active
     trackNewActive(action, properties);
-    localStorage.setItem(STORAGE_KEYS.ACTIVE_TRACKED, 'true');
+    localStorage.setItem(dailyKey, 'true');
     return true;
   }
   
@@ -290,17 +358,20 @@ export const checkAndTrackNewActive = (action: string, properties?: Record<strin
 
 /**
  * Check if this is a new manual ranking and track if so
- * Fires ONCE when user first moves any slider
+ * NOW RESETS DAILY - Same user moving slider 3x in one day = 1 event, next day = another event
  */
 export const checkAndTrackNewManualRanking = (properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
   if (typeof window === 'undefined') return false;
   
-  const hasTracked = localStorage.getItem(STORAGE_KEYS.MANUAL_RANKING_TRACKED);
+  // Create date-specific key (resets daily)
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
+  const dailyKey = `${STORAGE_KEYS.MANUAL_RANKING_TRACKED}_${today}`;
+  const hasTrackedToday = localStorage.getItem(dailyKey);
   
-  if (!hasTracked) {
+  if (!hasTrackedToday) {
     trackNewManualRanking(properties);
-    localStorage.setItem(STORAGE_KEYS.MANUAL_RANKING_TRACKED, 'true');
+    localStorage.setItem(dailyKey, 'true');
     return true;
   }
   
@@ -309,17 +380,20 @@ export const checkAndTrackNewManualRanking = (properties?: Record<string, any>) 
 
 /**
  * Check if this is a new partial ranking and track if so
- * Fires ONCE when user first answers any guided ranking question
+ * NOW RESETS DAILY - Same user answering questions 3x in one day = 1 event, next day = another event
  */
 export const checkAndTrackNewPartialRanking = (properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
   if (typeof window === 'undefined') return false;
   
-  const hasTracked = localStorage.getItem(STORAGE_KEYS.PARTIAL_RANKING_TRACKED);
+  // Create date-specific key (resets daily)
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
+  const dailyKey = `${STORAGE_KEYS.PARTIAL_RANKING_TRACKED}_${today}`;
+  const hasTrackedToday = localStorage.getItem(dailyKey);
   
-  if (!hasTracked) {
+  if (!hasTrackedToday) {
     trackNewPartialRanking(properties);
-    localStorage.setItem(STORAGE_KEYS.PARTIAL_RANKING_TRACKED, 'true');
+    localStorage.setItem(dailyKey, 'true');
     return true;
   }
   
@@ -328,17 +402,20 @@ export const checkAndTrackNewPartialRanking = (properties?: Record<string, any>)
 
 /**
  * Check if this is a new full ranking submittal and track if so
- * Fires ONCE when user completes entire guided ranking OR all partial rankings are complete
+ * NOW RESETS DAILY - Same user completing ranking 3x in one day = 1 event, next day = another event
  */
 export const checkAndTrackNewFullRankingSubmittal = (properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
   if (typeof window === 'undefined') return false;
   
-  const hasTracked = localStorage.getItem(STORAGE_KEYS.FULL_RANKING_TRACKED);
+  // Create date-specific key (resets daily)
+  const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
+  const dailyKey = `${STORAGE_KEYS.FULL_RANKING_TRACKED}_${today}`;
+  const hasTrackedToday = localStorage.getItem(dailyKey);
   
-  if (!hasTracked) {
+  if (!hasTrackedToday) {
     trackNewFullRankingSubmittal(properties);
-    localStorage.setItem(STORAGE_KEYS.FULL_RANKING_TRACKED, 'true');
+    localStorage.setItem(dailyKey, 'true');
     return true;
   }
   
@@ -346,21 +423,22 @@ export const checkAndTrackNewFullRankingSubmittal = (properties?: Record<string,
 };
 
 /**
- * Check if this is a new report sent and track if so
+ * Track report sent - NO DAILY LIMIT
+ * User sends 3 reports today = 3 events (all counted)
+ * This is different from other metrics - we want to count every report sent
  */
 export const checkAndTrackNewReportSent = (properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
   if (typeof window === 'undefined') return false;
   
-  const hasTracked = localStorage.getItem(STORAGE_KEYS.REPORT_TRACKED);
-  
-  if (!hasTracked) {
+  // NO DEDUPLICATION - track every report sent
+  try {
     trackNewReportSent(properties);
-    localStorage.setItem(STORAGE_KEYS.REPORT_TRACKED, 'true');
     return true;
+  } catch (error) {
+    console.warn('Failed to track report sent:', error);
+    return false;
   }
-  
-  return false;
 };
 
 /**

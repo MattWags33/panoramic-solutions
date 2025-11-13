@@ -11,12 +11,18 @@ if (typeof window !== 'undefined') {
     
     // Core capture settings
     capture_pageview: true,
-    capture_pageleave: true,
+    capture_pageleave: false, // ✅ DISABLED: Reduce noise and costs
     
-    // Session recording (optional - set disable_session_recording: true to disable)
-    session_recording: {
-      maskAllInputs: true // Mask sensitive form inputs for privacy
+    // ✅ NEW: Autocapture configuration (reduces costs by ~50%)
+    autocapture: {
+      dom_event_allowlist: ['click'], // Only capture clicks, not all DOM events
+      url_allowlist: ['/ppm-tool'], // Only track PPM tool pages
+      element_allowlist: ['button', 'a'], // Only buttons and links
+      css_selector_allowlist: ['.track-click', '[data-track]'] // Only elements we explicitly mark
     },
+    
+    // ✅ COST OPTIMIZATION: Disable session recording by default (can enable selectively)
+    disable_session_recording: true, // Reduces costs significantly
     
     // Person profiles (for identifying users)
     person_profiles: 'always', // Create profiles for all users

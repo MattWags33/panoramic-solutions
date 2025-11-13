@@ -36,6 +36,7 @@
     "@supabase/supabase-js": "^2.55.0",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
+    "autoprefixer": "^10.4.21",
     "canvas": "^3.2.0",
     "chart.js": "^4.4.1",
     "class-variance-authority": "^0.7.1",
@@ -48,6 +49,7 @@
     "next-mdx-remote": "^4.4.1",
     "next-sitemap": "^4.2.3",
     "openai": "^5.15.0",
+    "postcss": "^8.4.35",
     "posthog-js": "^1.260.3",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
@@ -57,9 +59,7 @@
     "resend": "^6.0.1",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.8",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.4.35"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.1",
@@ -67,7 +67,7 @@
     "@types/node": "^20",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
-    "cloudinary": "^1.41.0",
+    "cloudinary": "^2.8.0",
     "critters": "^0.0.23",
     "eslint": "^8",
     "eslint-config-next": "^14.2.32",

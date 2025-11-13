@@ -235,6 +235,50 @@ export const useEmailReport = (options: UseEmailReportOptions = {}) => {
         
         console.log('📧 Analytics: Email report send tracked with ID:', reportId);
         
+        // ✅ NEW: Identify user with PostHog for cross-device tracking
+        try {
+          const posthog = (await import('posthog-js')).default;
+          const { getAttribution } = await import('@/lib/attribution');
+          const attribution = getAttribution();
+          
+          if (posthog && posthog.__loaded) {
+            posthog.identify(data.userEmail, {
+              email: data.userEmail,
+              first_name: data.firstName,
+              last_name: data.lastName,
+              $set: {
+                last_report_sent_at: new Date().toISOString(),
+                total_tools_recommended: data.selectedTools.length
+              },
+              $set_once: {
+                first_report_sent_at: new Date().toISOString(),
+                first_report_type: 'full_report',
+                // ✅ ATTRIBUTION: Permanently associate with user profile
+                first_referrer: attribution?.referrer || 'direct',
+                first_source: attribution?.source_category || 'Direct Traffic',
+                first_utm_source: attribution?.utm_source,
+                first_utm_medium: attribution?.utm_medium,
+                first_utm_campaign: attribution?.utm_campaign,
+                first_landing_page: attribution?.landing_page
+              }
+            });
+            console.log('✅ PostHog: User identified with email:', data.userEmail);
+            console.log('🎯 PostHog: Attribution linked to user:', attribution?.source_category);
+            
+            // ✅ NEW: Track company-level analytics (B2B)
+            const emailDomain = data.userEmail.split('@')[1];
+            if (emailDomain && !emailDomain.includes('gmail') && !emailDomain.includes('yahoo') && !emailDomain.includes('hotmail')) {
+              posthog.group('company', emailDomain, {
+                company_domain: emailDomain,
+                first_seen: new Date().toISOString()
+              });
+              console.log('✅ PostHog: Company group tracked:', emailDomain);
+            }
+          }
+        } catch (posthogError) {
+          console.warn('Failed to identify user with PostHog:', posthogError);
+        }
+        
         // Track department if provided in personalization
         if (personalizationData?.departments && personalizationData.departments.length > 0) {
           await analytics.trackDepartment({
