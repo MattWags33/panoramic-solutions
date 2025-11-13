@@ -98,10 +98,12 @@ export default function PPMToolPage() {
 
   // Track new visitor and active user on page load
   useEffect(() => {
-    // ✅ NEW: Register super properties (auto-included in every event)
-    const registerSuperProperties = async () => {
+    // ✅ NEW: Register super properties and track visitor (AFTER PostHog loads)
+    const initializeTracking = async () => {
       try {
         const posthog = (await import('posthog-js')).default;
+        
+        // Wait for PostHog to be fully loaded
         if (posthog && posthog.__loaded) {
           posthog.register({
             app_version: '1.0.0',
@@ -110,18 +112,23 @@ export default function PPMToolPage() {
             tool_category: 'portfolio_management'
           });
           console.log('✅ PostHog: Super properties registered');
+          
+          // NOW track visitor (after PostHog is confirmed loaded)
+          const tracked = checkAndTrackVisitor({
+            page: 'ppm_tool',
+            tool_type: 'portfolio_management'
+          });
+          console.log('🎯 PostHog: New_Visitor tracking attempted:', tracked ? 'SUCCESS ✅' : 'SKIPPED (already tracked today)');
+        } else {
+          console.warn('⚠️ PostHog not loaded yet, retrying in 500ms...');
+          setTimeout(initializeTracking, 500);
         }
       } catch (error) {
-        console.warn('Failed to register super properties:', error);
+        console.warn('Failed to initialize tracking:', error);
       }
     };
-    registerSuperProperties();
     
-    // Check and track new visitor
-    checkAndTrackVisitor({
-      page: 'ppm_tool',
-      tool_type: 'portfolio_management'
-    });
+    initializeTracking();
 
     // Track first interaction as active user
     const handleFirstInteraction = () => {

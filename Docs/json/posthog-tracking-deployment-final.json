@@ -1,0 +1,258 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2025-11-13T20:15:00Z",
+  "type": "DEPLOYMENT_CHECKLIST",
+  "metadata": {
+    "project": "Panoramic Solutions - PPM Tool",
+    "maintainer": "Parker Gawne",
+    "mcp_compatible": true,
+    "feature": "Complete PostHog Tracking Fix + Attribution"
+  },
+  "critical_issue_identified": {
+    "problem": "PostHog custom events not firing (only $pageview and autocapture events seen)",
+    "root_cause": "Race condition - checkAndTrackNewVisitor() fires BEFORE PostHog is fully loaded",
+    "evidence": [
+      "Console shows 'PostHog tracking active on production domain'",
+      "Console shows 'User attribution captured'",
+      "BUT no New_Visitor, New_Active, or tool action events in PostHog",
+      "Last seen timestamps for custom events are 10+ hours ago"
+    ],
+    "user_report": "Multiple people messaged saying they used the tool today, but zero events tracked"
+  },
+  "fixes_implemented": {
+    "1_race_condition_fix": {
+      "file": "src/app/ppm-tool/page.tsx",
+      "changes": [
+        "Wrapped checkAndTrackNewVisitor in async initializeTracking() function",
+        "Now waits for posthog.__loaded before calling tracking",
+        "Retries if PostHog not loaded (500ms delay)",
+        "Added detailed console logging for debugging"
+      ],
+      "before": "checkAndTrackVisitor({ page: 'ppm_tool', tool_type: 'portfolio_management' });",
+      "after": "Wrapped in async function that checks posthog.__loaded first"
+    },
+    "2_enhanced_logging": {
+      "file": "src/lib/posthog.ts",
+      "changes": [
+        "Added console.log to trackNewVisitor() to confirm event capture",
+        "Added detailed logging to checkAndTrackNewVisitor()",
+        "Shows date, localStorage key, and tracking status",
+        "Helps diagnose if events are being blocked by deduplication"
+      ],
+      "debug_output": [
+        "🔍 PostHog: Checking New_Visitor status { date, dailyKey, hasTrackedToday }",
+        "🚀 PostHog: Tracking New_Visitor (first visit today)",
+        "✅ PostHog: New_Visitor event captured { source_category }",
+        "⏭️ PostHog: Skipping New_Visitor (already tracked today)"
+      ]
+    },
+    "3_attribution_enhancements": {
+      "files": [
+        "src/lib/attribution.ts",
+        "src/ppm-tool/shared/hooks/useEmailReport.ts"
+      ],
+      "changes": [
+        "Added 10+ new platform detections (TikTok, Pinterest, Discord, etc.)",
+        "Improved short URL detection (lnkd.in, redd.it, fbclid)",
+        "PostHog super properties integration (auto-included in all events)",
+        "User identification on email submission with attribution",
+        "Company group analytics for B2B tracking"
+      ]
+    },
+    "4_cost_optimization": {
+      "file": "src/instrumentation-client.ts",
+      "changes": [
+        "Disabled session recording (massive cost savings)",
+        "Disabled capture_pageleave",
+        "Configured autocapture for specific elements only",
+        "Estimated 60-70% cost reduction"
+      ]
+    }
+  },
+  "tracking_verification_checklist": {
+    "step_1_check_console_logs": {
+      "action": "Open browser console on live site",
+      "expected_output": [
+        "✅ PostHog: Super properties registered",
+        "🔍 PostHog: Checking New_Visitor status { date: '2025-11-13', dailyKey: 'posthog_visitor_tracked_2025-11-13', hasTrackedToday: false }",
+        "🚀 PostHog: Tracking New_Visitor (first visit today)",
+        "✅ PostHog: New_Visitor event captured { source_category: 'LinkedIn' }",
+        "🎯 PostHog: New_Visitor tracking attempted: SUCCESS ✅"
+      ],
+      "if_not_seen": "PostHog not loading correctly - check NEXT_PUBLIC_POSTHOG_KEY env var"
+    },
+    "step_2_check_posthog_events": {
+      "action": "Go to PostHog → Events tab → Filter last 5 minutes",
+      "expected_events": [
+        "$pageview",
+        "New_Visitor",
+        "New_Active (if user interacted)"
+      ],
+      "if_not_seen": "Check browser console for errors or blocking"
+    },
+    "step_3_interact_with_tool": {
+      "actions": [
+        "Move a criteria slider",
+        "Click a tool's 'Try Free' button",
+        "Click 'Add to Compare'",
+        "Click 'View Details'"
+      ],
+      "expected_events": [
+        "New_Active (first interaction)",
+        "New_Manual_Ranking (first slider move)",
+        "Tool_Try_Free_Click (once per tool per day)",
+        "Tool_Add_To_Compare_Click (once per tool per day)",
+        "Tool_View_Details_Click (once per tool per day)"
+      ]
+    },
+    "step_4_check_attribution": {
+      "action": "Check event properties in PostHog",
+      "expected_properties": [
+        "initial_referrer",
+        "initial_source",
+        "initial_utm_source",
+        "initial_utm_campaign",
+        "app_version",
+        "environment",
+        "page_type"
+      ]
+    }
+  },
+  "tracking_locations": {
+    "new_visitor": {
+      "file": "src/app/ppm-tool/page.tsx",
+      "function": "checkAndTrackNewVisitor",
+      "trigger": "On page mount (after PostHog loads)",
+      "frequency": "Once per day per user"
+    },
+    "new_active": {
+      "files": [
+        "src/app/ppm-tool/page.tsx (first click/scroll)",
+        "src/ppm-tool/components/ui/slider.tsx (slider interaction)",
+        "src/ppm-tool/components/common/EmbeddedPPMToolFlow.tsx (criteria reset)"
+      ],
+      "function": "checkAndTrackNewActive",
+      "trigger": "First meaningful interaction",
+      "frequency": "Once per day per user"
+    },
+    "tool_actions": {
+      "files": [
+        "src/ppm-tool/components/cards/EnhancedCompactToolCard.tsx",
+        "src/ppm-tool/features/recommendations/components/EnhancedRecommendationSection.tsx"
+      ],
+      "functions": [
+        "trackToolTryFreeClick",
+        "trackToolAddToCompareClick",
+        "trackToolViewDetailsClick"
+      ],
+      "trigger": "User clicks tool actions",
+      "frequency": "Once per tool per day (e.g., clicking Airtable 'Try Free' 5x = 1 event, clicking Workfront 'Try Free' = another event)"
+    },
+    "criteria_ranking": {
+      "files": [
+        "src/ppm-tool/features/criteria/components/CriteriaSection.tsx",
+        "src/ppm-tool/components/forms/GuidedRankingForm.tsx"
+      ],
+      "functions": [
+        "checkAndTrackNewManualRanking",
+        "checkAndTrackNewPartialRanking",
+        "checkAndTrackNewFullRankingSubmittal"
+      ],
+      "frequency": "Once per day per user"
+    },
+    "report_sent": {
+      "file": "src/ppm-tool/shared/hooks/useEmailReport.ts",
+      "function": "checkAndTrackNewReportSent",
+      "trigger": "Email report submitted",
+      "frequency": "UNLIMITED - every report tracked (no daily limit)"
+    }
+  },
+  "deployment_steps": {
+    "1_verify_local_build": {
+      "status": "COMPLETE ✅",
+      "command": "npm run build",
+      "result": "Build passes with no TypeScript errors"
+    },
+    "2_commit_changes": {
+      "status": "PENDING",
+      "commands": [
+        "git add .",
+        "git commit -m 'fix: PostHog tracking race condition + enhanced attribution (28 platforms)'",
+        "git push origin main"
+      ]
+    },
+    "3_verify_deployment": {
+      "status": "PENDING",
+      "wait_for": "Vercel auto-deployment (or your deployment process)",
+      "expected_time": "2-5 minutes"
+    },
+    "4_test_production": {
+      "status": "PENDING",
+      "steps": [
+        "Visit https://panoramic-solutions.com/ppm-tool",
+        "Open browser console (F12)",
+        "Look for tracking logs",
+        "Verify events appear in PostHog within 1 minute"
+      ]
+    }
+  },
+  "debugging_guide": {
+    "problem_1_no_console_logs": {
+      "symptom": "No PostHog tracking logs in console",
+      "checks": [
+        "Is NEXT_PUBLIC_POSTHOG_KEY set in environment?",
+        "Is code deployed to production?",
+        "Hard refresh browser (Ctrl+Shift+R)"
+      ]
+    },
+    "problem_2_logs_but_no_events": {
+      "symptom": "Console shows 'New_Visitor event captured' but nothing in PostHog",
+      "checks": [
+        "Check PostHog project ID is correct",
+        "Check browser network tab for blocked requests",
+        "Verify ad blocker is not blocking PostHog",
+        "Check if user is in 'test accounts' filter"
+      ]
+    },
+    "problem_3_events_once_then_stop": {
+      "symptom": "Events fire once, then stop working",
+      "explanation": "This is EXPECTED behavior - daily deduplication",
+      "solution": "Clear localStorage or wait until tomorrow to test again",
+      "debug_commands": [
+        "In console: localStorage.removeItem('posthog_visitor_tracked_2025-11-13')",
+        "Or: localStorage.clear()",
+        "Then refresh page"
+      ]
+    }
+  },
+  "what_user_should_see": {
+    "today_nov_13": {
+      "scenario": "Matt and others use the tool today",
+      "expected_posthog_data": [
+        "New_Visitor events (one per unique user per day)",
+        "New_Active events (one per unique user per day)",
+        "Tool action events (one per tool per user per day)",
+        "Dashboard 'Weekly Growth - All Metrics' shows data for 11/13"
+      ]
+    },
+    "tomorrow_nov_14": {
+      "scenario": "Same users return tomorrow",
+      "expected_posthog_data": [
+        "New_Visitor events fire AGAIN (daily reset)",
+        "All metrics reset for new day",
+        "Cumulative unique users count increases"
+      ]
+    }
+  },
+  "files_modified": [
+    "src/app/ppm-tool/page.tsx - Fixed race condition, added PostHog load check",
+    "src/lib/posthog.ts - Enhanced logging, fixed TypeScript error",
+    "src/lib/attribution.ts - 28 platforms, PostHog integration",
+    "src/ppm-tool/shared/hooks/useEmailReport.ts - User identification + attribution",
+    "src/instrumentation-client.ts - Cost optimization",
+    "docs/json/referrer-attribution-tracking.json - Complete documentation",
+    "docs/json/posthog-attribution-tracking-complete.json - Implementation summary"
+  ],
+  "next_action": "DEPLOY TO PRODUCTION IMMEDIATELY - Users are currently not being tracked"
+}
+

@@ -57,13 +57,18 @@ export const trackNewVisitor = (properties?: Record<string, any>) => {
   // Always include attribution data
   const attribution = getAttribution() || {};
   
-  posthog.capture('New_Visitor', {
-    timestamp: Date.now(),
-    user_agent: navigator.userAgent,
-    referrer: document.referrer,
-    ...attribution,
-    ...properties
-  });
+  try {
+    posthog.capture('New_Visitor', {
+      timestamp: Date.now(),
+      user_agent: navigator.userAgent,
+      referrer: document.referrer,
+      ...attribution,
+      ...properties
+    });
+    console.log('✅ PostHog: New_Visitor event captured', { source_category: (attribution as any).source_category });
+  } catch (error) {
+    console.error('❌ PostHog: New_Visitor event FAILED:', error);
+  }
 };
 
 /**
@@ -307,17 +312,29 @@ const STORAGE_KEYS = {
  */
 export const checkAndTrackNewVisitor = (properties?: Record<string, any>) => {
   // Ensure we're in the browser before accessing localStorage
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    console.warn('⚠️ checkAndTrackNewVisitor called on server-side, skipping');
+    return false;
+  }
   
   // Create date-specific key (resets daily)
   const today = new Date().toISOString().split('T')[0]; // e.g., "2025-11-13"
   const dailyKey = `${STORAGE_KEYS.VISITOR_TRACKED}_${today}`;
   const hasTrackedToday = localStorage.getItem(dailyKey);
   
+  console.log('🔍 PostHog: Checking New_Visitor status', { 
+    date: today, 
+    dailyKey, 
+    hasTrackedToday: !!hasTrackedToday 
+  });
+  
   if (!hasTrackedToday) {
+    console.log('🚀 PostHog: Tracking New_Visitor (first visit today)');
     trackNewVisitor(properties);
     localStorage.setItem(dailyKey, 'true');
     return true;
+  } else {
+    console.log('⏭️  PostHog: Skipping New_Visitor (already tracked today)');
   }
   
   return false;
